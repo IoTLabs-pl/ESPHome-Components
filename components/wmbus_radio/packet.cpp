@@ -111,7 +111,10 @@ namespace esphome
                 if (decoded_data)
                     this->data_ = decoded_data.value();
             }
-
+            else if (this->link_mode() == LinkMode::C1) {
+                this->data_.erase(this->data_.begin(), this->data_.begin() + 2);
+            }
+            
             removeAnyDLLCRCs(this->data_);
             int dummy;
             if (checkWMBusFrame(this->data_, (size_t *)&dummy, &dummy, &dummy, false) == FrameStatus::FullFrame)
