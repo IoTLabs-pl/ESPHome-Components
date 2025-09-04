@@ -181,7 +181,7 @@ namespace esphome
         {
             Telegram telegram;
             telegram.parseWMBUSHeader(this->data_);
-            return telegram.addresses[0].str();
+            return telegram.addresses[0].id;
         }
 
         void Frame::mark_as_handled()
