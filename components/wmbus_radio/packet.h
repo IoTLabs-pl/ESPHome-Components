@@ -48,7 +48,7 @@ namespace esphome
         {
         public:
             Frame(Packet *packet);
-            Frame(std::vector<uint8_t> data, LinkMode lm, int8_t rssi) : data_(std::move(data)), link_mode_(lm), rssi_(rssi), format_(format) {};
+            Frame(std::vector<uint8_t> data, LinkMode lm, int8_t rssi, std::string format) : data_(std::move(data)), link_mode_(lm), rssi_(rssi), format_(format) {};
 
             std::vector<uint8_t> &data();
             LinkMode link_mode();
@@ -73,3 +73,4 @@ namespace esphome
 
     }
 } // namespace esphome
+
