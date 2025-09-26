@@ -76,9 +76,6 @@ async def to_code(config):
     if CONF_MODE in config:
         driver += ":" + config[CONF_MODE]
 
-    
-    print(f"meter_id: {config[CONF_METER_ID]}")
-    print(type(config[CONF_METER_ID]))
     cg.add(
         meter.set_meter_params(
             config[CONF_METER_ID],
