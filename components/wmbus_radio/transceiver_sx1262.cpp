@@ -137,7 +137,7 @@ namespace esphome
 
         int8_t SX1262::get_rssi()
         {
-            uint8_t rssi = this->spi_transaction(RADIOLIB_SX126X_CMD_GET_PACKET_STATUS, {0x00, 0x00, 0x00});
+            uint8_t rssi = this->spi_read(RADIOLIB_SX126X_CMD_GET_PACKET_STATUS);
             return (int8_t)(-rssi / 2);
         }
 
