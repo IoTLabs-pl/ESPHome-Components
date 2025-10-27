@@ -103,8 +103,6 @@ namespace esphome
                             BYTE(timeout, 2), BYTE(timeout, 1), BYTE(timeout, 0)
             });
           
-            this->offset = 0;
-          
             ESP_LOGV(TAG, "SX1262 setup done");
         }
 
@@ -135,9 +133,6 @@ namespace esphome
                             BYTE(timeout, 2), BYTE(timeout, 1), BYTE(timeout, 0)
             });
             delay(5);
-          
-            // Start reading at buffer offset
-            this->offset = 0;
         }
 
         int8_t SX1262::get_rssi()
