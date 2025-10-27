@@ -459,15 +459,14 @@
 
 namespace esphome {
 namespace wmbus_radio {
-class SX1262 : public RadioTransceiver {
-public:
-  void setup() override;
-  bool get_frame(uint8_t *, size_t, uint32_t) override;
-  void restart_rx() override;
-  int8_t get_rssi() override;
-  const char *get_name() override;
-protected:
-  uint8_t offset;
-};
-} // namespace wmbus_radio
-} // namespace esphome
+class SX1262 : public RadioTransceiver
+        {
+        public:
+            void setup() override;
+            optional<uint8_t> read() override;
+            void restart_rx() override;
+            int8_t get_rssi() override;
+            const char * get_name() override;
+        };
+    }
+}
