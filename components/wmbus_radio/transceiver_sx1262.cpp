@@ -2,8 +2,6 @@
 
 #include "esphome/core/log.h"
 
-#define F_OSC (32000000)
-
 namespace esphome
 {
     namespace wmbus_radio
