@@ -1,11 +1,11 @@
 #pragma once
-#include "transceiver.h"
+#include "transceiver_sx.h"
 
 namespace esphome
 {
     namespace wmbus_radio
     {
-        class SX1276 : public RadioTransceiver
+        class SX1276 : public SXRadio
         {
         public:
             void setup() override;

@@ -1,5 +1,5 @@
 #pragma once
-#include "transceiver.h"
+#include "transceiver_sx.h"
 
 // SX126X physical layer properties
 #define RADIOLIB_SX126X_FREQUENCY_STEP_SIZE                     0.9536743164
@@ -461,7 +461,7 @@ namespace esphome
 {
     namespace wmbus_radio
     {
-        class SX1262 : public RadioTransceiver
+        class SX1262 : public SXRadio
         {
         public:
             void setup() override;
