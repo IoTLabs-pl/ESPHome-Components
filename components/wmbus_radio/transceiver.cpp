@@ -29,31 +29,6 @@ namespace esphome
             return true;
         }
 
-        void RadioTransceiver::set_reset_pin(InternalGPIOPin *reset_pin)
-        {
-            this->reset_pin_ = reset_pin;
-        }
-
-        void RadioTransceiver::set_irq_pin(InternalGPIOPin *irq_pin)
-        {
-            this->irq_pin_ = irq_pin;
-        }
-
-        void RadioTransceiver::reset()
-        {
-            this->reset_pin_->digital_write(0);
-            delay(5);
-            this->reset_pin_->digital_write(1);
-            delay(5);
-        }
-
-        void RadioTransceiver::common_setup()
-        {
-            this->reset_pin_->setup();
-            this->irq_pin_->setup();
-            this->spi_setup();
-        }
-
         uint8_t RadioTransceiver::spi_transaction(uint8_t operation, uint8_t address, std::initializer_list<uint8_t> data)
         {
             this->delegate_->begin_transaction();
@@ -82,8 +57,6 @@ namespace esphome
         void RadioTransceiver::dump_config()
         {
             ESP_LOGCONFIG(TAG, "Transceiver: %s", this->get_name());
-            LOG_PIN("Reset Pin: ", this->reset_pin_);
-            LOG_PIN("IRQ Pin: ", this->irq_pin_);
         }
     }
 }
