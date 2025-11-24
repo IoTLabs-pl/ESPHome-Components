@@ -457,16 +457,18 @@
 #define RADIOLIB_SX126X_LR_FHSS_BLOCK_PREAMBLE_BITS             (2)
 #define RADIOLIB_SX126X_LR_FHSS_BLOCK_BITS                      (RADIOLIB_SX126X_LR_FHSS_FRAG_BITS + RADIOLIB_SX126X_LR_FHSS_BLOCK_PREAMBLE_BITS)
 
-namespace esphome {
-namespace wmbus_radio {
-class SX1262 : public RadioTransceiver
+namespace esphome
+{
+    namespace wmbus_radio
+    {
+        class SX1262 : public RadioTransceiver
         {
         public:
             void setup() override;
             optional<uint8_t> read() override;
             void restart_rx() override;
             int8_t get_rssi() override;
-            const char * get_name() override;
+            const char *get_name() override;
         };
     }
 }
