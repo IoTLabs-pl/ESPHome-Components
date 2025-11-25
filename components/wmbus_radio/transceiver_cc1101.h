@@ -35,9 +35,22 @@ namespace esphome
             void send_strobe_(Strobe strobe);
             void write_register_(Register reg, uint8_t value);
             uint8_t read_status_(Status status);
+            void configure_gdo_signals_();
+            uint8_t stable_rxbytes_();
+            void read_rx_fifo_(uint8_t *buffer, size_t length);
+            void rearm_rx_(bool configure);
+            void apply_wmbus_rf_config_();
+            void recover_from_overflow_();
+            bool is_sync_active_();
+            void mark_frame_start_if_needed_(bool sync_active);
+            bool should_return_without_frame_(bool sync_active) const;
+            bool handle_no_rxbytes_(bool sync_active, size_t rxbytes);
+            bool handle_overflow_(uint8_t rxbytes);
+            size_t guarded_rxbytes_(bool sync_active, size_t rxbytes) const;
 
             InternalGPIOPin *gdo0_pin_;
             float frequency_mhz_;
+            bool frame_active_{false};
         };
 
     } // namespace wmbus_radio
