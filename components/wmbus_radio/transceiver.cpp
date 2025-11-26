@@ -13,7 +13,6 @@ namespace esphome
         bool RadioTransceiver::read_in_task(uint8_t *buffer, size_t length)
         {
             const uint8_t *buffer_end = buffer + length;
-            int wait_count = 0;
 
             while (buffer != buffer_end)
             {
@@ -22,8 +21,6 @@ namespace esphome
                     *buffer++ = *byte;
                 else if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(5)))
                     return false;
-                else
-                    wait_count++;
             }
 
             return true;
