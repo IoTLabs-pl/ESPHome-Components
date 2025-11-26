@@ -12,15 +12,28 @@ namespace esphome
 
         bool RadioTransceiver::read_in_task(uint8_t *buffer, size_t length)
         {
-            const uint8_t *buffer_end = buffer + length;
+            uint8_t *buffer_end = buffer + length;
+            constexpr TickType_t kReadWaitMs = 5;
 
             while (buffer != buffer_end)
             {
-                auto byte = this->read();
-                if (byte.has_value())
-                    *buffer++ = *byte;
-                else if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(5)))
+                const size_t remaining = static_cast<size_t>(buffer_end - buffer);
+                size_t bytes_read = this->read(buffer, remaining);
+                if (bytes_read > remaining)
+                {
+                    bytes_read = remaining;
+                }
+
+                if (bytes_read > 0)
+                {
+                    buffer += bytes_read;
+                    continue;
+                }
+
+                if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(kReadWaitMs)))
+                {
                     return false;
+                }
             }
 
             return true;

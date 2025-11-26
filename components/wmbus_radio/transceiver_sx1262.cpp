@@ -104,12 +104,16 @@ namespace esphome
             ESP_LOGV(TAG, "SX1262 setup done");
         }
 
-        optional<uint8_t> SX1262::read()
+        size_t SX1262::read(uint8_t *buffer, size_t length)
         {
-            if (this->irq_pin_->digital_read() == false)
-                return this->spi_read(0x00);
+            constexpr uint8_t kFifoRegister = 0x00;
 
-            return {};
+            if (length != 0 && this->irq_pin_->digital_read() == false)
+            {
+                buffer[0] = this->spi_read(kFifoRegister);
+                return 1;
+            }
+            return 0;
         }
 
         void SX1262::restart_rx()
