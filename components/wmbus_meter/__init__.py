@@ -48,17 +48,8 @@ def hex_key_validator(key):
 
 
 def meter_id_validator(meter_id):
-    meter_id = cv.string(meter_id).lower().removeprefix("0x")
-    meter_id = cv.Length(1, 8)(meter_id)
-
-    try:
-        value = int(meter_id, 16)
-    except ValueError:
-        raise cv.Invalid("Meter ID must be a valid hexadecimal string")
-    if value < 0:
-        raise cv.Invalid("Meter ID must be a positive hexadecimal integer")
-
-    return f"{value:08x}"
+    meter_id = cv.hex_uint32_t(meter_id)
+    return f"{meter_id:08x}"
 
 
 CONFIG_SCHEMA = cv.Schema(

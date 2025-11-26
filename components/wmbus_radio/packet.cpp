@@ -8,7 +8,8 @@
 #include "decode3of6.h"
 
 #define WMBUS_PREAMBLE_SIZE (3)
-#define WMBUS_MODE_C_PREAMBLE (0x54)
+#define WMBUS_MODE_C_SUFIX_LEN (2)
+#define WMBUS_MODE_C_PREAMBLE  (0x54)
 #define WMBUS_BLOCK_A_PREAMBLE (0xCD)
 #define WMBUS_BLOCK_B_PREAMBLE (0x3D)
 
@@ -16,6 +17,8 @@ namespace esphome
 {
     namespace wmbus_radio
     {
+        static const char *TAG = "wmbus";
+
         Packet::Packet()
         {
             this->data_.reserve(WMBUS_PREAMBLE_SIZE);
@@ -60,6 +63,10 @@ namespace esphome
         {
             if (!this->expected_size_)
             {
+                // Format A
+                //   L-field = length without CRC fields and without L (1 byte)
+                // Format B
+                //   L-field = length with CRC fields and without L (1 byte)
                 auto l_field = this->l_field();
 
                 // The 2 first blocks contains 25 bytes when excluding CRC and the L-field
@@ -73,9 +80,9 @@ namespace esphome
                 if (this->link_mode() != LinkMode::C1)
                     this->expected_size_ = encoded_size(nrBytes);
                 else if (this->data_[1] == WMBUS_BLOCK_A_PREAMBLE)
-                    this->expected_size_ = 2 + nrBytes;
+                    this->expected_size_ = WMBUS_MODE_C_SUFIX_LEN + nrBytes;
                 else if (this->data_[1] == WMBUS_BLOCK_B_PREAMBLE)
-                    this->expected_size_ = 2 + 1 + nrBytes;
+                    this->expected_size_ = WMBUS_MODE_C_SUFIX_LEN + 1 + l_field;
             }
             return this->expected_size_;
         }
@@ -103,13 +110,26 @@ namespace esphome
         std::optional<Frame> Packet::convert_to_frame()
         {
             std::optional<Frame> frame = {};
+            
+            ESP_LOGD(TAG, "Have data from radio (%zu bytes)", this->data_.size());
+            debugPayload("raw packet", this->data_);
 
-            if (this->link_mode() == LinkMode::T1 &&
-                this->expected_size() == this->data_.size())
-            {
-                auto decoded_data = decode3of6(this->data_);
-                if (decoded_data)
-                    this->data_ = decoded_data.value();
+            if (this->expected_size() == this->data_.size()) {
+                if (this->link_mode() == LinkMode::T1) {
+                    // TODO: Remove assumption that T1 is always A
+                    this->frame_format_ = "A";
+                    auto decoded_data = decode3of6(this->data_);
+                    if (decoded_data)
+                        this->data_ = decoded_data.value();
+                } else if (this->link_mode() == LinkMode::C1) {
+                    if (this->data_[1] == WMBUS_BLOCK_A_PREAMBLE)
+                        this->frame_format_ = "A";
+                    else if (this->data_[1] == WMBUS_BLOCK_B_PREAMBLE)
+                        this->frame_format_ = "B";
+                    this->data_.erase(this->data_.begin(), this->data_.begin() + WMBUS_MODE_C_SUFIX_LEN);
+                } else {
+                    ESP_LOGE(TAG, "unknown link mode!");
+                }
             }
 
             removeAnyDLLCRCs(this->data_);
@@ -124,13 +144,15 @@ namespace esphome
 
         Frame::Frame(Packet *packet) : data_(std::move(packet->data_)),
                                        link_mode_(packet->link_mode_),
-                                       rssi_(packet->rssi_)
+                                       rssi_(packet->rssi_),
+                                       format_(packet->frame_format_)
         {
         }
 
         std::vector<uint8_t> &Frame::data() { return this->data_; }
         LinkMode Frame::link_mode() { return this->link_mode_; }
         int8_t Frame::rssi() { return this->rssi_; }
+        std::string Frame::format() { return this->format_; }
 
         std::vector<uint8_t> Frame::as_raw() { return this->data_; }
         std::string Frame::as_hex() { return format_hex(this->data_); }
@@ -159,7 +181,7 @@ namespace esphome
         {
             Telegram telegram;
             telegram.parseWMBUSHeader(this->data_);
-            return telegram.addresses[0].str();
+            return telegram.addresses[0].id;
         }
 
         void Frame::mark_as_handled()

@@ -44,12 +44,18 @@ wmbus_radio:
         format: rtlwmbus
 
 wmbus_meter:
-  id: test_meter
-  meter_id: 012abcd
-  type: apator162
-  on_telegram:
-    - wmbus_meter.send_telegram_with_mqtt:
-        topic: test_topic
+  - id: test_meter
+    meter_id: 0x012abcd
+    type: apator162
+    on_telegram:
+      - wmbus_meter.send_telegram_with_mqtt:
+          topic: test_topic
+  - id: test_meter_izar
+    meter_id: 11223344
+    type: izar
+  - id: test_meter_evo
+    meter_id: 0x11223344
+    type: evo868
 
 sensor:
   - platform: wmbus_meter

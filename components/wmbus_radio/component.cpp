@@ -50,7 +50,7 @@ namespace esphome
       if (!frame)
         return;
 
-      ESP_LOGI(TAG, "Have data from radio (%zu bytes) [RSSI: %d, mode:%s]", frame->data().size(), frame->rssi(), toString(frame->link_mode()));
+      ESP_LOGI(TAG, "Have data (%zu bytes) [RSSI: %d, mode: %s %s]", frame->data().size(), frame->rssi(), toString(frame->link_mode()), frame->format().c_str());
 
       uint8_t packet_handled = 0;
       for (auto &handler : this->handlers_)

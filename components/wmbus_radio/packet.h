@@ -40,17 +40,20 @@ namespace esphome
 
             LinkMode link_mode();
             LinkMode link_mode_ = LinkMode::UNKNOWN;
+
+            std::string frame_format_;
         };
 
         struct Frame
         {
         public:
             Frame(Packet *packet);
-            Frame(std::vector<uint8_t> data, LinkMode lm, int8_t rssi) : data_(std::move(data)), link_mode_(lm), rssi_(rssi) {};
+            Frame(std::vector<uint8_t> data, LinkMode lm, int8_t rssi, std::string format) : data_(std::move(data)), link_mode_(lm), rssi_(rssi), format_(format) {};
 
             std::vector<uint8_t> &data();
             LinkMode link_mode();
             int8_t rssi();
+            std::string format();
 
             std::vector<uint8_t> as_raw();
             std::string as_hex();
@@ -64,8 +67,10 @@ namespace esphome
             std::vector<uint8_t> data_;
             LinkMode link_mode_;
             int8_t rssi_;
+            std::string format_;
             uint8_t handlers_count_ = 0;
         };
 
     }
 } // namespace esphome
+
