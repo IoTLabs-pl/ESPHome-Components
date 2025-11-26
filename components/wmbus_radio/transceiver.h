@@ -1,6 +1,6 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
-#include "esphome/core/optional.h"
 #include "esphome/components/spi/spi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -39,7 +39,7 @@ namespace esphome
 
         protected:
             virtual void attach_interrupt_impl(void (*callback)(void *), void *arg) = 0;
-            virtual optional<uint8_t> read() = 0;
+            virtual size_t read(uint8_t *buffer, size_t length) = 0;
 
             uint8_t spi_transaction(uint8_t operation, uint8_t address, std::initializer_list<uint8_t> data);
             uint8_t spi_read(uint8_t address);
