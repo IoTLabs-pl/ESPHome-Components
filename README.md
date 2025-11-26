@@ -100,29 +100,44 @@ On the `wmbus_meter` platform, you can use the following sensors to provide data
 For both `sensor` and `text_sensor`, all config from generic [Sensor](https://esphome.io/components/sensor/index.html) and [Text Sensor](https://esphome.io/components/text_sensor/index.html) components is available, so you can use filters, icons, etc.
 
 ## `wmbus_radio`
-This component provides a radio interface LoRa 868MHz transceivers allowing to receive wM-Bus packets. At the moment it support only Semtech SX1276 (RFM95/RFM96).
-As a dependency, it requires `spi` component to be configured in ESPHome.
+This component provides a radio interface for 868MHz transceivers to receive wM-Bus packets. It requires the ESPHome `spi` component.
 
-**Example configuration:**
+### Supported radios
 
+## Required pins:
+- **Semtech SX1276 (RFM95/RFM96)**
+  - `irq_pin` connects to DIO1.
+  - `reset_pin` connects to the module reset pin.
+- **TI CC1101**
+  - `gdo0_pin` connects to GDO0 (edge-triggered interrupt).
+
+### Minimal ESPHome configuration
 ```yaml
 spi:
+  id: spi_bus
   clk_pin: GPIO1
   miso_pin: GPIO2
   mosi_pin: GPIO3
-  id: spi_bus
 
 wmbus_radio:
   id: radio_component
-  radio_type: SX1276
-  reset_pin: GPIO4
-  irq_pin: GPIO5
+  radio_type: SX1276   # or CC1101
+  reset_pin: GPIO4 # set for SX radios
+  irq_pin: GPIO5 # set for SX radios
+  # gdo0_pin: GPIO5 # set for CC1101 radio
   on_frame:
     - wmbus_radio.send_frame_with_socket:
         id: transmitter
         format: rtlwmbus
 ```
 
-For SX1276, `reset_pin` should be connected to the reset pin and `irq_pin` should be connected to the DIO1 pin of the radio module.
+### Notes per radio
+- **SX1276**
+  - Uses DIO1 for RX FIFO signalling.
+  - Keep antenna matching for 868MHz; use 3.3 V supply only.
+- **CC1101**
+  - Uses GDO0 interrupts with burst reads from RX FIFO.
+  - Ensure GDO0 is routed to an interrupt-capable MCU pin.
 
-The `on_frame` trigger can be used to send received wM-Bus packets to a remote server using `socket_transmitter` component. It can also be used to process packets in any other way, such as sending them to MQTT broker or HTTP server.
+### Consuming frames
+Use the `on_frame` trigger to forward packets via `socket_transmitter`, MQTT, or custom automations. Frames are delivered in radio-independent format so handlers work for both SX1276 and CC1101.
