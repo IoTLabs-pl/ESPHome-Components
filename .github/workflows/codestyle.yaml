@@ -1,0 +1,14 @@
+name: Code style check
+on: 
+    pull_request:
+
+jobs:
+  check_code_style:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Check code style with clang-format
+        run: python3 scripts/clang-format-check.py
+
+
