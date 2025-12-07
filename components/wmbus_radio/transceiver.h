@@ -25,8 +25,6 @@ class RadioTransceiver : public Component,
 
   bool read_in_task(uint8_t *buffer, size_t length);
 
-  void set_spi(spi::SPIDelegate *spi);
-
  protected:
   virtual void attach_interrupt_impl(void (*callback)(void *), void *arg) = 0;
   virtual size_t read(uint8_t *buffer, size_t length) = 0;
