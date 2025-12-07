@@ -3,18 +3,15 @@
 
 #include "base_sensor.h"
 
-namespace esphome
-{
-    namespace wmbus_meter
-    {
-        class Sensor : public sensor::Sensor, public BaseSensor
-        {
-        public:
-            void handle_update();
-            void set_dynamic_decimals(bool dynamic_decimals);
+namespace esphome {
+namespace wmbus_meter {
+class Sensor : public sensor::Sensor, public BaseSensor {
+ public:
+  void handle_update();
+  void set_dynamic_decimals(bool dynamic_decimals);
 
-        protected:
-            bool dynamic_decimals_{true};
-        };
-    }
-}
+ protected:
+  bool dynamic_decimals_{true};
+};
+}  // namespace wmbus_meter
+}  // namespace esphome

@@ -3,15 +3,11 @@
 
 #include "base_sensor.h"
 
-namespace esphome
-{
-    namespace wmbus_meter
-    {
-        class TextSensor : public text_sensor::TextSensor,
-                           public BaseSensor
-        {
-        public:
-            void handle_update() override;
-        };
-    }
-}
+namespace esphome {
+namespace wmbus_meter {
+class TextSensor : public text_sensor::TextSensor, public BaseSensor {
+ public:
+  void handle_update() override;
+};
+}  // namespace wmbus_meter
+}  // namespace esphome
