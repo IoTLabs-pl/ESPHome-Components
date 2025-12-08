@@ -76,9 +76,9 @@ uint8_t Packet::l_field() {
       auto decoded = decode3of6(this->data_);
       if (decoded)
         return (*decoded)[0];
-      default:
-        break;
     }
+    default:
+      break;
   }
   return 0;
 }
