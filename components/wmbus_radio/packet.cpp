@@ -7,11 +7,14 @@
 
 #include "decode3of6.h"
 
-#define WMBUS_MODE_C_SUFIX_LEN (2)
-#define WMBUS_PREAMBLE_SIZE (3)
-#define WMBUS_MODE_C_PREAMBLE (0x54)
-#define WMBUS_BLOCK_A_PREAMBLE (0xCD)
-#define WMBUS_BLOCK_B_PREAMBLE (0x3D)
+// 3 bytes for mode C marks + len or first 3 bytes of mode T to decode into 2 bytes
+#define WMBUS_FRAME_PRELOAD_SIZE (3)
+
+// Mode C frame starts with \x54\xCD or \x54\x3D
+#define WMBUS_MODE_C_MARK (0x54)
+#define WMBUS_MODE_C_BLOCK_A_MARK (0xCD)
+#define WMBUS_MODE_C_BLOCK_B_MARK (0x3D)
+#define WMBUS_MODE_C_MARKS_LEN (2)
 
 namespace esphome {
 namespace wmbus_radio {
@@ -28,13 +31,13 @@ const char *toString(BlockType type) {
   }
 }
 
-Packet::Packet() { this->data_.reserve(WMBUS_PREAMBLE_SIZE); }
+Packet::Packet() { this->data_.reserve(WMBUS_FRAME_PRELOAD_SIZE); }
 
 // Determine the link mode based on the first byte of the data
 LinkMode Packet::link_mode() {
   if (this->link_mode_ == LinkMode::UNKNOWN)
     if (this->data_.size())
-      if (this->data_[0] == WMBUS_MODE_C_PREAMBLE)
+      if (this->data_[0] == WMBUS_MODE_C_MARK)
         this->link_mode_ = LinkMode::C1;
       else
         this->link_mode_ = LinkMode::T1;
@@ -46,10 +49,15 @@ LinkMode Packet::link_mode() {
 BlockType Packet::block_type() {
   if (this->block_type_ == BlockType::UNKNOWN) {
     if (this->link_mode() == LinkMode::C1) {
-      if (this->data_[1] == WMBUS_BLOCK_A_PREAMBLE) {
-        this->block_type_ = BlockType::A;
-      } else if (this->data_[1] == WMBUS_BLOCK_B_PREAMBLE) {
-        this->block_type_ = BlockType::B;
+      switch (this->data_[1]) {
+        case WMBUS_MODE_C_BLOCK_A_MARK:
+          this->block_type_ = BlockType::A;
+          break;
+        case WMBUS_MODE_C_BLOCK_B_MARK:
+          this->block_type_ = BlockType::B;
+          break;
+        default:
+          break;
       }
     }
   }
@@ -68,6 +76,8 @@ uint8_t Packet::l_field() {
       auto decoded = decode3of6(this->data_);
       if (decoded)
         return (*decoded)[0];
+      default:
+        break;
     }
   }
   return 0;
@@ -98,10 +108,10 @@ size_t Packet::expected_size() {
       case LinkMode::C1:
         switch (this->block_type()) {
           case BlockType::A:
-            this->expected_size_ = WMBUS_MODE_C_SUFIX_LEN + nrBytes;
+            this->expected_size_ = WMBUS_MODE_C_MARKS_LEN + nrBytes;
             break;
           case BlockType::B:
-            this->expected_size_ = WMBUS_MODE_C_SUFIX_LEN + 1 + l_field;
+            this->expected_size_ = WMBUS_MODE_C_MARKS_LEN + 1 + l_field;
             break;
           default:
             break;

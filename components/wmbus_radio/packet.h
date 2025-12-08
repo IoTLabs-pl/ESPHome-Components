@@ -36,19 +36,19 @@ struct Packet {
  protected:
   std::vector<uint8_t> data_;
 
+  size_t expected_size();
   size_t expected_size_ = 0;
 
-  void trim_preamble();
-
-  uint8_t l_field();
-  int8_t rssi_ = 0;
+  LinkMode link_mode();
+  LinkMode link_mode_ = LinkMode::UNKNOWN;
 
   BlockType block_type();
-  LinkMode link_mode();
-  size_t expected_size();
-
-  LinkMode link_mode_ = LinkMode::UNKNOWN;
   BlockType block_type_ = BlockType::UNKNOWN;
+
+  void trim_preamble();
+  uint8_t l_field();
+
+  int8_t rssi_;
 };
 
 struct Frame {
