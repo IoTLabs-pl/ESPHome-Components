@@ -3,6 +3,8 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
+#include "esphome/core/helpers.h"
+
 #define ASSERT(expr, expected, before_exit) \
   { \
     auto result = (expr); \
@@ -40,8 +42,8 @@ void Radio::loop() {
   if (!frame)
     return;
 
-  ESP_LOGI(TAG, "Have data from radio (%zu bytes) [RSSI: %d, mode:%s]", frame->data().size(), frame->rssi(),
-           toString(frame->link_mode()));
+  ESP_LOGI(TAG, "Frame created (%zu bytes) [RSSI: %d, mode:%s%s]", frame->data().size(), frame->rssi(),
+           toString(frame->link_mode()), toString(frame->block_type()));
 
   uint8_t packet_handled = 0;
   for (auto &handler : this->handlers_)
@@ -70,8 +72,13 @@ void Radio::receive_frame() {
     return;
   }
 
+  if (!packet->validate_preamble()) {
+    ESP_LOGV(TAG, "Received invalid preamble: [%s]", format_hex_pretty(packet->get_raw_data()).c_str());
+    return;
+  }
+
   if (!packet->calculate_payload_size()) {
-    ESP_LOGD(TAG, "Cannot calculate payload size");
+    ESP_LOGV(TAG, "Cannot calculate payload size");
     return;
   }
 
