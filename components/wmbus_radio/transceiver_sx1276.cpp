@@ -86,11 +86,14 @@ void SX1276::setup() {
   ESP_LOGV(TAG, "SX1276 setup done");
 }
 
-optional<uint8_t> SX1276::read() {
-  if (this->irq_pin_->digital_read() == false)
-    return this->spi_read(0x00);
+size_t SX1276::read(uint8_t *buffer, size_t length) {
+  constexpr uint8_t kFifoRegister = 0x00;
 
-  return {};
+  if (length != 0 && this->irq_pin_->digital_read() == false) {
+    buffer[0] = this->spi_read(kFifoRegister);
+    return 1;
+  }
+  return 0;
 }
 
 void SX1276::restart_rx() {
