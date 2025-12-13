@@ -108,10 +108,10 @@ size_t Packet::expected_size() {
       case LinkMode::C1:
         switch (this->block_type()) {
           case BlockType::A:
-            this->expected_size_ = WMBUS_MODE_C_MARKS_LEN + nrBytes;
+            this->expected_size_ = nrBytes;
             break;
           case BlockType::B:
-            this->expected_size_ = WMBUS_MODE_C_MARKS_LEN + 1 + l_field;
+            this->expected_size_ = 1 + l_field;
             break;
           default:
             break;
