@@ -1,0 +1,444 @@
+1: 
+  name: "Pump Flow"
+  byte: 169
+  bit_width: 16
+  offset: -1
+  multiplier: 0.00390625 # 1/256
+  device_class: volume_flow_rate
+5: 
+  name: "Main Inlet Temperature"
+  device_class: "temperature"
+  accuracy_decimals: 2
+  decoder: |-
+      if (data.size() < 144)
+          return {};
+      float value = data[143] - 128.0f;
+      auto frac_raw = data[118] & 0b00000111;
+
+      if (1 < frac_raw && frac_raw <= 4)
+          value += (frac_raw - 1) * 0.25;
+      return value;
+6:
+  name: "Main Outlet Temperature"
+  device_class: "temperature"
+  accuracy_decimals: 2
+  decoder: |-
+      if (data.size()<145)
+          return {};
+      float value = data[144] - 128.0f;
+      auto frac_raw = (data[118] >> 3) & 0b00000111;
+
+      if (1 < frac_raw && frac_raw <= 4)
+          value += (frac_raw - 1) * 0.25;
+      return value;
+7:
+  name: "Main Target Temperature"
+  byte: 153
+  offset: -128
+  device_class: "temperature"
+8:
+  name: "Compressor Frequency"
+  byte: 166
+  offset: -1
+  device_class: "frequency"
+9:
+  name: "DHW Target Temperature"
+  byte: 42
+  offset: -128
+  device_class: "temperature"
+10:
+  name: "DHW Temperature"
+  byte: 141
+  offset: -128
+  device_class: "temperature"
+11:
+  name: "Operations Hours"
+  byte: 182
+  bit_width: 16
+  offset: -1
+  unit_of_measurement: "h"
+  device_class: "duration"
+  state_class: "total_increasing"
+12:
+  name: "Operations Counter"
+  byte: 179
+  bit_width: 16
+  offset: -1
+  state_class: "total_increasing"
+  icon: "mdi:counter"
+14:
+  name: "Outside Temperature"
+  byte: 142
+  offset: -128
+  device_class: "temperature"
+15:
+  name: "Heat Power Production"
+  byte: 194
+  multiplier: 200
+  offset: -1
+  device_class: "power"
+16:
+  name: "Heat Power Consumption"
+  byte: 193
+  multiplier: 200
+  offset: -1
+  device_class: "power"
+21:
+  name: "Outside Pipe Temperature"
+  byte: 158
+  offset: -128
+  device_class: "temperature"
+23:
+  name: "Heat Delta"
+  byte: 84
+  offset: -128
+  device_class: "temperature"
+24:
+  name: "Cool Delta"
+  byte: 94
+  offset: -128
+  device_class: "temperature"
+25:
+  name: "DHW Holiday Shift Temperature"
+  byte: 44
+  offset: -128
+  device_class: "temperature"
+33: 
+  name: "Room Thermostat Temperature"
+  byte: 156
+  offset: -128
+  device_class: "temperature"
+36:
+  name: "Water Temperature Zone 1"
+  byte: 145
+  offset: -128
+  device_class: "temperature"
+37:
+  name: "Water Temperature Zone 2"
+  byte: 146
+  offset: -128
+  device_class: "temperature"
+38:
+  name: "Cool Power Production"
+  byte: 196
+  multiplier: 200
+  offset: -1
+  device_class: "power"
+39:
+  name: "Cool Power Consumption"
+  byte: 195
+  multiplier: 200
+  offset: -1
+  device_class: "power"
+40:
+  name: "DHW Power Production"
+  byte: 198
+  multiplier: 200
+  offset: -1
+  device_class: "power"
+41:
+  name: "DHW Power Consumption"
+  byte: 197
+  multiplier: 200
+  offset: -1
+  device_class: "power"
+42:
+  name: "Water Target Temperature Zone 1"
+  byte: 147
+  offset: -128
+  device_class: "temperature"
+43:
+  name: "Water Target Temperature Zone 2"
+  byte: 148
+  offset: -128
+  device_class: "temperature"
+45:
+  name: "Room Holiday Shift Temperature"
+  byte: 43
+  offset: -128
+  device_class: "temperature"
+46:
+  name: "Buffer Temperature"
+  byte: 149
+  offset: -128
+  device_class: "temperature"
+47:
+  name: "Solar Temperature"
+  byte: 150
+  offset: -128
+  device_class: "temperature"
+48:
+  name: "Pool Temperature"
+  byte: 151
+  offset: -128
+  device_class: "temperature"   
+49:
+  name: "Main Heat Exchanger Outlet Temperature"
+  byte: 154
+  offset: -128
+  device_class: "temperature"
+50:
+  name: "Discharge Temperature"
+  byte: 155
+  offset: -128
+  device_class: "temperature"
+51:
+  name: "Inside Pipe Temperature"
+  byte: 157
+  offset: -128
+  device_class: "temperature"
+52:
+  name: "Defrost Temperature"
+  byte: 159
+  offset: -128
+  device_class: "temperature"
+53:
+  name: "Eva Outlet Temperature"
+  byte: 160
+  offset: -128
+  device_class: "temperature"
+54:
+  name: "Bypass Outlet Temperature"
+  byte: 161
+  offset: -128
+  device_class: "temperature"
+55:
+  name: "IPM Temperature"
+  byte: 162
+  offset: -128
+  device_class: "temperature"
+56:
+  name: "Temperature Zone 1"
+  byte: 139
+  offset: -128
+  device_class: "temperature"
+57:
+  name: "Temperature Zone 2"
+  byte: 140
+  offset: -128
+  device_class: "temperature"
+62:
+  name: "Fan1 Motor Speed"
+  byte: 173
+  multiplier: 10
+  offset: -1
+  unit_of_measurement: "RPM"
+  state_class: "measurement"
+  icon: "mdi:fan"
+63:
+  name: "Fan2 Motor Speed"
+  byte: 174
+  multiplier: 10
+  offset: -1
+  unit_of_measurement: "RPM"
+  state_class: "measurement"
+  icon: "mdi:fan"
+64:
+  name: "High Pressure"
+  byte: 163
+  multiplier: 0.2
+  offset: -1
+  device_class: "pressure"
+65: 
+  name: "Pump Speed"
+  byte: 171
+  multiplier: 50
+  offset: -1
+  unit_of_measurement: "RPM"
+  state_class: "measurement"
+  icon: "mdi:pump"
+66:
+  name: "Low Pressure"
+  byte: 164
+  multiplier: 50
+  offset: -1
+  device_class: "pressure"
+67:
+  name: "Compressor Current"
+  byte: 165
+  multiplier: 0.2
+  offset: -1
+  device_class: "current"
+70:
+  name: "Sterilization Temperature"
+  byte: 100
+  offset: -128
+  device_class: "temperature"
+71:
+  name: "Sterilization Max Time"
+  byte: 101
+  offset: -1
+  unit_of_measurement: "min"
+  device_class: "duration"
+77:
+  name: "Heating Off Outdoor Temperature"
+  byte: 83
+  offset: -128
+  device_class: "temperature"
+78:
+  name: "Heater On Outdoor Temperature"
+  byte: 85
+  offset: -128
+  device_class: "temperature"
+79: 
+  name: "Heat to Cool Temperature"
+  byte: 95
+  offset: -128
+  device_class: "temperature"
+80: 
+  name: "Cool to Heat Temperature"
+  byte: 96
+  offset: -128
+  device_class: "temperature"
+90: 
+  name: "Room Heater Operations Hours"
+  byte: 185
+  bit_width: 16
+  offset: -1
+  unit_of_measurement: "h"
+  device_class: "duration"
+  state_class: "total_increasing"
+91: 
+  name: "DHW Heater Operations Hours"
+  byte: 188
+  bit_width: 16
+  offset: -1
+  unit_of_measurement: "h"
+  device_class: "duration"
+  state_class: "total_increasing"
+93: 
+  name: "Pump Duty"
+  byte: 172
+  offset: -1
+  icon: "mdi:pump"
+  state_class: "measurement"
+102: 
+  name: "Solar On Delta"
+  byte: 61
+  offset: -128
+  device_class: "temperature"
+103: 
+  name: "Solar Off Delta"
+  byte: 62
+  offset: -128
+  device_class: "temperature"
+104: 
+  name: "Solar Frost Protection"
+  byte: 63
+  offset: -128
+  device_class: "temperature"
+105: 
+  name: "Solar High Limit"
+  byte: 64
+  offset: -128
+  device_class: "temperature"
+113: 
+  name: "Buffer Tank Delta"
+  byte: 59
+  offset: -128
+  device_class: "temperature"
+115: 
+  name: "Water Pressure"
+  byte: 125
+  multiplier: 0.02
+  offset: -1
+  unit_of_measurement: "bar"
+  device_class: "pressure"
+116: 
+  name: "Second Inlet Temperature"
+  byte: 126
+  offset: -128
+  device_class: "temperature"
+117: 
+  name: "Economizer Outlet Temperature"
+  byte: 127
+  offset: -128
+  device_class: "temperature"
+118: 
+  name: "Second Room Thermostat Temperature"
+  byte: 128
+  offset: -128
+  device_class: "temperature"
+127: 
+  name: "Valve PID Zone 1"
+  byte: 177
+  multiplier: 0.5
+  offset: -1
+  unit_of_measurement: "%"
+  state_class: "measurement"
+128: 
+  name: "Valve PID Zone 2"
+  byte: 178
+  multiplier: 0.5
+  offset: -1
+  unit_of_measurement: "%"
+  state_class: "measurement"
+131: 
+  name: "Bivalent Start Temperature"
+  byte: 65
+  offset: -128
+  device_class: "temperature"
+134: 
+  name: "Bivalent Advanced Start Temperature"
+  byte: 66
+  offset: -128
+  device_class: "temperature"
+135: 
+  name: "Bivalent Advanced Stop Temperature"
+  byte: 68
+  offset: -128
+  device_class: "temperature"
+136: 
+  name: "Bivalent Advanced Start Delay"
+  byte: 67
+  offset: -1
+  unit_of_measurement: "min"
+  device_class: "duration"
+137: 
+  name: "Bivalent Advanced Stop Delay"
+  byte: 69
+  offset: -1
+  unit_of_measurement: "min"
+  device_class: "duration"
+138: 
+  name: "Bivalent Advanced DHW Delay"
+  byte: 70
+  offset: -1
+  unit_of_measurement: "min"
+  device_class: "duration"
+x0: 
+  name: "Heat Power Consumption Extra"
+  byte: 14
+  bit_width: 16
+  offset: -1
+  device_class: "power"
+x1: 
+  name: "Cool Power Consumption Extra"
+  byte: 16
+  bit_width: 16
+  offset: -1
+  device_class: "power"
+x2: 
+  name: "DHW Power Consumption Extra"
+  byte: 18
+  bit_width: 16
+  offset: -1
+  device_class: "power"
+x3: 
+  name: "Heat Power Production Extra"
+  byte: 20
+  bit_width: 16
+  offset: -1
+  device_class: "power"
+x4: 
+  name: "Cool Power Production Extra"
+  byte: 22
+  bit_width: 16
+  offset: -1
+  device_class: "power"
+x5: 
+  name: "DHW Power Production Extra"
+  byte: 24
+  bit_width: 16
+  offset: -1
+  device_class: "power"

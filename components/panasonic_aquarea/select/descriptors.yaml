@@ -1,0 +1,84 @@
+2:
+  name: "Holiday Mode"
+  byte: 5
+  bit: 3
+  bit_width: 2
+  icon: "mdi:palm-tree"
+  labels:
+    - "Off"
+    - "Scheduled"
+    - "Active"
+3:
+  name: "Quiet Mode Level"
+  byte: 7
+  bit: 3
+  bit_width: 3
+  icon: "mdi:sleep"
+  labels:
+    - "Off"
+    - "Level 1"
+    - "Level 2"
+    - "Level 3"
+
+4:
+  name: "Powerful Mode Time"
+  byte: 7
+  bit: 6
+  bit_width: 3
+  icon: "mdi:arm-flex"
+  labels:
+    - "Off"
+    - "30min"
+    - "60min"
+    - "90min"
+
+9:
+  name: "Operation Mode"
+  byte: 6
+  bit: 3
+  bit_width: 6
+  icon: "mdi:thermostat"
+  labels:
+    0x21: "Tank"
+    0x12: "Heat"
+    0x22: "Heat + Tank"
+    0x13: "Cool"
+    0x23: "Cool + Tank"
+    0x18: "Auto"
+    0x28: "Auto + Tank"
+    0x19: "Auto (Heat)"
+    0x29: "Auto (Heat) + Tank"
+    0x1A: "Auto (Cool)"
+    0x2A: "Auto (Cool) + Tank"
+
+17:
+  name: "Zones"
+  byte: 6
+  bit: 1
+  bit_width: 2
+  icon: "mdi:texture-box"
+  labels:
+    - "Zone 1"
+    - "Zone 2"
+    - "Zone 1 & 2"
+
+26:
+  name: "External Pad Heater"
+  byte: 25
+  bit: 3
+  bit_width: 2
+  icon: "mdi:radiator"
+  labels:
+    - "Disabled"
+    - "Type-A"
+    - "Type-B"
+
+35:
+  name: "Bivalent Mode"
+  byte: 26
+  bit: 5
+  bit_width: 2
+  labels:
+    - "Alternative"
+    - "Parallel"
+    - "Advanced Parallel"
