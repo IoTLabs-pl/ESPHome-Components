@@ -175,17 +175,11 @@ float Device::get_setup_priority() const {
   return setup_priority::BUS - 50.0f;
 }
 
-void Device::add_entity(ReadableEntity *entity, Protocol::CategoryByte type) {
-  switch (type) {
-    case Protocol::CategoryByte::STANDARD:
-      this->standard_response_entities_.push_front(entity);
-      break;
-    case Protocol::CategoryByte::EXTRA:
-      this->extra_response_entities_.push_front(entity);
-      break;
-    default:
-      ESP_LOGE(TAG, "Attempted to add entity with unknown category type");
-      break;
+void Device::add_entity(ReadableEntity *entity, bool extra) {
+  if (extra) {
+    this->extra_response_entities_.push_front(entity);
+  } else {
+    this->standard_response_entities_.push_front(entity);
   }
 }
 

@@ -65,7 +65,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   void update() override;
   void dump_config() override;
   float get_setup_priority() const override;
-  void add_entity(ReadableEntity *entity, Protocol::CategoryByte type = Protocol::CategoryByte::STANDARD);
+  void add_entity(ReadableEntity *entity, bool extra = false);
   std::vector<uint8_t> &get_command_data() {
     this->awaiting_command_dirty_flag_ = true;
     return this->awaiting_command_data;
