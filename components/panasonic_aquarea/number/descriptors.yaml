@@ -1,0 +1,247 @@
+5:
+  name: Heat Request Zone 1
+  byte: 38
+  offset: -128
+  min: -5
+  max: 5
+  device_class: "temperature"
+6:
+  name: Cool Request Zone 1
+  byte: 39
+  offset: -128
+  min: -5
+  max: 5
+  device_class: "temperature"
+7: 
+  name: Heat Request Zone 2
+  byte: 40
+  offset: -128
+  min: -5
+  max: 5
+  device_class: "temperature"
+8:
+  name: Cool Request Zone 2
+  byte: 41
+  offset: -128
+  min: -5
+  max: 5
+  device_class: "temperature"
+11:
+  name: DHW Temperature
+  byte: 42
+  offset: -128
+  min: 40
+  max: 75
+  device_class: "temperature"
+15:
+  name: Max Pump Duty
+  byte: 45
+  offset: -1
+  min: 64
+  max: 254
+16_1:
+  name: Heat Target High Zone 1
+  byte: 75
+  offset: -128
+  min: 20
+  max: 60
+  device_class: "temperature"
+  entity_category: "config"
+16_2:
+  name: Heat Target Low Zone 1
+  byte: 76
+  offset: -128
+  min: 20
+  max: 60
+  device_class: "temperature"
+  entity_category: "config"
+16_3:
+  name: Heat Outside Low Zone 1
+  byte: 77
+  offset: -128
+  min: -20
+  max: 15
+  device_class: "temperature"
+  entity_category: "config"
+16_4:
+  name: Heat Outside High Zone 1
+  byte: 78
+  offset: -128
+  min: -20
+  max: 15
+  device_class: "temperature"
+  entity_category: "config"
+16_5:
+  name: Heat Target High Zone 2
+  byte: 79
+  offset: -128
+  min: 20
+  max: 60
+  device_class: "temperature"
+  entity_category: "config"
+16_6:
+  name: Heat Target Low Zone 2
+  byte: 80
+  offset: -128
+  min: 20
+  max: 60
+  device_class: "temperature"
+  entity_category: "config"
+16_7:
+  name: Heat Outside Low Zone 2
+  byte: 81
+  offset: -128
+  min: -20
+  max: 15
+  device_class: "temperature"
+  entity_category: "config"
+16_8:
+  name: Heat Outside High Zone 2
+  byte: 82
+  offset: -128
+  min: -20
+  max: 15
+  device_class: "temperature"
+  entity_category: "config"
+16_9:
+  name: Cool Target High Zone 1
+  byte: 86
+  offset: -128
+  min: 5
+  max: 20
+  device_class: "temperature"
+  entity_category: "config"
+16_10:
+  name: Cool Target Low Zone 1
+  byte: 87
+  offset: -128
+  min: 5
+  max: 20
+  device_class: "temperature"
+  entity_category: "config"
+16_11:
+  name: Cool Outside Low Zone 1
+  byte: 88
+  offset: -128
+  min: 15
+  max: 30
+  device_class: "temperature"
+  entity_category: "config"
+16_12:
+  name: Cool Outside High Zone 1
+  byte: 89
+  offset: -128
+  min: 15
+  max: 30
+  device_class: "temperature"
+  entity_category: "config"
+16_13:
+  name: Cool Target High Zone 2
+  byte: 90
+  offset: -128
+  min: 5
+  max: 20
+  device_class: "temperature"
+  entity_category: "config"
+16_14:
+  name: Cool Target Low Zone 2
+  byte: 91
+  offset: -128
+  min: 5
+  max: 20
+  device_class: "temperature"
+  entity_category: "config"
+16_15:
+  name: Cool Outside Low Zone 2
+  byte: 92
+  offset: -128
+  min: 15
+  max: 30
+  device_class: "temperature"
+  entity_category: "config"
+16_16:
+  name: Cool Outside High Zone 2
+  byte: 93
+  offset: -128
+  min: 15
+  max: 30
+  device_class: "temperature"
+  entity_category: "config"
+18:
+  name: Floor Heat Delta
+  byte: 84
+  offset: -128
+  min: 1
+  max: 15
+  device_class: "temperature"
+19:
+  name: Floor Cool Delta
+  byte: 94
+  offset: -128
+  min: 1
+  max: 15
+  device_class: "temperature"
+20:
+  name: DHW Heat Delta
+  byte: 99
+  offset: -128
+  min: -12
+  max: -2
+  device_class: "temperature"
+21:
+  name: Heater Delay Time
+  byte: 104
+  offset: -1
+  min: 0
+  max: 250
+  device_class: "duration"
+22:
+  name: Heater Start Delta
+  byte: 105
+  offset: -128
+  min: 1
+  max: 15
+  device_class: "temperature"
+23:
+  name: Heater Stop Delta
+  byte: 106
+  offset: -128
+  min: 1
+  max: 15
+  device_class: "temperature"
+27:
+  name: Buffer Delta
+  byte: 59
+  offset: -128
+  min: 0
+  max: 10
+  device_class: "temperature"
+29:
+  name: Heating Off Outdoor Temp
+  byte: 83
+  offset: -128
+  min: 5
+  max: 35
+  device_class: "temperature"
+36:
+  name: Bivalent Start Temp
+  byte: 65
+  offset: -128
+  min: -15
+  max: 35
+  device_class: "temperature"
+37:
+  name: Bivalent AP Start Temp
+  byte: 66
+  offset: -128
+  min: -10
+  max: 0
+  device_class: "temperature"
+38:
+  name: Bivalent AP Stop Temp
+  byte: 68
+  offset: -128
+  min: -10
+  max: 0
+  device_class: "temperature"
+  
