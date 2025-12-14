@@ -95,7 +95,7 @@ class PlatformDescriptor(ABC, Generic[T]):
 
         # Register on hub component if needed (readable entities)
         if id.type.inherits_from(ReadableEntity):
-            cg.add(parent.add_entity(var), hasattr(self, "extra") and self.extra)
+            cg.add(parent.add_entity(var, hasattr(self, "extra") and self.extra))
 
         # Register as parented if needed (writable entities)
         if id.type.inherits_from(WritableEntity):
