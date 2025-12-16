@@ -116,8 +116,10 @@ size_t Packet::expected_size() {
           default:
             break;
         }
+        break;
       case LinkMode::T1:
         this->expected_size_ = encoded_size(nrBytes);
+        break;
       default:
         break;
     }
