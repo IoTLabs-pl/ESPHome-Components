@@ -36,7 +36,6 @@ class Radio : public Component {
 
   std::vector<std::function<void(Frame *)>> frame_handlers_;
   std::vector<std::function<void(Packet *)>> packet_handlers_;
-
 };
 }  // namespace wmbus_radio
 }  // namespace esphome
