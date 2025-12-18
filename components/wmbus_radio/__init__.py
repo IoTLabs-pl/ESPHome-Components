@@ -23,6 +23,7 @@ AUTO_LOAD = ["wmbus_common"]
 MULTI_CONF = True
 
 CONF_RADIO_ID = "radio_id"
+CONF_ON_PACKET = "on_packet"
 CONF_ON_FRAME = "on_frame"
 CONF_RADIO_TYPE = "radio_type"
 CONF_MARK_AS_HANDLED = "mark_as_handled"
@@ -30,10 +31,15 @@ CONF_MARK_AS_HANDLED = "mark_as_handled"
 radio_ns = cg.esphome_ns.namespace("wmbus_radio")
 RadioComponent = radio_ns.class_("Radio", cg.Component)
 RadioTransceiver = radio_ns.class_("RadioTransceiver", spi.SPIDevice, cg.Component)
+CONF_PACKET_TRIGGER_ID = "packet_rigger_id"
 Frame = radio_ns.class_("Frame")
 FrameOutputFormat = Frame.enum("OutputFormat")
 FramePtr = Frame.operator("ptr")
 FrameTrigger = radio_ns.class_("FrameTrigger", automation.Trigger.template(FramePtr))
+
+Packet = radio_ns.class_("Packet")
+PacketPtr = Packet.operator("ptr")
+PacketTrigger = radio_ns.class_("PacketTrigger", automation.Trigger.template(PacketPtr))
 
 TRANSCEIVER_NAMES = {
     r.stem.removeprefix("transceiver_").upper()
@@ -53,6 +59,11 @@ CONFIG_SCHEMA = (
                 {
                     cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(FrameTrigger),
                     cv.Optional(CONF_MARK_AS_HANDLED, default=False): cv.boolean,
+                }
+            ),
+            cv.Optional(CONF_ON_PACKET): automation.validate_automation(
+                {
+                    cv.GenerateID(CONF_PACKET_TRIGGER_ID): cv.declare_id(PacketTrigger),
                 }
             ),
         }
@@ -90,6 +101,14 @@ async def to_code(config):
         await automation.build_automation(
             trig,
             [(FramePtr, "frame")],
+            conf,
+        )
+
+    for conf in config.get(CONF_ON_PACKET, []):
+        trig = cg.new_Pvariable(conf[CONF_PACKET_TRIGGER_ID], var)
+        await automation.build_automation(
+            trig,
+            [(PacketPtr, "packet")],
             conf,
         )
 

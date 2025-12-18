@@ -240,8 +240,8 @@ std::string Frame::meter_id() {
   return telegram.addresses[0].str();
 }
 
-void Frame::mark_as_handled() { this->handlers_count_++; }
-uint8_t Frame::handlers_count() { return this->handlers_count_; }
+void Frame::mark_as_handled() { this->frame_handlers_count_++; }
+uint8_t Frame::frame_handlers_count() { return this->frame_handlers_count_; }
 
 }  // namespace wmbus_radio
 }  // namespace esphome
