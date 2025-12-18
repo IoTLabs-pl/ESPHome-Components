@@ -24,6 +24,7 @@ class Radio : public Component {
   void receive_frame();
 
   void add_frame_handler(std::function<void(Frame *)> &&callback);
+  void add_packet_handler(std::function<void(Packet *)> &&callback);
 
  protected:
   static void wakeup_receiver_task_from_isr(TaskHandle_t *arg);
@@ -33,7 +34,9 @@ class Radio : public Component {
   TaskHandle_t receiver_task_handle_{nullptr};
   QueueHandle_t packet_queue_{nullptr};
 
-  std::vector<std::function<void(Frame *)>> handlers_;
+  std::vector<std::function<void(Frame *)>> frame_handlers_;
+  std::vector<std::function<void(Packet *)>> packet_handlers_;
+
 };
 }  // namespace wmbus_radio
 }  // namespace esphome
