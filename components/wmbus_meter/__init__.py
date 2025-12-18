@@ -47,29 +47,19 @@ def hex_key_validator(key):
         raise cv.Invalid(e.msg.replace("Bind key", "Key"))
 
 
-def meter_id_validator(meter_id):
-    meter_id = cv.string(meter_id).lower().removeprefix("0x")
-    meter_id = cv.Length(1, 8)(meter_id)
-
-    try:
-        value = int(meter_id, 16)
-    except ValueError:
-        raise cv.Invalid("Meter ID must be a valid hexadecimal string")
-    if value < 0:
-        raise cv.Invalid("Meter ID must be a positive hexadecimal integer")
-
-    return f"{value:08x}"
-
-
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(Meter),
         cv.GenerateID(CONF_RADIO_ID): cv.use_id(RadioComponent),
-        cv.Required(CONF_METER_ID): meter_id_validator,
+        cv.Required(CONF_METER_ID): cv.All(cv.hex_uint32_t, lambda id: f"{id:08x}"),
         cv.Required(CONF_TYPE): validate_driver,
         cv.Optional(CONF_KEY): cv.Any(
-            cv.All(cv.string_strict, lambda s: s.encode().hex(), hex_key_validator),
-            hex_key_validator,
+            cv.All(
+                cv.string_strict,
+                lambda s: s.encode().hex(),
+                hex_key_validator,
+            ),  # binary keys
+            hex_key_validator,  # hex-encoded keys
         ),
         cv.Optional(CONF_ON_TELEGRAM): automation.validate_automation(
             {cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(TelegramTrigger)},
