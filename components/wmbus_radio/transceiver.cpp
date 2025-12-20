@@ -9,37 +9,27 @@ namespace wmbus_radio {
 static const char *TAG = "wmbus.transceiver";
 
 bool RadioTransceiver::read_in_task(uint8_t *buffer, size_t length) {
-  const uint8_t *buffer_end = buffer + length;
-  int wait_count = 0;
+  uint8_t *buffer_end = buffer + length;
+  constexpr TickType_t kReadWaitMs = 5;
 
   while (buffer != buffer_end) {
-    auto byte = this->read();
-    if (byte.has_value())
-      *buffer++ = *byte;
-    else if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(5)))
+    const size_t remaining = static_cast<size_t>(buffer_end - buffer);
+    size_t bytes_read = this->read(buffer, remaining);
+    if (bytes_read > remaining) {
+      bytes_read = remaining;
+    }
+
+    if (bytes_read > 0) {
+      buffer += bytes_read;
+      continue;
+    }
+
+    if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(kReadWaitMs))) {
       return false;
-    else
-      wait_count++;
+    }
   }
 
   return true;
-}
-
-void RadioTransceiver::set_reset_pin(InternalGPIOPin *reset_pin) { this->reset_pin_ = reset_pin; }
-
-void RadioTransceiver::set_irq_pin(InternalGPIOPin *irq_pin) { this->irq_pin_ = irq_pin; }
-
-void RadioTransceiver::reset() {
-  this->reset_pin_->digital_write(0);
-  delay(5);
-  this->reset_pin_->digital_write(1);
-  delay(5);
-}
-
-void RadioTransceiver::common_setup() {
-  this->reset_pin_->setup();
-  this->irq_pin_->setup();
-  this->spi_setup();
 }
 
 uint8_t RadioTransceiver::spi_transaction(uint8_t operation, uint8_t address, std::initializer_list<uint8_t> data) {
@@ -59,10 +49,7 @@ void RadioTransceiver::spi_write(uint8_t address, std::initializer_list<uint8_t>
 
 void RadioTransceiver::spi_write(uint8_t address, uint8_t data) { this->spi_write(address, {data}); }
 
-void RadioTransceiver::dump_config() {
-  ESP_LOGCONFIG(TAG, "Transceiver: %s", this->get_name());
-  LOG_PIN("Reset Pin: ", this->reset_pin_);
-  LOG_PIN("IRQ Pin: ", this->irq_pin_);
-}
+void RadioTransceiver::dump_config() { ESP_LOGCONFIG(TAG, "Transceiver: %s", this->get_name()); }
+
 }  // namespace wmbus_radio
 }  // namespace esphome
