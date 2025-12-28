@@ -37,9 +37,7 @@ void Radio::loop() {
   if (xQueueReceive(this->packet_queue_, &p, 0) != pdPASS)
     return;
 
-  for (auto &handler : this->packet_handlers_) {
-    handler(p);
-  }
+  this->on_packet_callback_manager(p);
 
   auto frame = p->convert_to_frame();
 
@@ -113,8 +111,8 @@ void Radio::add_frame_handler(std::function<void(Frame *)> &&callback) {
   this->frame_handlers_.push_back(std::move(callback));
 }
 
-void Radio::add_packet_handler(std::function<void(Packet *)> &&callback) {
-  this->packet_handlers_.push_back(std::move(callback));
+void Radio::on_packet(std::function<void(Packet *)> &&callback) {
+  this->on_packet_callback_manager.add(std::move(callback));
 }
 
 }  // namespace wmbus_radio

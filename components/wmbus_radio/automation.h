@@ -16,10 +16,11 @@ class FrameTrigger : public Trigger<Frame *> {
     });
   }
 };
+
 class PacketTrigger : public Trigger<Packet *> {
  public:
   explicit PacketTrigger(wmbus_radio::Radio *radio) {
-    radio->add_packet_handler([this](Packet *packet) { this->trigger(packet); });
+    radio->on_packet([this](Packet *packet) { this->trigger(packet); });
   }
 };
 

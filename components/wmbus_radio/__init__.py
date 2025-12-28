@@ -27,11 +27,11 @@ CONF_ON_PACKET = "on_packet"
 CONF_ON_FRAME = "on_frame"
 CONF_RADIO_TYPE = "radio_type"
 CONF_MARK_AS_HANDLED = "mark_as_handled"
+CONF_PACKET_TRIGGER_ID = "packet_trigger_id"
 
 radio_ns = cg.esphome_ns.namespace("wmbus_radio")
 RadioComponent = radio_ns.class_("Radio", cg.Component)
 RadioTransceiver = radio_ns.class_("RadioTransceiver", spi.SPIDevice, cg.Component)
-CONF_PACKET_TRIGGER_ID = "packet_rigger_id"
 Frame = radio_ns.class_("Frame")
 FrameOutputFormat = Frame.enum("OutputFormat")
 FramePtr = Frame.operator("ptr")
