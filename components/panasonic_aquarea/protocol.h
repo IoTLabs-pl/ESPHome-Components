@@ -74,7 +74,7 @@ class Serializer {
 
  private:
   static std::vector<uint8_t> serialize_message(PreambleByte preamble, ThirdByte direction, CategoryByte category,
-                                                size_t payload_length);
+                                                size_t length);
   static std::vector<uint8_t> serialize_message(PreambleByte preamble, ThirdByte direction, CategoryByte category,
                                                 std::vector<uint8_t> &data);
 };

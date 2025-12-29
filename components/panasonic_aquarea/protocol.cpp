@@ -76,10 +76,8 @@ Parser::Response Parser::parse_response(ResponseBuffer &buffer) {
 
 // ---- Serializer implementation ----
 std::vector<uint8_t> Serializer::serialize_message(PreambleByte preamble, ThirdByte direction, CategoryByte category,
-                                                   size_t payload_length) {
-  // Total frame: PREAMBLE(1) + LENGTH(1) + DIRECTION(1) + CATEGORY(1) + PAYLOAD(N) + CHECKSUM(1)
-  const size_t total_size = 1 + 1 + 2 + payload_length + 1;
-  std::vector<uint8_t> frame(total_size, 0);
+                                                   size_t length) {
+  std::vector<uint8_t> frame(length, 0);
   // Delegate to rvalue overload that mutates in place
   return serialize_message(preamble, direction, category, frame);
 }
