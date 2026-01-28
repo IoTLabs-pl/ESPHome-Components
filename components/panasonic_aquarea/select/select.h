@@ -1,7 +1,7 @@
 #pragma once
 #include "esphome/core/component.h"
 #include "esphome/components/select/select.h"
-#include "../extractor.h"
+#include "../panasonic_aquarea.h"
 
 namespace esphome {
 namespace panasonic_aquarea {

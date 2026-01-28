@@ -1,11 +1,33 @@
 #include "panasonic_aquarea.h"
 #include "protocol.h"
+#include "extractor.h"
 
 namespace esphome {
 namespace panasonic_aquarea {
 static const char *TAG = "panasonic_aquarea";
 static const char *RESPONSE_TIMEOUT_TAG = "response_timeout";
 static const char *UPDATE_ENABLER_TAG = "update_enabler";
+
+// ============================================================================
+// SupportsExtraQueryEntity Implementation
+// ============================================================================
+
+Device::SupportsExtraQueryEntity::SupportsExtraQueryEntity() {
+  // Lambda extractor that checks if extra query is supported
+  set_extractor(new LambdaExtractor<bool>([this](const std::vector<uint8_t> &data) -> optional<bool> {
+    if (data.size() <= EXTRA_SUPPORT_BYTE_INDEX) {
+      return {};
+    }
+    if (data[EXTRA_SUPPORT_BYTE_INDEX] >= EXTRA_SUPPORT_THRESHOLD) {
+      return true;
+    }
+    return false;
+  }));
+}
+
+void Device::SupportsExtraQueryEntity::publish_state(bool value) { state = value; }
+
+const std::string Device::SupportsExtraQueryEntity::get_name() const { return "Extra Query Support"; }
 
 // ============================================================================
 // Command Queue Management
@@ -37,7 +59,7 @@ bool Device::start_response_timeout(bool internal) {
 
   this->comm_state_ = internal ? CommunicationState::INTERNAL_TRANSACTION : CommunicationState::EXTERNAL_TRANSACTION;
 
-  ESP_LOGI(TAG, "Starting %s transaction with heatpump", internal ? "internal" : "external");
+  ESP_LOGD(TAG, "Starting %s transaction with heatpump", internal ? "internal" : "external");
   this->set_timeout(RESPONSE_TIMEOUT_TAG, 1500, [this]() {
     ESP_LOGW(TAG, "Response timeout occurred, resetting communication state");
     this->comm_state_ = CommunicationState::IDLE;
@@ -47,7 +69,7 @@ bool Device::start_response_timeout(bool internal) {
 }
 
 void Device::stop_response_timeout() {
-  ESP_LOGI(TAG, "Finishing transaction with heatpump");
+  ESP_LOGD(TAG, "Finishing transaction with heatpump");
 
   this->cancel_timeout(RESPONSE_TIMEOUT_TAG);
   this->comm_state_ = CommunicationState::IDLE;
@@ -106,6 +128,9 @@ void Device::process_external_controller_data() {
 // ============================================================================
 
 void Device::setup() {
+  // Initialize extra query support entity
+  this->add_entity(&this->supports_extra_query_entity_, false);
+
   // Disable polling initially
   this->stop_poller();
 
@@ -145,7 +170,7 @@ void Device::update() {
   if (this->start_response_timeout(true)) {
     // Determine which type of polling message to send
     // Alternate between standard and extra queries if supported
-    auto commands_range = this->supports_extra_query_ ? 2 : 1;
+    auto commands_range = this->supports_extra_query_entity_.state ? 2 : 1;
     auto idx = this->request_counter_ % commands_range;
 
     const static std::vector<uint8_t> requests[] = {
@@ -197,7 +222,6 @@ bool Device::parse_out_response() {
 
   switch (response.category) {
     case Protocol::CategoryByte::STANDARD:
-      this->supports_extra_query_ = true;
       for (auto *entity : this->standard_response_entities_)
         entity->handle_update(response.data);
       handled = true;

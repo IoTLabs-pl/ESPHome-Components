@@ -9,6 +9,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Check code style with clang-format
-        run: python3 scripts/clang-format-check.py
+        run: python3 scripts/clang_format_check.py
 
 
