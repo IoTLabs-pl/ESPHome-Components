@@ -125,8 +125,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
 
 // ==== WriteOnlyEntity::send_command implementation (after Device is fully defined) ====
 
-template<typename Derived, typename T>
-void WriteOnlyEntity<Derived, T>::send_command(const T &value) {
+template<typename Derived, typename T> void WriteOnlyEntity<Derived, T>::send_command(const T &value) {
   this->extractor_->encode(this->parent_->get_command_data(), value);
 }
 
