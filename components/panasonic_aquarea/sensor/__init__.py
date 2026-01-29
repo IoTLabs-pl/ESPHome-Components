@@ -41,6 +41,20 @@ class SensorDescriptor(PlatformDescriptor):
         FloatExtractorConfig,
     )
 
+    @property
+    def effective_unit(self) -> str:
+        """Get unit of measurement with defaults applied."""
+        if self.unit_of_measurement is not cv.UNDEFINED:
+            return self.unit_of_measurement
+        return DEFAULT_UNITS.get(self.device_class, cv.UNDEFINED)
+
+    @property
+    def effective_state_class(self) -> str:
+        """Get state class with defaults applied."""
+        if self.state_class is not cv.UNDEFINED:
+            return self.state_class
+        return DEFAULT_STATE_CLASS.get(self.device_class, cv.UNDEFINED)
+
     def create_entity_schema(self) -> cv.Schema:
         if self.accuracy_decimals is cv.UNDEFINED:
             multiplier = (
@@ -49,26 +63,15 @@ class SensorDescriptor(PlatformDescriptor):
                 else 1.0
             )
             decimals = 0 if multiplier >= 1 else ceil(log10(1 / multiplier))
-
         else:
             decimals = self.accuracy_decimals
 
-        if self.unit_of_measurement is cv.UNDEFINED:
-            unit_of_measurement = DEFAULT_UNITS.get(self.device_class, cv.UNDEFINED)
-        else:
-            unit_of_measurement = self.unit_of_measurement
-
-        if self.state_class is cv.UNDEFINED:
-            state_class = DEFAULT_STATE_CLASS.get(self.device_class, cv.UNDEFINED)
-        else:
-            state_class = self.state_class
-
         return sensor.sensor_schema(
             class_=SensorClass,
-            unit_of_measurement=unit_of_measurement,
+            unit_of_measurement=self.effective_unit,
             accuracy_decimals=decimals,
             device_class=self.device_class,
-            state_class=state_class,
+            state_class=self.effective_state_class,
             icon=self.icon,
         )
 

@@ -115,6 +115,8 @@ class PlatformDescriptor(ABC, Generic[T]):
 
 
 class Platform:
+    REGISTERED_PLATFORMS: ClassVar[list["Platform"]] = []
+
     def __init__(
         self,
         module_path: Path,
@@ -125,6 +127,7 @@ class Platform:
 
         self._descriptors: dict[int | str, PlatformDescriptor] = {}
         self._descriptor_class = descriptor_class
+        self.name = module_path.name
 
         for key, values in config.items():
             errors = []
@@ -143,6 +146,7 @@ class Platform:
                 )
 
         assert self._descriptors, "No descriptors loaded!"
+        Platform.REGISTERED_PLATFORMS.append(self)
 
     @property
     def _id_field(self) -> str:
