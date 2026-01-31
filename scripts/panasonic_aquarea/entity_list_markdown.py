@@ -72,7 +72,7 @@ env.globals["get_platform"] = get_platform
 for template_name in [
     "id",
     "name",
-    "entity_type_detailed",
+    "entity_type",
 ]:
     template_path = Path(__file__).with_name(f"by_{template_name}.md.jinja2")
     tmpl = env.from_string(template_path.read_text())

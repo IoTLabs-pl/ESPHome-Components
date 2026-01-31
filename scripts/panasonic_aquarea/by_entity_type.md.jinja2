@@ -1,4 +1,4 @@
-# Panasonic Aquarea Entities - By Type (Detailed)
+# Panasonic Aquarea Entities - By Type
 
 ## `sensor`
 
