@@ -2,6 +2,6 @@
 
 | Name | Entity Type | Heishamon ID | Example |
 |------|-------------|--------------|---------|
-{%- for platform, id, desc in all_entities_sorted(platforms) | sort(attribute='2.name') %}
-| {{ desc.name }} | `{{ platform.name }}` | `{{ desc._id_field_name() | upper }}{{ id | format_id }}` | <pre lang="yaml"><code>{{ platform.name }}:&#13;  - platform: panasonic_aquarea&#13;  {{ desc._id_field_name() }}: {{ id }}</code></pre> |
+{%- for entity in all_entities | sort(attribute='name') %}
+| {{ entity.name }} | `{{ entity.platform.name }}` | `{{ entity.full_id }}` | <pre lang="yaml"><code>{{ entity.platform.name }}:&#13;  - platform: panasonic_aquarea&#13;  {{ entity._id_field_name() }}: {{ entity.id_value }}</code></pre> |
 {%- endfor %}

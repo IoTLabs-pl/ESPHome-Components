@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, ClassVar, TypeVar, Generic
+from importlib import import_module
 
 import yaml
 
@@ -18,6 +19,7 @@ T = TypeVar("T")
 
 @dataclass(frozen=True)
 class PlatformDescriptor(ABC, Generic[T]):
+    platform: "Platform"
     name: str
     extractor: ExtractorConfig
 
@@ -35,6 +37,10 @@ class PlatformDescriptor(ABC, Generic[T]):
     def id_value(self) -> int | str:
         return getattr(self, self._id_field_name())
 
+    @property
+    def full_id(self) -> str:
+        return f"{self._id_field_name().upper()}{self.id_value}"
+
     @abstractmethod
     def create_entity_schema(self) -> cv.Schema:
         raise NotImplementedError
@@ -44,9 +50,11 @@ class PlatformDescriptor(ABC, Generic[T]):
         raise NotImplementedError
 
     @classmethod
-    def from_yaml(cls, key: int | str, values: dict) -> "PlatformDescriptor":
+    def from_yaml(
+        cls, platform: "Platform", key: int | str, values: dict
+    ) -> "PlatformDescriptor":
         values = dict(values)
-        data = {}
+        data = {"platform": platform}
 
         # Special case for sensor extras: key starts with 'x'
         if isinstance(key, str) and key.startswith("x"):
@@ -135,7 +143,7 @@ class Platform:
                 self._descriptor_class
             }:
                 try:
-                    descriptor = cls.from_yaml(key, values)
+                    descriptor = cls.from_yaml(self, key, values)
                     self._descriptors[key] = descriptor
                     break
                 except Exception as e:
@@ -146,7 +154,13 @@ class Platform:
                 )
 
         assert self._descriptors, "No descriptors loaded!"
-        Platform.REGISTERED_PLATFORMS.append(self)
+        self.REGISTERED_PLATFORMS.append(self)
+
+    @classmethod
+    def auto_load(cls):
+        for platform in Path(__file__).parent.glob("*/descriptors.yaml"):
+            import_module(f"..{platform.parent.name}", __name__)
+        return cls.REGISTERED_PLATFORMS
 
     @property
     def _id_field(self) -> str:

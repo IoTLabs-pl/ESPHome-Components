@@ -39,7 +39,7 @@
   offset: -1
   min: 64
   max: 254
-16_1:
+"16:1":
   name: Heat Target High Zone 1
   byte: 75
   offset: -128
@@ -47,7 +47,7 @@
   max: 60
   device_class: "temperature"
   entity_category: "config"
-16_2:
+"16:2":
   name: Heat Target Low Zone 1
   byte: 76
   offset: -128
@@ -55,7 +55,7 @@
   max: 60
   device_class: "temperature"
   entity_category: "config"
-16_3:
+"16:3":
   name: Heat Outside Low Zone 1
   byte: 77
   offset: -128
@@ -63,7 +63,7 @@
   max: 15
   device_class: "temperature"
   entity_category: "config"
-16_4:
+"16:4":
   name: Heat Outside High Zone 1
   byte: 78
   offset: -128
@@ -71,7 +71,7 @@
   max: 15
   device_class: "temperature"
   entity_category: "config"
-16_5:
+"16:5":
   name: Heat Target High Zone 2
   byte: 79
   offset: -128
@@ -79,7 +79,7 @@
   max: 60
   device_class: "temperature"
   entity_category: "config"
-16_6:
+"16:6":
   name: Heat Target Low Zone 2
   byte: 80
   offset: -128
@@ -87,7 +87,7 @@
   max: 60
   device_class: "temperature"
   entity_category: "config"
-16_7:
+"16:7":
   name: Heat Outside Low Zone 2
   byte: 81
   offset: -128
@@ -95,7 +95,7 @@
   max: 15
   device_class: "temperature"
   entity_category: "config"
-16_8:
+"16:8":
   name: Heat Outside High Zone 2
   byte: 82
   offset: -128
@@ -103,7 +103,7 @@
   max: 15
   device_class: "temperature"
   entity_category: "config"
-16_9:
+"16:9":
   name: Cool Target High Zone 1
   byte: 86
   offset: -128
@@ -111,7 +111,7 @@
   max: 20
   device_class: "temperature"
   entity_category: "config"
-16_10:
+"16:10":
   name: Cool Target Low Zone 1
   byte: 87
   offset: -128
@@ -119,7 +119,7 @@
   max: 20
   device_class: "temperature"
   entity_category: "config"
-16_11:
+"16:11":
   name: Cool Outside Low Zone 1
   byte: 88
   offset: -128
@@ -127,7 +127,7 @@
   max: 30
   device_class: "temperature"
   entity_category: "config"
-16_12:
+"16:12":
   name: Cool Outside High Zone 1
   byte: 89
   offset: -128
@@ -135,7 +135,7 @@
   max: 30
   device_class: "temperature"
   entity_category: "config"
-16_13:
+"16:13":
   name: Cool Target High Zone 2
   byte: 90
   offset: -128
@@ -143,7 +143,7 @@
   max: 20
   device_class: "temperature"
   entity_category: "config"
-16_14:
+"16:14":
   name: Cool Target Low Zone 2
   byte: 91
   offset: -128
@@ -151,7 +151,7 @@
   max: 20
   device_class: "temperature"
   entity_category: "config"
-16_15:
+"16:15":
   name: Cool Outside Low Zone 2
   byte: 92
   offset: -128
@@ -159,7 +159,7 @@
   max: 30
   device_class: "temperature"
   entity_category: "config"
-16_16:
+"16:16":
   name: Cool Outside High Zone 2
   byte: 93
   offset: -128
