@@ -41,11 +41,6 @@
   byte: 166
   offset: -1
   device_class: "frequency"
-9:
-  name: "DHW Target Temperature"
-  byte: 42
-  offset: -128
-  device_class: "temperature"
 10:
   name: "DHW Temperature"
   byte: 141

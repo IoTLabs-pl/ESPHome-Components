@@ -27,7 +27,7 @@
   max: 5
   device_class: "temperature"
 11:
-  name: DHW Temperature
+  name: DHW Target Temperature
   byte: 42
   offset: -128
   min: 40
