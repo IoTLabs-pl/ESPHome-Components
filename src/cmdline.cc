@@ -93,6 +93,17 @@ void enableEarlyLoggingFromCommandLine(int argc, char **argv)
             i++;
             continue;
         }
+        if (!strcmp(argv[i], "--nonet")) {
+            setNoNetwork(true);
+            i++;
+            continue;
+        }
+        if (!strncmp(argv[i], "--basicauth=", 12) && strlen(argv[i]) > 12) {
+            string ba = argv[i]+12;
+            setBasicAuth(ba);
+            i++;
+            continue;
+        }
         i++;
     }
 }
@@ -624,6 +635,16 @@ static shared_ptr<Configuration> parseNormalCommandLine(Configuration *c, int ar
             i++;
             continue;
         }
+        if (!strcmp(argv[i], "--nonet")) {
+            c->no_net = true;
+            i++;
+            continue;
+        }
+        if (!strncmp(argv[i], "--basicauth=", 12) && strlen(argv[i]) > 12) {
+            c->basic_auth_cred = argv[i]+12;
+            i++;
+            continue;
+        }
         if (!strncmp(argv[i], "--pollinterval=", 15) && strlen(argv[i]) > 15) {
             c->pollinterval = parseTime(argv[i]+15);
             if (c->pollinterval <= 0) {
@@ -861,6 +882,27 @@ shared_ptr<Configuration> parseCommandLineWithUseConfig(Configuration *c, int ar
             i++;
             continue;
         }
+        if (!strncmp(argv[i], "--listfields=", 13))
+        {
+            c->overrides.listfields_override = string(argv[i]+13);
+            debug("(useconfig) listfields override \"%s\"\n", c->overrides.listfields_override.c_str());
+            i++;
+            continue;
+        }
+        if (!strncmp(argv[i], "--listmeters=", 13))
+        {
+            c->overrides.listmeters_override = string(argv[i]+13);
+            debug("(useconfig) listmeters override \"%s\"\n", c->overrides.listmeters_override.c_str());
+            i++;
+            continue;
+        }
+        if (!strncmp(argv[i], "--listmeters", 12))
+        {
+            c->overrides.listmeters_override = "!";
+            debug("(useconfig) listmeters override\n");
+            i++;
+            continue;
+        }
         if (!strncmp(argv[i], "--listento=", 11))
         {
             c->overrides.listento_override = string(argv[i]+11);
@@ -894,7 +936,7 @@ shared_ptr<Configuration> parseCommandLineWithUseConfig(Configuration *c, int ar
         }
 
         error("Usage error: --useconfig=... can only be used in combination with:\n"
-              "--overridedevice= --listento= --exitafter= --oneshot= --logfile= --silent --normal --verbose --debug --trace\n");
+              "--overridedevice= --listento= --listmeters= --listfields= --exitafter= --oneshot= --logfile= --silent --normal --verbose --debug --trace\n");
         break;
     }
 

@@ -659,8 +659,8 @@ FrameStatus WMBusAmber::checkAMB8465Frame(vector<uchar> &data,
         payload_len = data[2];
         *payload_len_out = payload_len;
         *payload_offset = 3;
-        // FF CMD len payload [RSSI] CS
-        *frame_length = 4 + payload_len + rssi_len;
+        // FF CMD len payload [RSSI] CS (Note, RSSI already included in the payload_len if present.)
+        *frame_length = 4 + payload_len;
         if (data.size() < *frame_length)
         {
             debug("(amb8465) not enough bytes yet, partial command response %d %d.\n", data.size(), *frame_length);
@@ -752,8 +752,15 @@ void WMBusAmber::processSerialData()
         if (chunk_time.tv_sec >= 2)
         {
             verbose("(amb8465) rx long delay (%lds), drop incomplete telegram\n", chunk_time.tv_sec);
-            read_buffer_.clear();
-            protocolErrorDetected();
+
+            // Only trigger a protocol error if we were receiving a specific command response 
+            // from the stick (starts with AMBER_SERIAL_SOF).
+            if (read_buffer_.size() > 0 && read_buffer_[0] == AMBER_SERIAL_SOF)
+            {
+                protocolErrorDetected();
+            }
+
+            read_buffer_.clear(); 
         }
         else
         {
@@ -818,7 +825,7 @@ void WMBusAmber::handleMessage(int msgid, vector<uchar> &frame, int rssi_dbm)
     case (0): // Transparent telegram mode (no 0xff header)
     case(CMD_DATA_IND): // Command telegram mode (0xff03 prefix)
     {
-        AboutTelegram about("amb8465["+cached_device_id_+"]", rssi_dbm, FrameType::WMBUS);
+        AboutTelegram about("amb8465["+cached_device_id_+"]", rssi_dbm, LinkMode::UNKNOWN, FrameType::WMBUS);
         handleTelegram(about, frame);
         break;
     }

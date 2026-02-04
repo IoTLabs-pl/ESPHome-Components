@@ -28,22 +28,51 @@ using namespace std;
 
 pair<string,string> getNextKeyValue(vector<char> &buf, vector<char>::iterator &i)
 {
-    bool eof, err;
-    string key, value;
-    if (*i == '#')
+    // Enhanced parsing:
+    // - Read whole lines, skip empty & comment (#) lines.
+    // - Support CRLF (strip trailing '\r').
+    // - Require '='; warn and skip malformed lines.
+    // - Trim leading/trailing whitespace only (internal spaces preserved).
+    bool eof = false, err = false;
+    while (i != buf.end())
     {
-        string comment = eatToSkipWhitespace(buf, i, '\n', 4096, &eof, &err);
-        return { comment, "" };
+        string line = eatToSkipWhitespace(buf, i, '\n', 4096, &eof, &err);
+        if (err) break;
+
+        if (!line.empty() && line.back() == '\r') line.pop_back(); // CRLF support
+
+        if (line.empty() || line[0] == '#') continue;
+
+        auto pos = line.find('=');
+        if (pos == string::npos)
+        {
+            warning("Invalid line in config (no '='): \"%s\"\n", line.c_str());
+            continue;
+        }
+
+        string key = line.substr(0, pos);
+        string value = line.substr(pos + 1);
+
+        auto trim = [](string &s)
+            {
+                if (s.empty()) return;
+                size_t end = s.find_last_not_of(" \t\r\n");
+                if (end == string::npos) { s.clear(); return; }
+                s.erase(end + 1);
+                size_t start = s.find_first_not_of(" \t\r\n");
+                if (start > 0) s.erase(0, start);
+            };
+        trim(key);
+        trim(value);
+
+        if (key.empty())
+        {
+            warning("Empty key in config line ignored.\n");
+            continue;
+        }
+
+        return { key, value };
     }
-    key = eatToSkipWhitespace(buf, i, '=', 4096, &eof, &err);
-    if (eof || err) goto nomore;
-    value = eatToSkipWhitespace(buf, i, '\n', 4096, &eof, &err);
-    if (err) goto nomore;
-
-    return { key, value };
-
-    nomore:
-
     return { "", "" };
 }
 
@@ -93,8 +122,8 @@ void parseMeterConfig(Configuration *c, vector<char> &buf, string file)
                 warning("Found invalid meter bus \"%s\" in meter config file, skipping meter.\n", bus.c_str());
                 return;
             }
-        }
-        if (p.first == "name")
+        } 
+        else if (p.first == "name")
         {
             name = p.second;
             if (name.find(":") != string::npos)
@@ -104,20 +133,25 @@ void parseMeterConfig(Configuration *c, vector<char> &buf, string file)
                 return;
             }
         }
-        else
-        if (p.first == "type") driver = p.second;
-        else
-        if (p.first == "driver") driver = p.second;
-        else
-        if (p.first == "id") address_expressions = p.second;
-        else
-        if (p.first == "key")
+        else if (p.first == "type")
+        {
+            driver = p.second;
+        }
+        else if (p.first == "driver")
+        {
+            driver = p.second;
+        }
+        else if (p.first == "id")
+        {
+            address_expressions = p.second;
+        }
+        else if (p.first == "key")
         {
             key = p.second;
             debug("(config) key=<notprinted>\n");
         }
-        else
-        if (p.first == "pollinterval") {
+        else if (p.first == "pollinterval") 
+        {
             if (poll_interval != 0)
             {
                 error("You have already specified a poll interval for this meter!\n");
@@ -129,8 +163,8 @@ void parseMeterConfig(Configuration *c, vector<char> &buf, string file)
                 error("Poll interval must be non-zero \"%s\"!\n", p.second.c_str());
             }
         }
-        else
-        if (p.first == "identitymode") {
+        else if (p.first == "identitymode") 
+        {
             identity_mode = toIdentityMode(p.second.c_str());
 
             if (identity_mode == IdentityMode::INVALID)
@@ -138,20 +172,19 @@ void parseMeterConfig(Configuration *c, vector<char> &buf, string file)
                 error("Invalid identity mode: \"%s\"!\n", p.second.c_str());
             }
         }
-        else
-        if (p.first == "shell") {
+        else if (p.first == "shell") 
+        {
             telegram_shells.push_back(p.second);
         }
-        else
-        if (p.first == "metershell") {
+        else if (p.first == "metershell") 
+        {
             new_meter_shells.push_back(p.second);
         }
-        else
-        if (p.first == "alarmshell") {
+        else if (p.first == "alarmshell") 
+        {
             alarm_shells.push_back(p.second);
         }
-        else
-        if (p.first == "selectedfields")
+        else if (p.first == "selectedfields")
         {
             if (selected_fields.size() > 0)
             {
@@ -160,23 +193,23 @@ void parseMeterConfig(Configuration *c, vector<char> &buf, string file)
             }
             selected_fields = splitString(p.second, ',');
         }
-        else
-        if (startsWith(p.first, "json_") ||
-            startsWith(p.first, "field_"))
+        else if (startsWith(p.first, "json_") ||
+                startsWith(p.first, "field_"))
         {
             int off = 5;
             if (startsWith(p.first, "field_")) { off = 6; }
             string keyvalue = p.first.substr(off)+"="+p.second;
             extra_constant_fields.push_back(keyvalue);
         }
-        else
-        if (startsWith(p.first, "calculate_"))
+        else if (startsWith(p.first, "calculate_"))
         {
             string keyvalue = p.first.substr(10)+"="+p.second;
             extra_calculated_fields.push_back(keyvalue);
         }
         else
+        {
             warning("Found invalid key \"%s\" in meter config file\n", p.first.c_str());
+        }
 
         if (p.first != "key") {
             debug("(config) %s=%s\n", p.first.c_str(), p.second.c_str());
@@ -186,30 +219,43 @@ void parseMeterConfig(Configuration *c, vector<char> &buf, string file)
 
     MeterInfo mi;
 
-    if (!isValidSequenceOfAddressExpressions(address_expressions))
+    // Modified meter id validation:
+    // Accept pure numeric non-empty IDs silently (common case).
+    // Only warn if not numeric and not a valid sequence of match expressions.
     {
-        warning("In config, not a valid meter id nor a valid sequence of match expression \"%s\"\n", address_expressions.c_str());
-        use = false;
-    }
-
-    mi.parse(name, driver, address_expressions, key); // sets driver, extras, name, bus, bps, link_modes, ids, name, key
-    mi.poll_interval = poll_interval;
-    mi.identity_mode = identity_mode;
-
-    if (!isValidKey(key, mi))
-    {
-        warning("In config, not a valid meter key in config \"%s\"\n", key.c_str());
-        use = false;
+        bool numeric_id = !address_expressions.empty() &&
+            address_expressions.find_first_not_of("0123456789") == string::npos;
+        if (!numeric_id)
+        {
+            if (!isValidSequenceOfAddressExpressions(address_expressions))
+            {
+                warning("In config, not a valid meter id nor a valid sequence of match expression \"%s\"\n", address_expressions.c_str());
+                use = false;
+            }
+        }
     }
 
     if (use)
     {
-        mi.extra_constant_fields = extra_constant_fields;
-        mi.extra_calculated_fields = extra_calculated_fields;
-        mi.shells = telegram_shells;
-        mi.new_meter_shells = new_meter_shells;
-        mi.selected_fields = selected_fields;
-        c->meters.push_back(mi);
+        mi.parse(name, driver, address_expressions, key); // sets driver, extras, name, bus, bps, link_modes, ids, name, key
+        mi.poll_interval = poll_interval;
+        mi.identity_mode = identity_mode;
+
+        if (!isValidKey(key, mi))
+        {
+            warning("In config, not a valid meter key in config \"%s\"\n", key.c_str());
+            use = false;
+        }
+
+        if (use)
+        {
+            mi.extra_constant_fields = extra_constant_fields;
+            mi.extra_calculated_fields = extra_calculated_fields;
+            mi.shells = telegram_shells;
+            mi.new_meter_shells = new_meter_shells;
+            mi.selected_fields = selected_fields;
+            c->meters.push_back(mi);
+        }
     }
 
     return;
@@ -276,6 +322,27 @@ void handleInternalTesting(Configuration *c, string value)
     else {
         warning("Internaltesting should be either true or false, not \"%s\"\n", value.c_str());
     }
+}
+
+void handleNoNet(Configuration *c, string value)
+{
+    if (value == "true")
+    {
+        c->no_net = true;
+    }
+    else if (value == "false")
+    {
+        c->no_net = false;
+    }
+    else
+    {
+        warning("nonet should be either true or false, not \"%s\"\n", value.c_str());
+    }
+}
+
+void handleBasicAuth(Configuration *c, string value)
+{
+    c->basic_auth_cred = value;
 }
 
 void handleIgnoreDuplicateTelegrams(Configuration *c, string value)
@@ -727,6 +794,8 @@ shared_ptr<Configuration> loadConfiguration(string root, ConfigOverrides overrid
         if (p.first.length() > 0 && p.first[0] == '#') continue;
         if (p.first == "loglevel") handleLoglevel(c, p.second);
         else if (p.first == "internaltesting") handleInternalTesting(c, p.second);
+        else if (p.first == "nonet") handleNoNet(c, p.second);
+        else if (p.first == "basicauth") handleBasicAuth(c, p.second);
         else if (p.first == "ignoreduplicates") handleIgnoreDuplicateTelegrams(c, p.second);
         else if (p.first == "detailedfirst") handleDetailedFirst(c, p.second);
         else if (p.first == "device") handleDeviceOrHex(c, p.second);
@@ -772,18 +841,6 @@ shared_ptr<Configuration> loadConfiguration(string root, ConfigOverrides overrid
         }
     }
 
-    vector<string> meters;
-    listFiles(conf_meter_dir, &meters);
-
-    for (auto& f : meters)
-    {
-        vector<char> meter_conf;
-        string file = conf_meter_dir+"/"+f;
-        loadFile(file.c_str(), &meter_conf);
-        meter_conf.push_back('\n');
-        parseMeterConfig(c, meter_conf, file);
-    }
-
     if (overrides.device_override != "")
     {
         // There is an override, therefore we
@@ -799,6 +856,7 @@ shared_ptr<Configuration> loadConfiguration(string root, ConfigOverrides overrid
         debug("(config) overriding device with \"%s\"\n", overrides.device_override.c_str());
         handleDeviceOrHex(c, overrides.device_override);
     }
+
     if (overrides.listento_override != "")
     {
         debug("(config) overriding listento with \"%s\"\n", overrides.listento_override.c_str());
@@ -830,6 +888,20 @@ shared_ptr<Configuration> loadConfiguration(string root, ConfigOverrides overrid
     }
 
     loadDriversFromDir(conf_drivers_dir);
+
+    // Load meters AFTER the drivers have been loaded. That is better...
+
+    vector<string> meters;
+    listFiles(conf_meter_dir, &meters);
+
+    for (auto& f : meters)
+    {
+        vector<char> meter_conf;
+        string file = conf_meter_dir+"/"+f;
+        loadFile(file.c_str(), &meter_conf);
+        meter_conf.push_back('\n');
+        parseMeterConfig(c, meter_conf, file);
+    }
 
     return shared_ptr<Configuration>(c);
 }

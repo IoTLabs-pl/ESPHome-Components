@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2021-2022 Fredrik Öhrström (gpl-3.0-or-later)
+ Copyright (C) 2021-2025 Fredrik Öhrström (gpl-3.0-or-later)
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -28,15 +28,16 @@ namespace
       void processContent(Telegram *t) override;
     };
 
-    static bool ok = registerDriver([](DriverInfo&di)
+    static bool ok = staticRegisterDriver([](DriverInfo&di)
     {
         di.setName("qheat");
         di.setDefaultFields("name,id,total_energy_consumption_kwh,last_month_date,last_month_energy_consumption_kwh,timestamp");
         di.setMeterType(MeterType::HeatMeter);
         di.addLinkMode(LinkMode::C1);
-        di.addDetection(MANUFACTURER_QDS, 0x04,  0x23);
-        di.addDetection(MANUFACTURER_QDS, 0x04,  0x46);
-        di.addDetection(MANUFACTURER_QDS, 0x37,  0x23);
+        di.addMVT(MANUFACTURER_QDS, 0x04,  0x23);
+        di.addMVT(MANUFACTURER_QDS, 0x04,  0x46);
+        di.addMVT(MANUFACTURER_QDS, 0x37,  0x23);
+        di.addMVT(MANUFACTURER_QDS, 0x37,  0x47);
         di.usesProcessContent();
         di.setConstructor([](MeterInfo& mi, DriverInfo& di){ return shared_ptr<Meter>(new Driver(mi, di)); });
     });
@@ -226,3 +227,13 @@ namespace
 // telegram=|5344934411345678233778077998765431934423040dff5f350082fe00005f0107c005ffff68223500df2c80253200fe24251535005c03030000000000af03f508e91e1d2efc236e1fa218fe142f046d1911f225|
 // {"_":"telegram","media":"heat","meter":"qheat","name":"Qheatoo","id":"31547698","status":"OK","total_energy_consumption_kwh":35226.8,"last_month_date":"2023-04-30","last_month_energy_consumption_kwh":35152.5,"last_year_date":"2022-12-31","last_year_energy_consumption_kwh":32258,"device_date_time":"2023-05-18 17:25","timestamp":"1111-11-11T11:11:11Z"}
 // |Qheatoo;31547698;35226.8;2023-04-30;35152.5;1111-11-11 11:11.11
+
+// Test: QQ1 qheat 68204641 NOKEY
+// Comment:
+// telegram=|_58449344414620684737780779414620689344470C0DFF5F3500825A00000E0007C00DFFFF310803001F3C036800003E34310803000080008000800080008000800000931A92293128190C00002F02FD170000046D000F3235|
+// {"_": "telegram","device_date_time": "2025-05-18 15:00","id": "68204641","last_month_date": "2025-04-30","last_month_energy_consumption_kwh": 3083.1,"last_year_date": "2024-12-31","last_year_energy_consumption_kwh": 680.3,"media": "heat volume at inlet","meter": "qheat","name": "QQ1","status": "OK","timestamp": "1111-11-11T11:11:11Z","total_energy_consumption_kwh": 3083.1}
+// |QQ1;68204641;3083.1;2025-04-30;3083.1;1111-11-11 11:11.11
+
+// telegram=|_4144934441462068473772414620689344470C5B0000200C0D310803004C0D03680000426C1F3CCC080D31080300C2086C3E3402FD170000326CFFFF046D000F3235|
+// {"_": "telegram","device_date_time": "2025-05-18 15:00","device_error_date": "2127-15-31","id": "68204641","last_month_date": "2025-04-30","last_month_energy_consumption_kwh": 856.416667,"last_year_date": "2024-12-31","last_year_energy_consumption_kwh": 188.972222,"media": "heat volume at inlet","meter": "qheat","name": "QQ1","status": "OK","timestamp": "1111-11-11T11:11:11Z","total_energy_consumption_kwh": 856.416667}
+// |QQ1;68204641;856.416667;2025-04-30;856.416667;1111-11-11 11:11.11
