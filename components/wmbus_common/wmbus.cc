@@ -281,6 +281,10 @@ void Telegram::print()
     {
         notice("                device: %s\n", about.device.c_str());
         notice("                  rssi: %d dBm\n", about.rssi_dbm);
+        if (about.link_mode != LinkMode::UNKNOWN)
+        {
+            notice("             link mode: %s\n", toString(about.link_mode));
+        }
     }
     std::string possible_drivers = autoDetectPossibleDrivers();
     notice("                driver: %s\n", possible_drivers.c_str());
@@ -2227,15 +2231,15 @@ std::string Telegram::analyzeParse(OutputFormat format, int *content_length, int
     return "ERROR";
 }
 
-void detectMeterDrivers(int manufacturer, int media, int version, std::vector<std::string> *drivers);
+void detectMeterDrivers(int manufacturer, int version, int type, std::vector<std::string> *drivers);
 
 std::string Telegram::autoDetectPossibleDrivers()
 {
     std::vector<std::string> drivers;
-    detectMeterDrivers(dll_mfct, dll_type, dll_version, &drivers);
+    detectMeterDrivers(dll_mfct, dll_version, dll_type, &drivers);
     if (tpl_id_found)
     {
-        detectMeterDrivers(tpl_mfct, tpl_type, tpl_version, &drivers);
+        detectMeterDrivers(tpl_mfct, tpl_version, tpl_type, &drivers);
     }
     std::string possibles;
     for (std::string d : drivers) possibles = possibles+d+" ";
@@ -4272,7 +4276,9 @@ bool trimCRCsFrameFormatBInternal(std::vector<uchar> &payload, bool fail_is_ok)
         crc2_pos = len-2;
     }
 
-    uint16_t calc_crc = crc16_EN13757(safeButUnsafeVectorPtr(payload), crc1_pos);
+    uchar *from1 = &payload[0];
+    size_t len1 = crc1_pos;
+    uint16_t calc_crc = crc16_EN13757(from1, len1);
     uint16_t check_crc = payload[crc1_pos] << 8 | payload[crc1_pos+1];
 
     if (calc_crc != check_crc && !FUZZING)
@@ -4292,7 +4298,9 @@ bool trimCRCsFrameFormatBInternal(std::vector<uchar> &payload, bool fail_is_ok)
 
     if (crc2_pos > 0)
     {
-        calc_crc = crc16_EN13757(&payload[crc1_pos+2], crc2_pos);
+        uchar *from2 = &payload[crc1_pos+2];
+        size_t len2 = crc2_pos-crc1_pos-2;
+        calc_crc = crc16_EN13757(from2, len2);
         check_crc = payload[crc2_pos] << 8 | payload[crc2_pos+1];
 
         if (calc_crc != check_crc && !FUZZING)
@@ -4451,7 +4459,7 @@ FrameStatus checkMBusFrame (std::vector<uchar> &data,
     // 5E checksum
     // 16 stop
 
-    debugPayload("(mbus) checkMBUSFrame\n", data);
+    debugPayload("(mbus) checkMBUSFrame", data);
 
     if (data.size() > 0 && data[0] == 0xe5)
     {

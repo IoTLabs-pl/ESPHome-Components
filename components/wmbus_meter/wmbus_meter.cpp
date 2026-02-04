@@ -41,7 +41,7 @@ void Meter::dump_config() {
 }
 
 void Meter::handle_frame(wmbus_radio::Frame *frame) {
-  auto about = AboutTelegram(App.get_friendly_name(), frame->rssi(), FrameType::WMBUS);
+  auto about = AboutTelegram(App.get_friendly_name(), frame->rssi(), frame->link_mode(), FrameType::WMBUS);
 
   std::vector<Address> adresses;
   bool id_match = false;

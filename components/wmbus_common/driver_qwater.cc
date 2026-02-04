@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2022-2024 Fredrik Öhrström (gpl-3.0-or-later)
+ Copyright (C) 2022-2025 Fredrik Öhrström (gpl-3.0-or-later)
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ namespace
         void processContent(Telegram *t) override;
     };
 
-    static bool ok = registerDriver([](DriverInfo&di)
+    static bool ok = staticRegisterDriver([](DriverInfo&di)
     {
         di.setName("qwater");
         di.setDefaultFields("name,id,total_m3,"
@@ -37,16 +37,19 @@ namespace
                             "timestamp");
         di.setMeterType(MeterType::WaterMeter);
         di.addLinkMode(LinkMode::S1);
-        di.addDetection(MANUFACTURER_QDS, 0x37,  0x33);
-        di.addDetection(MANUFACTURER_QDS, 0x06,  0x16);
-        di.addDetection(MANUFACTURER_QDS, 0x07,  0x16);
-        di.addDetection(MANUFACTURER_QDS, 0x06,  0x17);
-        di.addDetection(MANUFACTURER_QDS, 0x07,  0x17);
-        di.addDetection(MANUFACTURER_QDS, 0x06,  0x18);
-        di.addDetection(MANUFACTURER_QDS, 0x07,  0x18);
-        di.addDetection(MANUFACTURER_QDS, 0x07,  0x19);
-        di.addDetection(MANUFACTURER_QDS, 0x06,  0x35);
-        di.addDetection(MANUFACTURER_QDS, 0x07,  0x35);
+        di.addMVT(MANUFACTURER_QDS, 0x37,  0x33);
+        di.addMVT(MANUFACTURER_QDS, 0x37,  0x35);
+        di.addMVT(MANUFACTURER_QDS, 0x06,  0x16);
+        di.addMVT(MANUFACTURER_QDS, 0x07,  0x16);
+        di.addMVT(MANUFACTURER_QDS, 0x06,  0x17);
+        di.addMVT(MANUFACTURER_QDS, 0x07,  0x17);
+        di.addMVT(MANUFACTURER_QDS, 0x06,  0x18);
+        di.addMVT(MANUFACTURER_QDS, 0x07,  0x18);
+        di.addMVT(MANUFACTURER_QDS, 0x07,  0x19);
+        di.addMVT(MANUFACTURER_QDS, 0x06,  0x1a);
+        di.addMVT(MANUFACTURER_QDS, 0x07,  0x1a);
+        di.addMVT(MANUFACTURER_QDS, 0x06,  0x35);
+        di.addMVT(MANUFACTURER_QDS, 0x07,  0x35);
         di.usesProcessContent();
 
         di.setConstructor([](MeterInfo& mi, DriverInfo& di){ return shared_ptr<Meter>(new Driver(mi, di)); });
@@ -216,3 +219,27 @@ void Driver::processContent(Telegram *t) {
 // telegram=|49449344954933131706780DFF5F3500823A0000600107C113FFFF29970300FF2C580303001E3B269703000A006500750073005B0070007D0061005B004200160000002F046D1E0F113C|
 // {"_": "telegram","due_17_date": "2024-11-30","due_17_date_m3": 39.726,"due_date": "2023-12-31","due_date_m3": 30.358,"id": "13334995","media": "warm water","meter": "qwater","meter_datetime": "2024-12-17 15:30","name": "QWddd","status": "OK","timestamp": "1111-11-11T11:11:11Z","total_m3": 39.729}
 // |QWddd;13334995;39.729;30.358;2023-12-31;OK;1111-11-11 11:11.11
+
+// Test: QQ1 qwater 37439212 NOKEY
+// Comment:
+// telegram=|_5344934412924337353778077912924337934435070DFF5F3500828A0000100007C113FFFF966600001F3C000000003E3419580000008000800080008000800080008000005A0094009C00BB002F046D010F3235|
+// {"_": "telegram","due_17_date": "2025-04-30","due_17_date_m3": 5.819,"due_date": "2024-12-31","due_date_m3": 0,"id": "37439212","media": "radio converter (meter side)","meter": "qwater","meter_datetime": "2025-05-18 15:01","name": "QQ1","status": "OK","timestamp": "1111-11-11T11:11:11Z","total_m3": 6.696}
+// |QQ1;37439212;6.696;0;2024-12-31;OK;1111-11-11 11:11.11
+
+// Test: QQ2 qwater 37432649 NOKEY
+// Comment:
+// telegram=|_5344934449264337353778077949264337934435070DFF5F350082560000110007C113FFFF245300001F3C210400003E348946000000800080008000800080008000002A0066005F00730072002F046D000F3235|
+// {"_": "telegram","due_17_date": "2025-04-30","due_17_date_m3": 4.689,"due_date": "2024-12-31","due_date_m3": 0.421,"id": "37432649","media": "radio converter (meter side)","meter": "qwater","meter_datetime": "2025-05-18 15:00","name": "QQ2","status": "OK","timestamp": "1111-11-11T11:11:11Z","total_m3": 5.324}
+// |QQ2;37432649;5.324;0.421;2024-12-31;OK;1111-11-11 11:11.11
+
+// Test: QQ3 qwater 60101441 NOKEY
+// Comment:
+// telegram=|39449344411410601A067ADB000020_0C13780000004C1300000000426CFFFFCC081335000000C2086C3F3502BB560000326CFFFF046D14173136|
+// {"_": "telegram","due_17_date": "2025-05-31","due_17_date_m3": 0.035,"due_date": "2128-03-31","due_date_m3": 0,"error_date": "2128-03-31","id": "60101441","media": "warm water","meter": "qwater","meter_datetime": "2025-06-17 23:20","name": "QQ3","status": "OK","timestamp": "1111-11-11T11:11:11Z","total_m3": 0.078,"volume_flow_m3h": 0}
+// |QQ3;60101441;0.078;0;2128-03-31;OK;1111-11-11 11:11.11
+
+// Test: QQ4 qwater 60113189 NOKEY
+// Comment:
+// telegram=|39449344893111601a077a580000200c13200300004c1300000000426cffffcc081334000000c2086c3f3502BB560000326cffff046d13173136|
+// {"_": "telegram","due_17_date": "2025-05-31","due_17_date_m3": 0.034,"due_date": "2128-03-31","due_date_m3": 0,"error_date": "2128-03-31","id": "60113189","media": "water","meter": "qwater","meter_datetime": "2025-06-17 23:19","name": "QQ4","status": "OK","timestamp": "1111-11-11T11:11:11Z","total_m3": 0.32,"volume_flow_m3h": 0}
+// |QQ4;60113189;0.32;0;2128-03-31;OK;1111-11-11 11:11.11

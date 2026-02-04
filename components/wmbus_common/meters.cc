@@ -31,6 +31,7 @@
 
 std::map<std::string, DriverInfo> *registered_drivers_ = NULL;
 std::vector<DriverInfo*> *registered_drivers_list_ = NULL;
+std::map<std::string, std::string> removed_driver_explanation_;
 
 void verifyDriverLookupCreated()
 {
@@ -74,7 +75,7 @@ std::vector<DriverInfo*> &allDrivers()
     return *registered_drivers_list_;
 }
 
-void removeDriver(const std::string &name)
+void removeDriver(const std::string &name, std::string explanation)
 {
     for (auto i = registered_drivers_list_->begin(); i != registered_drivers_list_->end(); i++)
     {
@@ -86,7 +87,17 @@ void removeDriver(const std::string &name)
     }
 
     registered_drivers_->erase(name);
+    removed_driver_explanation_[name] = explanation;
     assert(registered_drivers_->count(name) == 0);
+}
+
+std::string removedDriverExplanation(const std::string& name)
+{
+    if (removed_driver_explanation_.count(name) > 0)
+    {
+        return removed_driver_explanation_[name];
+    }
+    return "";
 }
 
 void addRegisteredDriver(DriverInfo di)
@@ -103,22 +114,33 @@ void addRegisteredDriver(DriverInfo di)
     (*registered_drivers_list_).push_back(lookupDriver(di.name().str()));
 }
 
-bool DriverInfo::detect(uint16_t mfct, uchar type, uchar version)
+bool DriverInfo::detect(uint16_t mfct, uchar version, uchar type)
 {
-    for (auto &dd : detect_)
+    for (auto &dd : mvts_)
     {
         if (dd.mfct == 0 && dd.type == 0 && dd.version == 0) continue; // Ignore drivers with no detection.
         // Some weird meters (aptor08 and itronheat) send a mfct where the first character is lower case,
         // which results in mfct which are bigger than 32767, therefore restrict mfct to correct range
         // and the normal check will work.
-        if ((dd.mfct & 0x7fff) == (mfct & 0x7fff) && dd.type == type && dd.version == version) return true;
+        if ((dd.mfct & 0x7fff) == (mfct & 0x7fff) && dd.version == version && dd.type == type ) return true;
     }
     return false;
 }
 
+void DriverInfo::setAliases(string a)
+{
+    if (a == "") return;
+
+    auto as = splitString(a, ',');
+    for (string& s : as)
+    {
+        addNameAlias(s);
+    }
+}
+
 bool DriverInfo::isValidMedia(uchar type)
 {
-    for (auto &dd : detect_)
+    for (auto &dd : mvts_)
     {
         if (dd.type == type) return true;
     }
@@ -131,14 +153,14 @@ DriverInfo::~DriverInfo()
 
 bool DriverInfo::isCloseEnoughMedia(uchar type)
 {
-    for (auto &dd : detect_)
+    for (auto &dd : mvts_)
     {
         if (isCloseEnough(dd.type, type)) return true;
     }
     return false;
 }
 
-bool forceRegisterDriver(function<void(DriverInfo&)> setup)
+bool staticRegisterDriver(function<void(DriverInfo&)> setup)
 {
     DriverInfo di;
     setup(di);
@@ -147,11 +169,11 @@ bool forceRegisterDriver(function<void(DriverInfo&)> setup)
     assert(lookupDriver(di.name().str()) == NULL);
 
     // Check that no other driver also triggers on the same detection values.
-    for (auto &d : di.detect())
+    for (auto &d : di.mvts())
     {
         for (DriverInfo *p : allDrivers())
         {
-            bool foo = p->detect(d.mfct, d.type, d.version);
+            bool foo = p->detect(d.mfct, d.version, d.type);
             if (foo)
             {
                 error("Internal error: driver %s tried to register the same auto detect combo as driver %s alread has taken!\n",
@@ -166,39 +188,7 @@ bool forceRegisterDriver(function<void(DriverInfo&)> setup)
     // This code is invoked from the static initializers of DriverInfos when starting
     // wmbusmeters. Thus we do not yet know if the user has supplied --debug or similar setting.
     // To debug this you have to uncomment the printf below.
-    // fprintf(stderr, "(STATIC) added driver: %s\n", n.c_str());
-    return true;
-}
-
-bool registerDriver(function<void(DriverInfo&)> setup)
-{
-    DriverInfo di;
-    setup(di);
-
-    // Check that the driver name has not been registered before!
-    assert(lookupDriver(di.name().str()) == NULL);
-
-    // Check that no other driver also triggers on the same detection values.
-    for (auto &d : di.detect())
-    {
-        for (DriverInfo *p : allDrivers())
-        {
-            bool foo = p->detect(d.mfct, d.type, d.version);
-            if (foo)
-            {
-                error("Internal error: driver %s tried to register the same auto detect combo as driver %s alread has taken!\n",
-                      di.name().str().c_str(), p->name().str().c_str());
-            }
-        }
-    }
-
-    // Everything looks, good install this driver.
-    addRegisteredDriver(di);
-
-    // This code is invoked from the static initializers of DriverInfos when starting
-    // wmbusmeters. Thus we do not yet know if the user has supplied --debug or similar setting.
-    // To debug this you have to uncomment the printf below.
-    // fprintf(stderr, "(STATIC) added driver: %s\n", n.c_str());
+    // fprintf(stderr, "(STATIC) added driver: %s\n", di.name().str().c_str());
     return true;
 }
 
@@ -747,12 +737,6 @@ bool MeterCommonImplementation::isTelegramForMeter(Telegram *t, Meter *meter, Me
         // The id must match.
         debug("(meter) %s: not for me: no match\n", name.c_str());
         return false;
-    }
-
-    bool valid_driver = isMeterDriverValid(driver_name, t->dll_mfct, t->dll_type, t->dll_version);
-    if (!valid_driver && t->tpl_id_found)
-    {
-        valid_driver = isMeterDriverValid(driver_name, t->tpl_mfct, t->tpl_type, t->tpl_version);
     }
 
     debug("(meter) %s: yes for me\n", name.c_str());
@@ -1733,29 +1717,15 @@ ELLSecurityMode MeterCommonImplementation::expectedELLSecurityMode()
     return expected_ell_sec_mode_;
 }
 
-void detectMeterDrivers(int manufacturer, int media, int version, std::vector<std::string> *drivers)
+void detectMeterDrivers(int manufacturer, int version, int type, std::vector<std::string> *drivers)
 {
     for (DriverInfo *p : allDrivers())
     {
-        if (p->detect(manufacturer, media, version))
+        if (p->detect(manufacturer, version, type))
         {
             drivers->push_back(p->name().str());
         }
     }
-
-}
-
-bool isMeterDriverValid(DriverName driver_name, int manufacturer, int media, int version)
-{
-    for (DriverInfo *p : allDrivers())
-    {
-        if (p->detect(manufacturer, media, version))
-        {
-            if (p->hasDriverName(driver_name)) return true;
-        }
-    }
-
-    return false;
 }
 
 bool isMeterDriverReasonableForMedia(std::string driver_name, int media)
@@ -1778,19 +1748,19 @@ DriverInfo driver_unknown_;
 DriverInfo pickMeterDriver(Telegram *t)
 {
     int manufacturer = t->dll_mfct;
-    int media = t->dll_type;
     int version = t->dll_version;
+    int type = t->dll_type;
 
     if (t->tpl_id_found)
     {
         manufacturer = t->tpl_mfct;
-        media = t->tpl_type;
         version = t->tpl_version;
+        type = t->tpl_type;
     }
 
     for (DriverInfo *p : allDrivers())
     {
-        if (p->detect(manufacturer, media, version))
+        if (p->detect(manufacturer, version, type))
         {
             return *p;
         }
@@ -1801,39 +1771,34 @@ DriverInfo pickMeterDriver(Telegram *t)
 
 shared_ptr<Meter> createMeter(MeterInfo *mi)
 {
-    shared_ptr<Meter> newm;
-
     const char *keymsg = (mi->key[0] == 0) ? "not-encrypted" : "encrypted";
 
     DriverInfo *di = lookupDriver(mi->driver_name.str());
 
-    if (di != NULL)
+    assert(di != NULL);
+
+    shared_ptr<Meter> newm = di->construct(*mi);
+    for (string &j : mi->extra_calculated_fields)
     {
-        shared_ptr<Meter> newm = di->construct(*mi);
-        for (std::string &j : mi->extra_calculated_fields)
-        {
-            newm->addExtraCalculatedField(j);
-        }
-        newm->setPollInterval(mi->poll_interval);
-        if (mi->selected_fields.size() > 0)
-        {
-            newm->setSelectedFields(mi->selected_fields);
-        }
-        else
-        {
-            newm->setSelectedFields(di->defaultFields());
-        }
-        
-        std::string aesc = AddressExpression::concat(mi->address_expressions);
-        verbose("(meter) created %s %s %s %s\n",
-                mi->name.c_str(),
-                di->name().str().c_str(),
-                aesc.c_str(),
-                keymsg);
-        
-        return newm;
+        newm->addExtraCalculatedField(j);
+    }
+    newm->setPollInterval(mi->poll_interval);
+    if (mi->selected_fields.size() > 0)
+    {
+        newm->setSelectedFields(mi->selected_fields);
+    }
+    else
+    {
+        newm->setSelectedFields(di->defaultFields());
     }
 
+    string aesc = AddressExpression::concat(mi->address_expressions);
+    verbose("(meter) created %s %s %s %s\n",
+            mi->name.c_str(),
+            di->name().str().c_str(),
+            aesc.c_str(),
+            keymsg);
+    
     return newm;
 }
 
@@ -1858,6 +1823,10 @@ bool is_driver_and_extras(const std::string& t, DriverName *out_driver_name, std
             *out_extras = "";
             return true;
         }
+        else
+        {
+            error("No such driver %s %s\n", t.c_str(), removedDriverExplanation(t).c_str());
+        }
         *out_extras = "";
         return true;
     }
@@ -1873,6 +1842,10 @@ bool is_driver_and_extras(const std::string& t, DriverName *out_driver_name, std
     if (found)
     {
         *out_driver_name = di.name();
+    }
+    else
+    {
+        error("No such driver %s %s\n", type.c_str(), removedDriverExplanation(type).c_str());
     }
 
     std::string extras = t.substr(ps+1, pe-ps-1);
@@ -1917,6 +1890,7 @@ bool MeterInfo::parse(std::string n, std::string d, std::string aes, std::string
     //         c5isf:MAIN:2400:mbus // attached to mbus instead of t1
     //         multical21:c1
     //         telco:BUS2:c2
+    //         @iperl:t1
     // driver ( extras ) : bus_alias : bps : linkmodes
 
     for (auto& p : parts)
@@ -2332,13 +2306,38 @@ bool checkFieldsEmpty(std::set<std::string> &fields, std::string driver_name)
 
 bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names)
 {
+    // Old C++ driver passes fields like: "target_date,target_volume_m3"
+    // New xmq driver passes single field like: "target_date|Special help for target date."
+    // or just: "target_date"
+
     std::set<std::string> fields = splitStringIntoSet(field_names, ',');
+    std::string help;
+    std::vector<std::string> helps = splitString(field_names, '|');
+    if (helps.size() == 2)
+    {
+        fields.clear();
+        fields.insert(helps[0]);
+        help = " "+helps[1];
+    }
+    if (helps.size() > 2)
+    {
+        error("Bad library field, only zero or one pipe | symbol is allowed: %s", field_names.c_str());
+    }
+
+    if (checkIf(fields,"status-tpl-only"))
+    {
+        addStringField(
+            "status",
+            "Status and error flags."+help,
+            STATUS | INCLUDE_TPL_STATUS);
+        markLastFieldAsLibrary();
+    }
 
     if (checkIf(fields, "actuality_duration_s"))
     {
         addNumericFieldWithExtractor(
             "actuality_duration",
-            "Lapsed time between measurement and transmission.",
+            "Lapsed time between measurement and transmission."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Time,
             VifScaling::Auto,
@@ -2355,7 +2354,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "actuality_duration",
-            "Lapsed time between measurement and transmission.",
+            "Lapsed time between measurement and transmission."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Time,
             VifScaling::Auto,
@@ -2371,7 +2370,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "fabrication_no",
-            "Fabrication number.",
+            "Fabrication number."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2384,7 +2383,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "enhanced_id",
-            "Enhanced identification number.",
+            "Enhanced identification number."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2397,7 +2396,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "software_version",
-            "Software version.",
+            "Software version."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2410,7 +2409,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "manufacturer",
-            "Meter manufacturer.",
+            "Meter manufacturer."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2423,7 +2422,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "model_version",
-            "Meter model version.",
+            "Meter model version."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2436,7 +2435,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "firmware_version",
-            "Meter firmware version.",
+            "Meter firmware version."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2449,7 +2448,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "parameter_set",
-            "Parameter set for this meter.",
+            "Parameter set for this meter."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2462,7 +2461,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "customer",
-            "Customer name.",
+            "Customer name."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2475,7 +2474,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "location",
-            "Meter installed at this customer location.",
+            "Meter installed at this customer location."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2488,7 +2487,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "operating_time",
-            "How long the meter has been collecting data.",
+            "How long the meter has been collecting data."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Time,
             VifScaling::Auto,
@@ -2504,7 +2503,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "on_time",
-            "How long the meter has been powered up.",
+            "How long the meter has been powered up."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Time,
             VifScaling::Auto,
@@ -2520,7 +2519,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "on_time_at_error",
-            "How long the meter has been in an error state while powered up.",
+            "How long the meter has been in an error state while powered up."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Time,
             VifScaling::Auto,
@@ -2536,7 +2535,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "meter_date",
-            "Date when the meter sent the telegram.",
+            "Date when the meter sent the telegram."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2549,7 +2548,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "meter_date_at_error",
-            "Date when the meter was in error.",
+            "Date when the meter was in error."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::AtError)
@@ -2562,7 +2561,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "meter_datetime",
-            "Date and time when the meter sent the telegram.",
+            "Date and time when the meter sent the telegram."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::Instantaneous)
@@ -2575,7 +2574,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addStringFieldWithExtractor(
             "meter_datetime_at_error",
-            "Date and time when the meter was in error.",
+            "Date and time when the meter was in error."+help,
             DEFAULT_PRINT_PROPERTIES,
             FieldMatcher::build()
             .set(MeasurementType::AtError)
@@ -2588,7 +2587,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "total",
-            "The total media volume consumption recorded by this meter.",
+            "The total media volume consumption recorded by this meter."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Volume,
             VifScaling::Auto,
@@ -2604,7 +2603,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "target",
-            "The volume recorded by this meter at the target date.",
+            "The volume recorded by this meter at the target date."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Volume,
             VifScaling::Auto,
@@ -2621,7 +2620,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "target",
-            "The target date. Usually the end of the previous billing period.",
+            "The target date. Usually the end of the previous billing period."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::PointInTime,
             VifScaling::Auto,
@@ -2639,7 +2638,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "total_forward",
-            "The total media volume flowing forward.",
+            "The total media volume flowing forward."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Volume,
             VifScaling::Auto,
@@ -2656,7 +2655,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "total_backward",
-            "The total media volume flowing backward.",
+            "The total media volume flowing backward."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Volume,
             VifScaling::Auto,
@@ -2673,7 +2672,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "flow_temperature",
-            "Forward media temperature.",
+            "Forward media temperature."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Temperature,
             VifScaling::Auto,
@@ -2689,7 +2688,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "external_temperature",
-            "Temperature outside of meter.",
+            "Temperature outside of meter."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Temperature,
             VifScaling::Auto,
@@ -2721,7 +2720,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "flow_return_temperature_difference",
-            "The difference between flow and return media temperatures.",
+            "The difference between flow and return media temperatures."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Temperature,
             VifScaling::Auto,
@@ -2737,7 +2736,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "volume_flow",
-            "Media volume flow.",
+            "Media volume flow."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Flow,
             VifScaling::Auto,
@@ -2753,7 +2752,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "access",
-            "Meter access counter.",
+            "Meter access counter."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::Dimensionless,
             VifScaling::None,
@@ -2769,7 +2768,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "consumption",
-            "The current heat cost allocation for this meter.",
+            "The current heat cost allocation for this meter."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::HCA,
             VifScaling::Auto,
@@ -2785,7 +2784,7 @@ bool MeterCommonImplementation::addOptionalLibraryFields(std::string field_names
     {
         addNumericFieldWithExtractor(
             "target",
-            "The heat cost allocation recorded by this meter at the target date.",
+            "The heat cost allocation recorded by this meter at the target date."+help,
             DEFAULT_PRINT_PROPERTIES,
             Quantity::HCA,
             VifScaling::Auto,
