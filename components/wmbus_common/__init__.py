@@ -109,7 +109,7 @@ async def to_code(config):
     target_dir = CORE.relative_src_path("xmq_drivers")
 
     if active_xmq_drivers:
-        target_dir.mkdir(exist_ok=True)
+        target_dir.mkdir(exist_ok=True, parents=True)
 
         existing_xmq_drivers = current_generated_drivers(target_dir)
 
