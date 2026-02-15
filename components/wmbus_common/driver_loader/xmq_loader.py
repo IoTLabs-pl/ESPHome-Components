@@ -226,7 +226,7 @@ def driver_info_expressions(driver):
 
 
 def build_matcher(match):
-    matcher = ns.class_("FieldMatcher")
+    matcher = ns.namespace("FieldMatcher")
     if match is None:
         return matcher()
 
