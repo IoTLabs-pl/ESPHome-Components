@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from esphome import codegen as cg
-from esphome.cpp_generator import ExpressionStatement
 from esphome.config_validation import ensure_list, hex_int
+from esphome.cpp_generator import ExpressionStatement
 from jinja2 import Template
-from voluptuous import All, Any, Optional, Remove, Required, Schema, Coerce
+from voluptuous import All, Any, Coerce, Optional, Remove, Required, Schema
 
 
 def parse_xmq(content: str):
@@ -53,7 +53,6 @@ def parse_xmq(content: str):
     return result
 
 
-# Mockowanie przestrzeni nazw C++
 ns = cg.global_ns
 Translate = ns.namespace("Translate")
 Quantity = ns.namespace("Quantity")
@@ -99,7 +98,7 @@ LOOKUP_SCHEMA = Schema(
 NUMERIC_FIELD_WITH_EXTRACTOR = Schema(
     {
         Required("name"): str,
-        Remove("info"): str,
+        Optional("info"): str,
         Optional("attributes", default=""): str,
         Required("quantity"): str,
         Optional("vif_scaling", default=""): str,
@@ -113,7 +112,7 @@ NUMERIC_FIELD_WITH_EXTRACTOR = Schema(
 NUMERIC_FIELD_WITH_CALCULATOR = Schema(
     {
         Required("name"): str,
-        Remove("info"): str,
+        Optional("info"): str,
         Optional("attributes", default=""): str,
         Required("quantity"): str,
         Required("calculate"): str,
@@ -124,7 +123,7 @@ NUMERIC_FIELD_WITH_CALCULATOR = Schema(
 NUMERIC_FIELD_WITH_CALCULATOR_AND_MATCHER = Schema(
     {
         Required("name"): str,
-        Remove("info"): str,
+        Optional("info"): str,
         Optional("attributes", default=""): str,
         Required("quantity"): str,
         Required("formula"): str,
@@ -138,7 +137,7 @@ NUMERIC_FIELD = Schema(
         Required("name"): str,
         Required("quantity"): str,
         Optional("attributes", default=""): str,
-        Remove("info"): str,
+        Optional("info"): str,
         Optional("display_unit", default=""): str,
     }
 )
@@ -147,7 +146,7 @@ STRING_FIELD_WITH_EXTRACTOR = Schema(
     {
         Required("name"): str,
         Required("quantity"): "Text",
-        Remove("info"): str,
+        Optional("info"): str,
         Optional("attributes", default=""): str,
         Required("match"): MATCHER_SCHEMA,
     }
@@ -157,7 +156,7 @@ STRING_FIELD_WITH_EXTRACTOR_AND_LOOKUP = Schema(
     {
         Required("name"): str,
         Required("quantity"): "Text",
-        Remove("info"): str,
+        Optional("info"): str,
         Optional("attributes", default=""): str,
         Required("match"): MATCHER_SCHEMA,
         Required("lookup"): LOOKUP_SCHEMA,
@@ -168,7 +167,7 @@ STRING_FIELD = Schema(
     {
         Required("name"): str,
         Required("quantity"): "Text",
-        Remove("info"): str,
+        Optional("info"): str,
         Optional("attributes", default=""): str,
     }
 )
@@ -189,7 +188,7 @@ SCHEMA = Schema(
         Required("driver"): {
             Required("name"): str,
             Required("meter_type"): str,
-            Remove("info"): str,
+            Optional("info"): str,
             Remove("manufacturer"): str,
             Remove("model"): str,
             Optional("aliases"): str,
@@ -227,7 +226,11 @@ def driver_info_expressions(driver):
 
 
 def build_matcher(match):
-    matcher = ns.namespace("FieldMatcher").build()
+    matcher = ns.class_("FieldMatcher")
+    if match is None:
+        return matcher()
+
+    matcher = matcher.build()
 
     if difvifkey := match.get("difvifkey"):
         conv = ns.DifVifKey(difvifkey)
@@ -292,27 +295,14 @@ def constructor_expressions(driver):
     if fields := driver.get("fields"):
         for field in fields["field"]:
             name = field["name"]
-            quantity = ns.toQuantity(field["quantity"])
-
-            if (vif_scaling := field.get("vif_scaling")) is not None:
-                vif_scaling = ns.toVifScaling(vif_scaling)
-
-            if (dif_signedness := field.get("dif_signedness")) is not None:
-                dif_signedness = ns.toDifSignedness(dif_signedness)
-
+            info = field.get("info", "")
             attributes = ns.toPrintProperties(field["attributes"])
+            quantity = ns.toQuantity(field["quantity"])
+            calculate = field.get("calculate")
+            display_unit = ns.toUnit(field.get("display_unit"))
 
-            if calculate := field.get("calculate"):
-                calculate = calculate
-
-            if (display_unit := field.get("display_unit")) is not None:
-                display_unit = ns.toUnit(display_unit)
-
-            if force_scale := field.get("force_scale"):
-                force_scale = force_scale
-
-            if match := field.get("match"):
-                match = build_matcher(match)
+            match = field.get("match")
+            matcher = build_matcher(match)
 
             if lookup := field.get("lookup"):
                 lookup = build_lookup(lookup)
@@ -323,19 +313,19 @@ def constructor_expressions(driver):
                 case (True, False, _, _):
                     yield ns.addNumericFieldWithExtractor(
                         name,
-                        "",
+                        info,
                         attributes,
                         quantity,
-                        vif_scaling,
-                        dif_signedness,
-                        match,
+                        ns.toVifScaling(field["vif_scaling"]),
+                        ns.toDifSignedness(field["dif_signedness"]),
+                        matcher,
                         display_unit,
-                        force_scale,
+                        field["force_scale"],
                     )
                 case (True, True, False, _):
                     yield ns.addNumericFieldWithCalculator(
                         name,
-                        "",
+                        info,
                         attributes,
                         quantity,
                         calculate,
@@ -344,37 +334,41 @@ def constructor_expressions(driver):
                 case (True, True, True, _):
                     yield ns.addNumericFieldWithCalculatorAndMatcher(
                         name,
-                        "",
+                        info,
                         attributes,
                         quantity,
                         calculate,
-                        match,
+                        matcher,
                         display_unit,
                     )
                 case (False, _, _, True):
                     yield ns.addStringFieldWithExtractorAndLookup(
                         name,
-                        "",
+                        info,
                         attributes,
-                        match,
+                        matcher,
                         lookup,
                     )
                 case (False, _, _, False):
                     yield ns.addStringFieldWithExtractor(
                         name,
-                        "",
+                        info,
                         attributes,
-                        match,
+                        matcher,
                     )
 
 
-def generate(xmq_path: Path):
-    raw = parse_xmq(Path(xmq_path).read_text(encoding="utf-8"))
+def generate(xmq_content: str):
+    raw = parse_xmq(xmq_content)
 
     data = SCHEMA(raw)
 
-    template_path = Path(__file__).parent / "driver.cpp.j2"
-    template = Template(template_path.read_text(), trim_blocks=True, lstrip_blocks=True)
+    template_path = Path(__file__).parent / "xmq_driver.cpp.j2"
+    template: Template = Template(
+        template_path.read_text(),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
 
     return template.render(
         constructor_expressions=(
@@ -384,14 +378,3 @@ def generate(xmq_path: Path):
             str(ExpressionStatement(e)) for e in driver_info_expressions(data["driver"])
         ),
     )
-
-
-if __name__ == "__main__":
-    path = Path(
-        "/home/kuba/wmbus/ESPHome-Components/components/wmbus_common/drivers/src/"
-    ).glob("*.xmq")
-
-    for p in path:
-        target_path = p.with_stem("driver_" + p.stem).with_suffix(".cpp")
-        r = generate(p)
-        target_path.write_text(r, encoding="utf-8")
