@@ -2,7 +2,7 @@ from pathlib import Path
 
 import esphome.config_validation as cv
 from esphome import codegen as cg
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, SOURCE_FILE_EXTENSIONS
 from esphome.core import CORE
 
 from .driver_loader import CppDriver, DriverManager
@@ -11,10 +11,13 @@ CODEOWNERS = ["@kubasaw"]
 CONF_DRIVERS = "drivers"
 CONF_MARK_ALL = "all"
 
+CURRENT_DIR = Path(__file__).parent
+SOURCE_FILE_EXTENSIONS.add(".cc")
+
+
 wmbus_common_ns = cg.esphome_ns.namespace("wmbus_common")
 WMBusCommon = wmbus_common_ns.class_("WMBusCommon", cg.Component)
 
-CURRENT_DIR = Path(__file__).parent
 
 driver_validator = cv.All(
     cv.one_of(*sorted(DriverManager.all_drivers), lower=True, space="_"),
