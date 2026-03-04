@@ -21,6 +21,11 @@ WELL_KNOWN_FIELDS = {
     "timestamp",
 }
 
+RELOCATED_CPP_HEADERS = {
+    "meters_common_implementation",
+    "wmbus_utils"
+}
+
 
 @dataclass(frozen=True, order=True)
 class Driver:
@@ -87,10 +92,12 @@ class CppDriver(Driver):
     @classmethod
     def from_source(cls, path: Path) -> "CppDriver":
         name = path.stem.removeprefix("driver_")
-        cpp_source = path.read_text().replace(
-            "meters_common_implementation.h",
-            "../esphome/components/wmbus_common/meters_common_implementation.h",
-        )
+        cpp_source = path.read_text()
+        for hdr in RELOCATED_CPP_HEADERS:
+            cpp_source = cpp_source.replace(
+                f"{hdr}.h",
+                f"../esphome/components/wmbus_common/{hdr}.h",
+            )
         return cls(name=name, source_path=path, cpp_source=cpp_source)
 
 
