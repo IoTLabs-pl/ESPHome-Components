@@ -11,8 +11,7 @@ from .xmq_loader import generate as load_xmq
 LOGGER = getLogger(__name__)
 
 ADD_FIELD_METHOD_RE = re.compile(
-    #  method name                 ("name"*otherargs*"info"*otherargs*);
-    r'add(Numeric|String)Field\w*?\([^"]*"([^"]+)"[^"]*"([^"]+)".*?\);',
+    r'(?P<comment_mark>/[*/]\s*)?add(?P<field_type>Numeric|String)Field\w*?\([^"]*"(?P<name>[^"]+)"[^"]*"(?P<info>[^"]+)".*?\);',
     flags=re.MULTILINE | re.DOTALL,
 )
 
@@ -22,6 +21,7 @@ WELL_KNOWN_FIELDS = {
 }
 
 RELOCATED_CPP_HEADERS = {
+    "manufacturer_specificities",
     "meters_common_implementation",
     "wmbus_utils"
 }
@@ -37,10 +37,11 @@ class Driver:
     def fields(self) -> set[FieldDefinition]:
         return {
             FieldDefinition(
-                field_type=FieldType(match[1]),
-                name=match[2],
+                field_type=FieldType(match['field_type']),
+                name=match['name'],
             )
             for match in ADD_FIELD_METHOD_RE.finditer(self.cpp_source)
+            if match['comment_mark'] is None
         }
 
     def request_field(
@@ -70,13 +71,16 @@ class Driver:
         fields_to_comment_out = {f.name for f in (self.fields - active_fields)}
 
         def replacer(match: re.Match) -> str:
-            full_call = match.group(0)
-            field_name = match.group(2)
+            if match['comment_mark'] is not None:
+                return match[0]
+
+            full_call = match[0]
+            field_name = match['name']
 
             if field_name in fields_to_comment_out:
                 return f"/* {full_call} */"
             else:
-                help_start, help_end = match.span(3)
+                help_start, help_end = match.span('info')
 
                 call_start = match.start(0)
                 rel_start = help_start - call_start - 1
@@ -93,6 +97,7 @@ class CppDriver(Driver):
     def from_source(cls, path: Path) -> "CppDriver":
         name = path.stem.removeprefix("driver_")
         cpp_source = path.read_text()
+        
         for hdr in RELOCATED_CPP_HEADERS:
             cpp_source = cpp_source.replace(
                 f"{hdr}.h",
