@@ -55,8 +55,7 @@ class Driver:
     def available_fields(self):
         return sorted(self.fields | WELL_KNOWN_FIELDS)
 
-    def request_field(self, field: str, field_type: FieldType | None = None):
-        field_name, field_unit = split_name_unit(field)
+    def request_field(self, field_name: str, field_type: FieldType | None = None):
         if field_name in WELL_KNOWN_FIELDS:
             return
 

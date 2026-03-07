@@ -2,6 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 import esphome.final_validate as fv
 
+from ..wmbus_common.driver_loader import FieldType, split_name_unit
 from . import Meter, wmbus_meter_ns
 
 CONF_PARENT_ID = "parent_id"
@@ -27,10 +28,13 @@ def get_driver(config):
 def make_field_validator(field_type):
     def validate_field(config):
         driver = get_driver(config)
-        try:
-            driver.request_field(config[CONF_FIELD], field_type)
-        except ValueError as e:
-            raise cv.Invalid(e) from e
+        field_name = config[CONF_FIELD]
+
+        if field_type == FieldType.NUMERIC:
+            field_name, unit = split_name_unit(field_name)
+
+        field_name = cv.one_of(*driver.available_fields)(field_name)
+        driver.request_field(config[CONF_FIELD], field_type)
 
     return validate_field
 

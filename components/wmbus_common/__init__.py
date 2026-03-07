@@ -21,7 +21,9 @@ wmbus_common_ns = cg.esphome_ns.namespace("wmbus_common")
 WMBusCommon = wmbus_common_ns.class_("WMBusCommon", cg.Component)
 
 
-ESPHomeDumper.add_multi_representer(Driver, ESPHomeDumper.represent_stringify)
+ESPHomeDumper.add_multi_representer(
+    Driver, lambda s, v: s.represent_stringify(s, v.name)
+)
 
 
 def maybe_all(replacements):
@@ -50,7 +52,7 @@ DRIVER_ENTRY_SCHEMA = cv.maybe_simple_value(
         cv.Required(CONF_NAME): cv.All(
             cv.one_of(*DriverManager.available_drivers), DriverManager.request_driver
         ),
-        cv.Optional(CONF_FIELDS, default=[]): cv.valid,
+        cv.Optional(CONF_FIELDS, default=CONF_ALL): cv.valid,
     },
     driver_field_validator,
     key=CONF_NAME,
