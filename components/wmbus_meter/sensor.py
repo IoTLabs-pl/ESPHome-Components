@@ -1,8 +1,10 @@
 from esphome import codegen as cg
 from esphome import config_validation as cv
 from esphome.components import sensor
-from esphome.components.wmbus_common.driver_loader import FieldType
-from esphome.components.wmbus_common.units import get_human_readable_unit
+from esphome.components.wmbus_common.driver_loader import (
+    FieldType,
+    get_human_readable_unit,
+)
 from esphome.const import CONF_ACCURACY_DECIMALS, CONF_UNIT_OF_MEASUREMENT
 
 from . import wmbus_meter_ns

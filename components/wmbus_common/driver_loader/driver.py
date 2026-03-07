@@ -6,6 +6,7 @@ from logging import getLogger
 from pathlib import Path
 
 from .field import FieldDefinition, FieldType
+from .units import split_name_unit
 from .xmq_loader import generate as load_xmq
 
 LOGGER = getLogger(__name__)
@@ -23,32 +24,41 @@ WELL_KNOWN_FIELDS = {
 RELOCATED_CPP_HEADERS = {
     "manufacturer_specificities",
     "meters_common_implementation",
-    "wmbus_utils"
+    "wmbus_utils",
 }
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class Driver:
     name: str
-    source_path: Path = field(compare=False, repr=False)
-    cpp_source: str = field(compare=False, repr=False)
+    source_path: Path = field(repr=False)
+    cpp_source: str = field(repr=False)
+
+    def __lt__(self, other):
+        if isinstance(other, Driver):
+            return self.name < other.name
+
+        return NotImplemented
 
     @cached_property
     def fields(self) -> set[FieldDefinition]:
         return {
             FieldDefinition(
-                field_type=FieldType(match['field_type']),
-                name=match['name'],
+                field_type=FieldType(match["field_type"]),
+                name=match["name"],
             )
             for match in ADD_FIELD_METHOD_RE.finditer(self.cpp_source)
-            if match['comment_mark'] is None
+            if match["comment_mark"] is None
         }
 
-    def request_field(
-        self, field_name: str, field_type: FieldType | None = None
-    ) -> set[FieldDefinition]:
+    @property
+    def available_fields(self):
+        return sorted(self.fields | WELL_KNOWN_FIELDS)
+
+    def request_field(self, field: str, field_type: FieldType | None = None):
+        field_name, field_unit = split_name_unit(field)
         if field_name in WELL_KNOWN_FIELDS:
-            return set()
+            return
 
         matching_fields = [f for f in self.fields if f.match(field_name, field_type)]
         if not matching_fields:
@@ -62,25 +72,25 @@ class Driver:
                 "similar" if matches else "valid",
                 ", ".join(matches or field_names),
             )
+        else:
+            for f in matching_fields:
+                f.serialize = True
 
-        return set(matching_fields)
-
-    def serialize(self, requested_fields: set[FieldDefinition] | None = None) -> str:
-        """Serialize driver C++ source, commenting out unrequested fields."""
-        active_fields = requested_fields or self.fields
-        fields_to_comment_out = {f.name for f in (self.fields - active_fields)}
+    def serialize(self) -> str:
+        requested_fields = {f for f in self.fields if f.serialize} or self.fields
+        fields_to_comment_out = {f.name for f in (self.fields - requested_fields)}
 
         def replacer(match: re.Match) -> str:
-            if match['comment_mark'] is not None:
+            if match["comment_mark"] is not None:
                 return match[0]
 
             full_call = match[0]
-            field_name = match['name']
+            field_name = match["name"]
 
             if field_name in fields_to_comment_out:
                 return f"/* {full_call} */"
             else:
-                help_start, help_end = match.span('info')
+                help_start, help_end = match.span("info")
 
                 call_start = match.start(0)
                 rel_start = help_start - call_start - 1
@@ -97,7 +107,7 @@ class CppDriver(Driver):
     def from_source(cls, path: Path) -> "CppDriver":
         name = path.stem.removeprefix("driver_")
         cpp_source = path.read_text()
-        
+
         for hdr in RELOCATED_CPP_HEADERS:
             cpp_source = cpp_source.replace(
                 f"{hdr}.h",

@@ -1,8 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 import esphome.final_validate as fv
-from esphome.components.wmbus_common.driver_loader import DriverManager
-from esphome.components.wmbus_common.units import split_name_unit
 
 from . import Meter, wmbus_meter_ns
 
@@ -19,7 +17,7 @@ BASE_SCHEMA = cv.Schema(
 )
 
 
-def get_parent_type(config):
+def get_driver(config):
     parent = config[CONF_PARENT_ID]
     fc = fv.full_config.get()
     parent_type_path = fc.get_path_for_id(parent)[:-1]
@@ -28,11 +26,9 @@ def get_parent_type(config):
 
 def make_field_validator(field_type):
     def validate_field(config):
-        field_name, _ = split_name_unit(config[CONF_FIELD])
-        parent_type = get_parent_type(config)
-
+        driver = get_driver(config)
         try:
-            DriverManager.request_field(parent_type, field_name, field_type)
+            driver.request_field(config[CONF_FIELD], field_type)
         except ValueError as e:
             raise cv.Invalid(e) from e
 

@@ -6,7 +6,6 @@ from esphome.components.mqtt import (
     MQTTPublishAction,
     mqtt_publish_action_to_code,
 )
-from esphome.components.wmbus_common import CONF_MARK_ALL, driver_validator
 from esphome.components.wmbus_common.driver_loader import DriverManager
 from esphome.components.wmbus_radio import RadioComponent
 from esphome.const import (
@@ -29,7 +28,6 @@ DEPENDENCIES = ["wmbus_radio"]
 AUTO_LOAD = ["sensor", "text_sensor"]
 
 MULTI_CONF = True
-MULTI_CONF_NO_DEFAULT = True
 
 
 wmbus_meter_ns = cg.esphome_ns.namespace("wmbus_meter")
@@ -63,46 +61,30 @@ def meter_id_validator(meter_id):
     return f"{value:08x}"
 
 
-def inflate_fields(config):
-    if config[CONF_FIELDS] == CONF_MARK_ALL:
-        driver = DriverManager.get_driver(config[CONF_TYPE])
-        config[CONF_FIELDS] = [f.name for f in driver.fields]
-
-    return config
-
-
-CONFIG_SCHEMA = cv.All(
-    cv.Schema(
-        {
-            cv.GenerateID(): cv.declare_id(Meter),
-            cv.GenerateID(CONF_RADIO_ID): cv.use_id(RadioComponent),
-            cv.Required(CONF_METER_ID): meter_id_validator,
-            cv.Required(CONF_TYPE): driver_validator,
-            cv.Optional(CONF_FIELDS, default=[]): cv.Any(
-                CONF_MARK_ALL, [cv.string_strict]
-            ),
-            cv.Optional(CONF_KEY): cv.Any(
-                cv.All(cv.string_strict, lambda s: s.encode().hex(), hex_key_validator),
-                hex_key_validator,
-            ),
-            cv.Optional(CONF_ON_TELEGRAM): automation.validate_automation(
-                {cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(TelegramTrigger)},
-            ),
-            cv.Optional(CONF_MODE): cv.one_of("c1", "t1", lower=True),
-        },
-    ).extend(cv.COMPONENT_SCHEMA),
-    inflate_fields,
-)
-
-
-def FINAL_VALIDATE_SCHEMA(config):
-    for field in config[CONF_FIELDS]:
-        DriverManager.request_field(config[CONF_TYPE], field)
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(Meter),
+        cv.GenerateID(CONF_RADIO_ID): cv.use_id(RadioComponent),
+        cv.Required(CONF_METER_ID): meter_id_validator,
+        cv.Required(CONF_TYPE): cv.All(
+            cv.one_of(*DriverManager.available_drivers),
+            DriverManager.request_driver,
+        ),
+        cv.Optional(CONF_KEY): cv.Any(
+            cv.All(cv.string_strict, lambda s: s.encode().hex(), hex_key_validator),
+            hex_key_validator,
+        ),
+        cv.Optional(CONF_ON_TELEGRAM): automation.validate_automation(
+            {cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(TelegramTrigger)},
+        ),
+        cv.Optional(CONF_MODE): cv.one_of("c1", "t1", lower=True),
+    },
+).extend(cv.COMPONENT_SCHEMA)
 
 
 async def to_code(config):
     meter = cg.new_Pvariable(config[CONF_ID])
-    driver_type = config[CONF_TYPE]
+    driver_type = config[CONF_TYPE].name
     if CONF_MODE in config:
         driver_type += ":" + config[CONF_MODE]
 
