@@ -33,8 +33,7 @@ def make_field_validator(field_type):
         if field_type == FieldType.NUMERIC:
             field_name, unit = split_name_unit(field_name)
 
-        field_name = cv.one_of(*driver.available_fields)(field_name)
-        driver.request_field(config[CONF_FIELD], field_type)
+        driver.request_field(field_name, field_type)
 
     return validate_field
 

@@ -22,7 +22,7 @@ WMBusCommon = wmbus_common_ns.class_("WMBusCommon", cg.Component)
 
 
 ESPHomeDumper.add_multi_representer(
-    Driver, lambda s, v: s.represent_stringify(s, v.name)
+    Driver, lambda s, v: s.represent_stringify(v.name)
 )
 
 
@@ -41,7 +41,7 @@ def driver_field_validator(conf):
 
     conf[CONF_FIELDS] = cv.All(
         maybe_all(driver.available_fields),
-        [cv.All(cv.one_of(*driver.available_fields), driver.request_field)],
+        [driver.request_field],
     )(conf[CONF_FIELDS])
 
     return conf

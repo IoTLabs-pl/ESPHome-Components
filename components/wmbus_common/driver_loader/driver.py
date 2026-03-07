@@ -6,7 +6,6 @@ from logging import getLogger
 from pathlib import Path
 
 from .field import FieldDefinition, FieldType
-from .units import split_name_unit
 from .xmq_loader import generate as load_xmq
 
 LOGGER = getLogger(__name__)
@@ -53,7 +52,7 @@ class Driver:
 
     @property
     def available_fields(self):
-        return sorted(self.fields | WELL_KNOWN_FIELDS)
+        return sorted({f.interpolated_name() for f in self.fields} | WELL_KNOWN_FIELDS)
 
     def request_field(self, field_name: str, field_type: FieldType | None = None):
         if field_name in WELL_KNOWN_FIELDS:

@@ -8,6 +8,7 @@ class FieldType(StrEnum):
     NUMERIC = "Numeric"
     STRING = "String"
 
+FORMULA_RE = re.compile(r"\{[^}]+?}")
 
 @dataclass
 class FieldDefinition:
@@ -21,7 +22,10 @@ class FieldDefinition:
         # This allows to match fields like "current_power_consumption_1_kw",
         # "current_power_consumption_2_kw", etc. with a single definition
         # "current_power_consumption_{number}_kw".
-        return re.compile(re.sub(r"\{[^}]+?}", r"\\d+", self.name))
+        return re.compile(FORMULA_RE.sub(r"\\d+", self.name))
+
+    def interpolated_name(self, number: int=0) -> str:
+        return FORMULA_RE.sub(str(number), self.name)
 
     def match(self, field_name: str, type_hint: FieldType | None = None) -> bool:
         matched = self._pattern.fullmatch(field_name) is not None
