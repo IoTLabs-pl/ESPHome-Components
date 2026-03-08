@@ -36,10 +36,20 @@ class FieldDefinition:
         return re.compile(FORMULA_RE.sub(r"\\d+", self.name))
 
     def match(self, field_name: str, type_hint: FieldType | None = None) -> MatchResult:
-        if self.field_type == FieldType.NUMERIC:
-            field_name, unit = split_name_unit(field_name)
+        # alter formula expressions to number
+        field_name = FORMULA_RE.sub('0', field_name)
 
-        matched = self._pattern.fullmatch(field_name) is not None
+        # and try to match with or without unit suffix
+        variants = [field_name]
+        if self.field_type == FieldType.NUMERIC:
+            name_without_unit, unit = split_name_unit(field_name)
+            if unit:
+                variants.append(name_without_unit)
+
+        matched = any(
+            self._pattern.fullmatch(variant) is not None for variant in variants
+        )
+
         if (
             type_hint
             and matched

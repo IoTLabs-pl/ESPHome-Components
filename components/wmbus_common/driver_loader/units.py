@@ -35,7 +35,7 @@ def units_dict():
 def split_name_unit(field_with_suffix):
     parts = field_with_suffix.rsplit("_", 1)
     if len(parts) == 1 or parts[-1] not in units_dict():
-        return parts[0], ""
+        return field_with_suffix, ""
     else:
         return parts
 
