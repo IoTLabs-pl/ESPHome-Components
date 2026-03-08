@@ -5,7 +5,7 @@ from functools import cached_property
 from logging import getLogger
 from pathlib import Path
 
-from .field import FieldDefinition, FieldType
+from .field import FieldDefinition, FieldType, MatchResult
 from .xmq_loader import generate as load_xmq
 
 LOGGER = getLogger(__name__)
@@ -15,8 +15,13 @@ ADD_FIELD_METHOD_RE = re.compile(
     flags=re.MULTILINE | re.DOTALL,
 )
 
+ADD_LIBRARY_FIELD_METHOD_RE = re.compile(
+    r'(?P<comment_mark>/[*/]\s*)?addOptionalLibraryFields\("(?P<names>[^"]+)"\);',
+    flags=re.MULTILINE | re.DOTALL,
+)
+
 WELL_KNOWN_FIELDS = {
-    "rssi",
+    "rssi_dbm",
     "timestamp",
 }
 
@@ -48,44 +53,82 @@ class Driver:
             )
             for match in ADD_FIELD_METHOD_RE.finditer(self.cpp_source)
             if match["comment_mark"] is None
+        } | {
+            FieldDefinition(
+                field_type=FieldType.LIBRARY,
+                name=name,
+            )
+            for match in ADD_LIBRARY_FIELD_METHOD_RE.finditer(self.cpp_source)
+            if match["comment_mark"] is None
+            for name in match["names"].split(",")
         }
 
     @property
     def available_fields(self):
-        return sorted({f.interpolated_name() for f in self.fields} | WELL_KNOWN_FIELDS)
+        return sorted({f.name for f in self.fields} | WELL_KNOWN_FIELDS)
 
     def request_field(self, field_name: str, field_type: FieldType | None = None):
         if field_name in WELL_KNOWN_FIELDS:
-            return
+            return field_name
 
-        matching_fields = [f for f in self.fields if f.match(field_name, field_type)]
-        if not matching_fields:
-            field_names = [f.name for f in self.fields] + list(WELL_KNOWN_FIELDS)
-            matches = get_close_matches(field_name, field_names)
+        matches = [(f, f.match(field_name, field_type)) for f in self.fields]
 
+        exact = [f for f, r in matches if r is MatchResult.MATCH]
+        if exact:
+            for f in exact:
+                f.serialize = True
+            return field_name
+
+        partial = [f for f, r in matches if r is MatchResult.PARTIAL_MATCH]
+        if partial:
+            for f in partial:
+                f.serialize = True
             LOGGER.warning(
-                "Unknown field '%s' requested from driver '%s', %s options are: %s",
+                "Requested %s field '%s' from driver '%s' has no exact match, "
+                "using %d partial match(es): %s",
+                field_type.lower(),
                 field_name,
                 self.name,
-                "similar" if matches else "valid",
-                ", ".join(matches or field_names),
+                len(partial),
+                ", ".join(f"{f.name} ({f.field_type.value})" for f in partial),
             )
-        else:
-            for f in matching_fields:
-                f.serialize = True
+            return field_name
+
+        field_names = sorted({f.name for f in self.fields} | WELL_KNOWN_FIELDS)
+        suggestions = get_close_matches(field_name, field_names)
+
+        LOGGER.warning(
+            "Unknown field '%s' requested from driver '%s', %s options are: %s",
+            field_name,
+            self.name,
+            "similar" if suggestions else "valid",
+            ", ".join(suggestions or field_names),
+        )
+        return f"{field_name} [unknown]"
 
     def serialize(self) -> str:
         requested_fields = {f for f in self.fields if f.serialize} or self.fields
-        fields_to_comment_out = {f.name for f in (self.fields - requested_fields)}
+        regular_fields_to_remove = {
+            f.name
+            for f in (self.fields - requested_fields)
+            if f.field_type != FieldType.LIBRARY
+        }
+        library_fields_to_remove = {
+            f.name
+            for f in (self.fields - requested_fields)
+            if f.field_type == FieldType.LIBRARY
+        }
 
-        def replacer(match: re.Match) -> str:
+        source = self.cpp_source
+
+        def regular_field_replacer(match: re.Match) -> str:
             if match["comment_mark"] is not None:
                 return match[0]
 
             full_call = match[0]
             field_name = match["name"]
 
-            if field_name in fields_to_comment_out:
+            if field_name in regular_fields_to_remove:
                 return f"/* {full_call} */"
             else:
                 help_start, help_end = match.span("info")
@@ -96,7 +139,28 @@ class Driver:
 
                 return f'{full_call[:rel_start]}"" /* {full_call[rel_start:rel_end]} */{full_call[rel_end:]}'
 
-        return ADD_FIELD_METHOD_RE.sub(replacer, self.cpp_source)
+        source = ADD_FIELD_METHOD_RE.sub(regular_field_replacer, self.cpp_source)
+
+        def library_field_replacer(match: re.Match) -> str:
+            if match["comment_mark"] is not None:
+                return match[0]
+
+            full_call = match[0]
+            old_content = match["names"]
+            new_content = ",".join(
+                set(old_content.split(",")) - library_fields_to_remove
+            )
+
+            arg_start, arg_end = match.span("names")
+            call_start = match.start(0)
+            rel_start = arg_start - call_start - 1
+            rel_end = arg_end - call_start + 1
+
+            return f'{full_call[:rel_start]}"{new_content}" /* "{old_content}" */{full_call[rel_end:]}'
+
+        source = ADD_LIBRARY_FIELD_METHOD_RE.sub(library_field_replacer, source)
+
+        return source
 
 
 @dataclass(frozen=True, order=True)

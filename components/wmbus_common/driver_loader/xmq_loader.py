@@ -194,7 +194,12 @@ SCHEMA = Schema(
             Optional("aliases"): str,
             Required("default_fields"): str,
             Required("detect"): {Required("mvt"): ensure_list(CSV_LIST, parse_mvt)},
-            Optional("library"): {Required("use"): ensure_list(str)},
+            Optional("library"): {
+                Required("use"): All(
+                    ensure_list(CSV_LIST),
+                    lambda lst: [i for sublst in lst for i in sublst],
+                )
+            },
             Optional("fields"): {
                 Required("field"): ensure_list(
                     Any(
@@ -289,8 +294,8 @@ def build_lookup(lookup):
 
 def constructor_expressions(driver):
     if lib := driver.get("library"):
-        for fields in lib["use"]:
-            yield ns.addOptionalLibraryFields(fields)
+        for field in lib["use"]:
+            yield ns.addOptionalLibraryFields(field.split("|", 1)[0])
 
     if fields := driver.get("fields"):
         for field in fields["field"]:

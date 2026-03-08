@@ -1,14 +1,25 @@
 import re
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import StrEnum, Enum, auto
 from functools import cached_property
+
+from .units import split_name_unit
 
 
 class FieldType(StrEnum):
     NUMERIC = "Numeric"
     STRING = "String"
+    LIBRARY = "Library"
+
+
+class MatchResult(Enum):
+    MATCH = auto()
+    NO_MATCH = auto()
+    PARTIAL_MATCH = auto()
+
 
 FORMULA_RE = re.compile(r"\{[^}]+?}")
+
 
 @dataclass
 class FieldDefinition:
@@ -24,24 +35,23 @@ class FieldDefinition:
         # "current_power_consumption_{number}_kw".
         return re.compile(FORMULA_RE.sub(r"\\d+", self.name))
 
-    def interpolated_name(self, number: int=0) -> str:
-        return FORMULA_RE.sub(str(number), self.name)
+    def match(self, field_name: str, type_hint: FieldType | None = None) -> MatchResult:
+        if self.field_type == FieldType.NUMERIC:
+            field_name, unit = split_name_unit(field_name)
 
-    def match(self, field_name: str, type_hint: FieldType | None = None) -> bool:
         matched = self._pattern.fullmatch(field_name) is not None
-        if type_hint and matched and self.field_type != type_hint:
-            raise ValueError(
-                f"Field '{field_name}' matched '{self.name}' "
-                f"but has type {type_hint}, expected {self.field_type}"
-            )
-        return matched
+        if (
+            type_hint
+            and matched
+            and self.field_type != FieldType.LIBRARY
+            and self.field_type != type_hint
+        ):
+            return MatchResult.PARTIAL_MATCH
 
-    def __eq__(self, other) -> bool:
-        if isinstance(other, FieldDefinition):
-            return self.name == other.name and self.field_type == other.field_type
-        if isinstance(other, str):
-            return self._pattern.fullmatch(other) is not None
-        return NotImplemented
+        if matched:
+            return MatchResult.MATCH
+
+        return MatchResult.NO_MATCH
 
     def __hash__(self) -> int:
         return hash((self.name, self.field_type))
