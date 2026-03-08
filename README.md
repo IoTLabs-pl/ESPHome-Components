@@ -36,7 +36,21 @@ wmbus_common:
     drivers:
       - apator162
       - amiplus
+    # or specify drivers and their fields to be loaded
+    drivers:
+      - name: apator162
+        fields:
+          - total_m3
+      - amiplus
+      - name: sensostar
+        fields:
+          - total_kwh
+      - waterstarm
 ```
+
+If you use `wmbus_meter` component, you may not need to configure `wmbus_common` component, as it will be automatically included as a dependency. Dependent components will automatically load required drivers and fields based on their configuration, so specifying them on this level is redundant.
+
+However, if you want to load specific drivers or fields that are not required by any dependent component, you should specify them in `wmbus_common` configuration.
 
 `wmbusmeters` is included as a git subtree. To sync version from upstream repository, run:
 
@@ -69,6 +83,9 @@ wmbus_meter:
 `mode` parameter is optional and allows to filter received packets by mode. It can be set to `T1` or `C1`. If not set, all packets will be processed.
 `key` parameter is optional and allows to decrypt packets using AES-128-CBC encryption. It should be provided as hexadecimal or ASCII encoded string. If not set, packets will be processed as unencrypted.
 
+**Attention!**
+By default, component will not load any fields to reduce memory footprint. If you need specific fields (or all fields) you can specify them in `wmbus_common` component configuration. Only specified fields will be available in `meter` variable in `on_telegram` trigger, will be serialized with `as_json` method etc.
+
 Component provides `on_telegram` trigger that can be used to send data to a remote server or process it in any other way. It can be used to send data to MQTT broker, HTTP server, or any other service. `meter` variable is available in the following lambdas.
 Additionally, `wmbus_meter.send_telegram_with_mqtt` action can be used to send JSON-encoded meter data to MQTT broker. It requires `mqtt` component to be configured in ESPHome.
 
@@ -96,6 +113,8 @@ On the `wmbus_meter` platform, you can use the following sensors to provide data
       name: My Water Meter Timestamp
       field: timestamp
   ```
+
+When you use `sensor` and `text_sensor` platforms, required fields will be automatically loaded for corresponding driver, so you don't need to specify them in `wmbus_common` component configuration.
 
 For both `sensor` and `text_sensor`, all config from generic [Sensor](https://esphome.io/components/sensor/index.html) and [Text Sensor](https://esphome.io/components/text_sensor/index.html) components is available, so you can use filters, icons, etc.
 
