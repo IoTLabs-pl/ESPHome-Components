@@ -37,6 +37,8 @@ void Radio::loop() {
   if (xQueueReceive(this->packet_queue_, &p, 0) != pdPASS)
     return;
 
+  this->on_packet_callback_manager(p);
+
   auto frame = p->convert_to_frame();
 
   if (!frame)
@@ -46,10 +48,10 @@ void Radio::loop() {
            toString(frame->link_mode()), toString(frame->block_type()));
 
   uint8_t packet_handled = 0;
-  for (auto &handler : this->handlers_)
+  for (auto &handler : this->frame_handlers_)
     handler(&frame.value());
 
-  ESP_LOGI(TAG, "Telegram handled by %d handlers", frame->handlers_count());
+  ESP_LOGI(TAG, "Telegram handled by %d handlers", frame->frame_handlers_count());
 }
 
 void Radio::wakeup_receiver_task_from_isr(TaskHandle_t *arg) {
@@ -106,7 +108,11 @@ void Radio::receiver_task(Radio *arg) {
 }
 
 void Radio::add_frame_handler(std::function<void(Frame *)> &&callback) {
-  this->handlers_.push_back(std::move(callback));
+  this->frame_handlers_.push_back(std::move(callback));
+}
+
+void Radio::on_packet(std::function<void(Packet *)> &&callback) {
+  this->on_packet_callback_manager.add(std::move(callback));
 }
 
 }  // namespace wmbus_radio

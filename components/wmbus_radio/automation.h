@@ -17,5 +17,12 @@ class FrameTrigger : public Trigger<Frame *> {
   }
 };
 
+class PacketTrigger : public Trigger<Packet *> {
+ public:
+  explicit PacketTrigger(wmbus_radio::Radio *radio) {
+    radio->on_packet([this](Packet *packet) { this->trigger(packet); });
+  }
+};
+
 }  // namespace wmbus_radio
 }  // namespace esphome
