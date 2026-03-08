@@ -46,6 +46,7 @@ bool trimCRCsFrameFormatB(std::vector<uchar> &payload);
     X(IU891A,iu891a,true,false,detectIU891A)         \
     X(RAWTTY,rawtty,true,false,detectRAWTTY)         \
     X(HEXTTY,hextty,true,false,detectSKIP)           \
+    X(XMQTTY,xmqtty,true,false,detectSKIP)         \
     X(RC1180,rc1180,true,false,detectRC1180)         \
     X(RTL433,rtl433,false,true,detectRTL433)         \
     X(RTLWMBUS,rtlwmbus,false,true,detectRTLWMBUS)   \
@@ -303,12 +304,14 @@ struct AboutTelegram
     // -100 dbm = 0.1 pico Watt to -20 dbm = 10 micro W
     // Measurements smaller than -100 and larger than -10 are unlikely.
     int rssi_dbm {};
+    // If the LinkMode is known, then it is stored here.
+    LinkMode link_mode {};
     // WMBus or MBus
     FrameType type {};
     // time the telegram was received
     time_t timestamp;
 
-    AboutTelegram(std::string dv, int rs, FrameType t, time_t ts = 0) : device(dv), rssi_dbm(rs), type(t), timestamp(ts) {}
+    AboutTelegram(std::string dv, int rs, LinkMode lm, FrameType t, time_t ts = 0) : device(dv), rssi_dbm(rs), link_mode(lm), type(t), timestamp(ts) {}
     AboutTelegram() {}
 };
 

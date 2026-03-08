@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2017-2022 Fredrik Öhrström (gpl-3.0-or-later)
+ Copyright (C) 2017-2025 Fredrik Öhrström (gpl-3.0-or-later)
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -1210,6 +1210,7 @@ bool isValidBps(const std::string& b)
     if (b == "38400") return true;
     if (b == "57600") return true;
     if (b == "115200") return true;
+    if (b == "230400") return true;
     return false;
 }
 

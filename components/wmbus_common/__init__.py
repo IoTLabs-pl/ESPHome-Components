@@ -1,63 +1,89 @@
-import esphome.config_validation as cv
-from esphome.const import SOURCE_FILE_EXTENSIONS, CONF_ID
-from esphome.loader import get_component, ComponentManifest
-from esphome import codegen as cg
 from pathlib import Path
 
+import esphome.config_validation as cv
+from esphome import codegen as cg
+from esphome.const import CONF_ID, CONF_NAME, SOURCE_FILE_EXTENSIONS
+from esphome.core import CORE
+from esphome.yaml_util import ESPHomeDumper
+
+from .driver_loader import CppDriver, Driver, DriverManager
+
 CODEOWNERS = ["@kubasaw"]
+CONF_ALL = "all"
 CONF_DRIVERS = "drivers"
+CONF_FIELDS = "fields"
+
+CURRENT_DIR = Path(__file__).parent
+SOURCE_FILE_EXTENSIONS.add(".cc")
+
 
 wmbus_common_ns = cg.esphome_ns.namespace("wmbus_common")
 WMBusCommon = wmbus_common_ns.class_("WMBusCommon", cg.Component)
 
-SOURCE_FILE_EXTENSIONS.add(".cc")
 
-_ALWAYS_EXCLUDED = {"auto", "unknown"}
-
-AVAILABLE_DRIVERS = sorted(
-    name
-    for f in Path(__file__).parent.glob("driver_*.cc")
-    if (name := f.stem.removeprefix("driver_")) not in _ALWAYS_EXCLUDED
+ESPHomeDumper.add_multi_representer(
+    Driver, lambda s, v: s.represent_stringify(v.name)
 )
 
-_registered_drivers = set()
+
+def maybe_all(replacements):
+    def validator(v):
+        if v == CONF_ALL:
+            return replacements
+        else:
+            return v
+
+    return validator
 
 
-validate_driver = cv.All(
-    cv.one_of(*AVAILABLE_DRIVERS, lower=True, space="_"),
-    lambda driver: _registered_drivers.add(driver) or driver,
+def driver_field_validator(conf):
+    driver = conf[CONF_NAME]
+
+    conf[CONF_FIELDS] = cv.All(
+        maybe_all(driver.available_fields),
+        [driver.request_field],
+    )(conf[CONF_FIELDS])
+
+    return conf
+
+
+DRIVER_ENTRY_SCHEMA = cv.maybe_simple_value(
+    {
+        cv.Required(CONF_NAME): cv.All(
+            cv.one_of(*DriverManager.available_drivers), DriverManager.request_driver
+        ),
+        cv.Optional(CONF_FIELDS, default=CONF_ALL): cv.valid,
+    },
+    driver_field_validator,
+    key=CONF_NAME,
 )
-
 
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(WMBusCommon),
-        cv.Optional(CONF_DRIVERS): cv.All(
-            lambda x: AVAILABLE_DRIVERS if x == "all" else x,
-            [validate_driver],
+        cv.Optional(CONF_DRIVERS, default=[]): cv.All(
+            maybe_all(DriverManager.available_drivers), [DRIVER_ENTRY_SCHEMA]
         ),
     }
 )
 
 
-class WMBusComponentManifest(ComponentManifest):
-    @property
-    def resources(self):
-        exclude_drivers = set(AVAILABLE_DRIVERS) - _registered_drivers
-        if _registered_drivers:
-            exclude_drivers |= _ALWAYS_EXCLUDED
-        else:
-            exclude_drivers |= _ALWAYS_EXCLUDED - {"unknown"}
-
-        exclude_files = {f"driver_{name}.cc" for name in exclude_drivers}
-        resources = [fr for fr in super().resources if fr.resource not in exclude_files]
-        return resources
-
-
 async def to_code(config):
-    cg.add_define("WMBUSMETERS_TAG", Path(__file__).with_name('.wmbusmeters_tag').read_text())
+    cg.add_define(
+        "WMBUSMETERS_TAG",
+        CURRENT_DIR.joinpath(".wmbusmeters_tag").read_text(),
+    )
 
-    get_component("wmbus_common").__class__ = WMBusComponentManifest
+    target_dir = CORE.relative_src_path("wmbusmeters_drivers")
+    DriverManager.sync_to_directory(target_dir)
 
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+
+
+def FILTER_SOURCE_FILES() -> list[str]:
+    return [
+        d.source_path.name
+        for d in DriverManager._all_drivers.values()
+        if isinstance(d, CppDriver)
+    ]
