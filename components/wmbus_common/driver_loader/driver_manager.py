@@ -37,6 +37,10 @@ class DriverManager:
         target_dir = Path(target_dir)
         target_dir.mkdir(exist_ok=True, parents=True)
         written_files = set()
+
+        if not self._requested_drivers:
+            self.request_driver("unknown")
+
         for driver in self._requested_drivers:
             target_path = target_dir / f"{driver.name}.cpp"
             old_content = target_path.read_text() if target_path.exists() else ""
