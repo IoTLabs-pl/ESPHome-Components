@@ -1,0 +1,57 @@
+# Panasonic Aquarea Entities - By Type
+
+## `sensor`
+
+| Name | Heishamon ID | Unit | Device Class | Icon | State Class | Example |
+|------|--------------|------|--------------|------|-------------|---------|
+{%- for entity in sensor_entities %}
+| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.effective_unit }} | {{ entity.device_class }} | {{ entity.icon }} | {{ entity.effective_state_class }} | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: {{ entity.id_value }}</code></pre> |
+{%- endfor %}
+
+## `number`
+
+| Name | Heishamon ID | Device Class | Min | Max | Entity Category | Example |
+|------|--------------|--------------|-----|-----|-----------------|---------|
+{%- for entity in number_entities %}
+| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.device_class }} | {{ entity.min }} | {{ entity.max }} | {{ entity.entity_category }} | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: {{ entity.id_value }}</code></pre> |
+{%- endfor %}
+
+## `select`
+
+| Name | Heishamon ID | Icon | Options | Example |
+|------|--------------|------|---------|---------|
+{%- for entity in select_entities %}
+| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.icon }} | <ul>{% for opt in entity.options | sort %}<li>{{ opt }}</li>{% endfor %}</ul> | <pre lang="yaml"><code>select:&#13;  - platform: panasonic_aquarea&#13;    set: {{ entity.id_value }}</code></pre> |
+{%- endfor %}
+
+## `binary_sensor`
+
+| Name | Heishamon ID | Device Class | Example |
+|------|--------------|--------------|---------|
+{%- for entity in binary_sensor_entities %}
+| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.device_class }} | <pre lang="yaml"><code>binary_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: {{ entity.id_value }}</code></pre> |
+{%- endfor %}
+
+## `text_sensor`
+
+| Name | Heishamon ID | Icon | Options | Example |
+|------|--------------|------|---------|---------|
+{%- for entity in text_sensor_entities %}
+| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.icon }} | {% if entity.options %}<ul>{% for opt in entity.options | sort %}<li>{{ opt }}</li>{% endfor %}</ul>{% else %}—{% endif %} | <pre lang="yaml"><code>text_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: {{ entity.id_value }}</code></pre> |
+{%- endfor %}
+
+## `button`
+
+| Name | Heishamon ID | Example |
+|------|--------------|---------|
+{%- for entity in button_entities %}
+| {{ entity.name }} | `{{ entity.full_id }}` | <pre lang="yaml"><code>button:&#13;  - platform: panasonic_aquarea&#13;    set: {{ entity.id_value }}</code></pre> |
+{%- endfor %}
+
+## `switch`
+
+| Name | Heishamon ID | Example |
+|------|--------------|---------|
+{%- for entity in switch_entities %}
+| {{ entity.name }} | `{{ entity.full_id }}` | <pre lang="yaml"><code>switch:&#13;  - platform: panasonic_aquarea&#13;    set: {{ entity.id_value }}</code></pre> |
+{%- endfor %}
