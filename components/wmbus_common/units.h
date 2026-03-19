@@ -23,6 +23,11 @@
 #include<vector>
 #include<cstdint>
 
+// Some toolchains (ESP32-C3) define HZ as a macro; drop it so our enum can use HZ safely.
+#ifdef HZ
+#undef HZ
+#endif
+
 // A named quantity has a preferred unit,
 // ie Volume has m3 (cubic meters) Energy has kwh, Power has kw.
 // We search for quantities in the mbus telegrams instead of
