@@ -8,23 +8,6 @@ namespace esphome {
 namespace wmbus_radio {
 static const char *TAG = "wmbus.transceiver";
 
-bool RadioTransceiver::read_in_task(uint8_t *buffer, size_t length) {
-  const uint8_t *buffer_end = buffer + length;
-  int wait_count = 0;
-
-  while (buffer != buffer_end) {
-    auto byte = this->read();
-    if (byte.has_value())
-      *buffer++ = *byte;
-    else if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(5)))
-      return false;
-    else
-      wait_count++;
-  }
-
-  return true;
-}
-
 void RadioTransceiver::set_reset_pin(InternalGPIOPin *reset_pin) { this->reset_pin_ = reset_pin; }
 
 void RadioTransceiver::set_irq_pin(InternalGPIOPin *irq_pin) { this->irq_pin_ = irq_pin; }

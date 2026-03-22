@@ -137,6 +137,7 @@ with suppress(ImportError):
         "wmbus_radio.send_frame_with_socket",
         SocketTransmitterSendAction,
         FRAME_SOCKET_SEND_SCHEMA,
+        synchronous=True,
     )
     async def send_frame_with_socket_to_code(config, action_id, template_arg, args):
         output_type = {

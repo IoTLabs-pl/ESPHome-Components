@@ -125,4 +125,5 @@ automation.register_action(
     "wmbus_meter.send_telegram_with_mqtt",
     MQTTPublishAction,
     TELEGRAM_MQTT_PUBLISH_ACTION_SCHEMA,
+    synchronous=True,
 )(mqtt_publish_action_to_code)

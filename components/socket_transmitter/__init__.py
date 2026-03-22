@@ -50,7 +50,10 @@ SOCKET_SEND_ACTION_SCHEMA = cv.Schema(
 
 
 @automation.register_action(
-    "socket_transmitter.send", SocketTransmitterSendAction, SOCKET_SEND_ACTION_SCHEMA
+    "socket_transmitter.send",
+    SocketTransmitterSendAction,
+    SOCKET_SEND_ACTION_SCHEMA,
+    synchronous=True,
 )
 async def socket_transmitter_send_to_code(config, action_id, template_arg, args):
     paren = await cg.get_variable(config[CONF_ID])

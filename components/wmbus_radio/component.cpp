@@ -69,7 +69,7 @@ void Radio::receive_frame() {
   }
   auto packet = std::make_unique<Packet>();
 
-  if (!this->radio->read_in_task(packet->rx_data_ptr(), packet->rx_capacity())) {
+  if (!this->radio->read(packet->rx_data_ptr(), packet->rx_capacity())) {
     ESP_LOGV(TAG, "Failed to read preamble");
     return;
   }
@@ -84,7 +84,7 @@ void Radio::receive_frame() {
     return;
   }
 
-  if (!this->radio->read_in_task(packet->rx_data_ptr(), packet->rx_capacity())) {
+  if (!this->radio->read(packet->rx_data_ptr(), packet->rx_capacity())) {
     ESP_LOGW(TAG, "Failed to read data");
     return;
   }
