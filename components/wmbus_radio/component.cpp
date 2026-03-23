@@ -54,7 +54,7 @@ void Radio::loop() {
   ESP_LOGI(TAG, "Telegram handled by %d handlers", frame->frame_handlers_count());
 }
 
-void Radio::wakeup_receiver_task_from_isr(TaskHandle_t *arg) {
+void IRAM_ATTR Radio::wakeup_receiver_task_from_isr(TaskHandle_t *arg) {
   BaseType_t xHigherPriorityTaskWoken;
   vTaskNotifyGiveFromISR(*arg, &xHigherPriorityTaskWoken);
   portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -63,11 +63,12 @@ void Radio::wakeup_receiver_task_from_isr(TaskHandle_t *arg) {
 void Radio::receive_frame() {
   this->radio->restart_rx();
 
+  auto packet = std::make_unique<Packet>();
+
   if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(60000))) {
     ESP_LOGD(TAG, "Radio interrupt timeout");
     return;
   }
-  auto packet = std::make_unique<Packet>();
 
   if (!this->radio->read(packet->rx_data_ptr(), packet->rx_capacity())) {
     ESP_LOGV(TAG, "Failed to read preamble");
@@ -84,12 +85,13 @@ void Radio::receive_frame() {
     return;
   }
 
+  packet->set_rssi(this->radio->get_rssi());
+
   if (!this->radio->read(packet->rx_data_ptr(), packet->rx_capacity())) {
     ESP_LOGW(TAG, "Failed to read data");
     return;
   }
 
-  packet->set_rssi(this->radio->get_rssi());
   auto packet_ptr = packet.get();
 
   if (xQueueSend(this->packet_queue_, &packet_ptr, 0) == pdTRUE) {

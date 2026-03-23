@@ -86,7 +86,7 @@ void SX1276::setup() {
   ESP_LOGV(TAG, "SX1276 setup done");
 }
 
-bool SX1276::read(uint8_t *buffer, size_t length) {
+bool IRAM_ATTR SX1276::read(uint8_t *buffer, size_t length) {
   while (length > 0) {
     if (this->irq_pin_->digital_read()) {
       if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1))) {
@@ -113,6 +113,9 @@ void SX1276::restart_rx() {
 
   // Clear FIFO
   this->spi_write(0x3F, (uint8_t) (1 << 4));
+
+  // Clear pending IRQs we not consumed in read() method
+  ulTaskNotifyTake(pdTRUE, 0);
 
   // Enable RX
   this->spi_write(0x01, (uint8_t) 0b101);
