@@ -26,7 +26,7 @@ template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEnt
   void handle_update(const std::vector<uint8_t> &data) override {
     auto value = extractor_->decode(data);
 
-    if (!value.has_value()) {
+    if (!value.has_value() || publish_dedup_.next(*value) == false) {
       auto name = static_cast<Derived *>(this)->get_name();
       ESP_LOGV("ReadableEntity", "Value unchanged for %s, not publishing", name.c_str());
 
@@ -37,6 +37,7 @@ template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEnt
 
  protected:
   ExtractorInterface<T> *extractor_;
+  Deduplicator<T> publish_dedup_;
 };
 
 template<typename Derived, typename T> class WriteOnlyEntity : public WritableEntity, public Parented<Device> {
