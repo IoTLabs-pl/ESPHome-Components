@@ -8,15 +8,12 @@
 | Bivalent Advanced DHW Delay | `sensor` | `TOP138` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 138</code></pre> |
 | Bivalent Advanced Heat | `binary_sensor` | `TOP132` | <pre lang="yaml"><code>binary_sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 132</code></pre> |
 | Bivalent Advanced Start Delay | `sensor` | `TOP136` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 136</code></pre> |
-| Bivalent Advanced Start Temperature | `sensor` | `TOP134` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 134</code></pre> |
 | Bivalent Advanced Stop Delay | `sensor` | `TOP137` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 137</code></pre> |
-| Bivalent Advanced Stop Temperature | `sensor` | `TOP135` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 135</code></pre> |
 | Bivalent AP Start Temp | `number` | `SET37` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;  set: 37</code></pre> |
 | Bivalent AP Stop Temp | `number` | `SET38` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;  set: 38</code></pre> |
 | Bivalent Control | `switch` | `SET34` | <pre lang="yaml"><code>switch:&#13;  - platform: panasonic_aquarea&#13;  set: 34</code></pre> |
 | Bivalent Mode | `select` | `SET35` | <pre lang="yaml"><code>select:&#13;  - platform: panasonic_aquarea&#13;  set: 35</code></pre> |
 | Bivalent Start Temp | `number` | `SET36` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;  set: 36</code></pre> |
-| Bivalent Start Temperature | `sensor` | `TOP131` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 131</code></pre> |
 | Buffer Delta | `number` | `SET27` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;  set: 27</code></pre> |
 | Buffer Installed | `switch` | `SET28` | <pre lang="yaml"><code>switch:&#13;  - platform: panasonic_aquarea&#13;  set: 28</code></pre> |
 | Buffer Tank Delta | `sensor` | `TOP113` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 113</code></pre> |
@@ -52,8 +49,7 @@
 | DHW Power Consumption Extra | `sensor` | `TOPx2` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: x2</code></pre> |
 | DHW Power Production | `sensor` | `TOP40` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 40</code></pre> |
 | DHW Power Production Extra | `sensor` | `TOPx5` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: x5</code></pre> |
-| DHW Target Temperature | `sensor` | `TOP9` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 9</code></pre> |
-| DHW Temperature | `number` | `SET11` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;  set: 11</code></pre> |
+| DHW Target Temperature | `number` | `SET11` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;  set: 11</code></pre> |
 | DHW Temperature | `sensor` | `TOP10` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 10</code></pre> |
 | Discharge Temperature | `sensor` | `TOP50` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 50</code></pre> |
 | Economizer Outlet Temperature | `sensor` | `TOP117` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;  top: 117</code></pre> |

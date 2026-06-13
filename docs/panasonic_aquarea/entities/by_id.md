@@ -12,7 +12,7 @@
 | `SET8` | `number` | Cool Request Zone 2 | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 8</code></pre> |
 | `SET9` | `select` | Operation Mode | <pre lang="yaml"><code>select:&#13;  - platform: panasonic_aquarea&#13;    set: 9</code></pre> |
 | `SET10` | `switch` | Force DHW | <pre lang="yaml"><code>switch:&#13;  - platform: panasonic_aquarea&#13;    set: 10</code></pre> |
-| `SET11` | `number` | DHW Temperature | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 11</code></pre> |
+| `SET11` | `number` | DHW Target Temperature | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 11</code></pre> |
 | `SET12` | `button` | Force Defrosting | <pre lang="yaml"><code>button:&#13;  - platform: panasonic_aquarea&#13;    set: 12</code></pre> |
 | `SET13` | `button` | Force Sterilization | <pre lang="yaml"><code>button:&#13;  - platform: panasonic_aquarea&#13;    set: 13</code></pre> |
 | `SET15` | `number` | Max Pump Duty | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 15</code></pre> |
@@ -62,7 +62,6 @@
 | `TOP6` | `sensor` | Main Outlet Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 6</code></pre> |
 | `TOP7` | `sensor` | Main Target Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 7</code></pre> |
 | `TOP8` | `sensor` | Compressor Frequency | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 8</code></pre> |
-| `TOP9` | `sensor` | DHW Target Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 9</code></pre> |
 | `TOP10` | `sensor` | DHW Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 10</code></pre> |
 | `TOP11` | `sensor` | Operations Hours | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 11</code></pre> |
 | `TOP12` | `sensor` | Operations Counter | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 12</code></pre> |
@@ -145,11 +144,8 @@
 | `TOP126` | `text_sensor` | Three-way Valve State 2 | <pre lang="yaml"><code>text_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 126</code></pre> |
 | `TOP127` | `sensor` | Valve PID Zone 1 | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 127</code></pre> |
 | `TOP128` | `sensor` | Valve PID Zone 2 | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 128</code></pre> |
-| `TOP131` | `sensor` | Bivalent Start Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 131</code></pre> |
 | `TOP132` | `binary_sensor` | Bivalent Advanced Heat | <pre lang="yaml"><code>binary_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 132</code></pre> |
 | `TOP133` | `binary_sensor` | Bivalent Advanced DHW | <pre lang="yaml"><code>binary_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 133</code></pre> |
-| `TOP134` | `sensor` | Bivalent Advanced Start Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 134</code></pre> |
-| `TOP135` | `sensor` | Bivalent Advanced Stop Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 135</code></pre> |
 | `TOP136` | `sensor` | Bivalent Advanced Start Delay | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 136</code></pre> |
 | `TOP137` | `sensor` | Bivalent Advanced Stop Delay | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 137</code></pre> |
 | `TOP138` | `sensor` | Bivalent Advanced DHW Delay | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 138</code></pre> |

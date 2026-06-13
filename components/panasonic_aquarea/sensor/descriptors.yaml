@@ -368,21 +368,6 @@
   offset: -1
   unit_of_measurement: "%"
   state_class: "measurement"
-131: 
-  name: "Bivalent Start Temperature"
-  byte: 65
-  offset: -128
-  device_class: "temperature"
-134: 
-  name: "Bivalent Advanced Start Temperature"
-  byte: 66
-  offset: -128
-  device_class: "temperature"
-135: 
-  name: "Bivalent Advanced Stop Temperature"
-  byte: 68
-  offset: -128
-  device_class: "temperature"
 136: 
   name: "Bivalent Advanced Start Delay"
   byte: 67
