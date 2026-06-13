@@ -1,0 +1,40 @@
+1:
+  name: State
+  byte: 4
+  bit: 7
+10:
+  name: Force DHW
+  byte: 4
+  bit: 1
+24:
+  name: Main Schedule
+  byte: 5
+  bit: 1
+25:
+  name: Alt External Sensor
+  byte: 20
+  bit: 3
+28:
+  name: Buffer Installed
+  byte: 24
+  bit: 5
+30:
+  name: External Control
+  byte: 23
+  bit: 7
+31:
+  name: External Error Signal
+  byte: 23
+  bit: 3
+32:
+  name: External Compressor Control
+  byte: 23
+  bit: 1
+33:
+  name: External Heat Cool Control
+  byte: 23
+  bit: 5
+34:
+  name: Bivalent Control
+  byte: 26
+  bit: 7

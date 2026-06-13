@@ -1,0 +1,7 @@
+# Panasonic Aquarea Entities (Alphabetical)
+
+| Name | Entity Type | Heishamon ID | Example |
+|------|-------------|--------------|---------|
+{%- for entity in all_entities | sort(attribute='name') %}
+| {{ entity.name }} | `{{ entity.platform.name }}` | `{{ entity.full_id }}` | <pre lang="yaml"><code>{{ entity.platform.name }}:&#13;  - platform: panasonic_aquarea&#13;  {{ entity._id_field_name() }}: {{ entity.id_value }}</code></pre> |
+{%- endfor %}

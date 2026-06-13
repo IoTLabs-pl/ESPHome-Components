@@ -1,0 +1,59 @@
+3:
+  name: Quiet Mode Schedule
+  byte: 7
+  bit: 1
+  device_class: running
+26:
+  name: Defrosting
+  byte: 111
+  bit: 5
+  device_class: running
+60:
+  name: Internal Heater
+  byte: 112
+  bit: 7
+  device_class: running
+61:
+  name: External Heater
+  byte: 112
+  bit: 5
+  device_class: running
+68:
+  name: Force Heater
+  byte: 5
+  bit: 5
+  device_class: running
+69:
+  name: Sterilization
+  byte: 117
+  bit: 5
+  device_class: running
+100:
+  name: DHW Installed
+  byte: 24
+  bit: 7
+109:
+  name: Anti Freeze Mode
+  byte: 20
+  bit: 5
+  device_class: running
+110:
+  name: Optional PCB
+  byte: 20
+  bit: 7
+123:
+  name: Pump Zone 2
+  byte: 116
+  bit: 1
+124:
+  name: Pump Zone 1
+  byte: 116
+  bit: 3
+132:
+  name: Bivalent Advanced Heat
+  byte: 26
+  bit: 3
+133:
+  name: Bivalent Advanced DHW
+  byte: 26
+  bit: 1
