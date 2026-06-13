@@ -2,6 +2,52 @@
 
 This repository contains custom [ESPHome](https://esphome.io/) components for devices developed by IoTLabs.
 
+## `panasonic_aquarea`
+This component allows to communicate with Panasonic Aquarea heat pumps using their serial interface. It supports reading various parameters from the heat pump, such as temperature, pressure, and operating mode.
+
+Heavily based on [Heishamon](https://github.com/heishamon/HeishaMon). Thanks to the authors for grunt work of reverse-engineering the proprietary protocol used by Panasonic Aquarea heat pumps and making it available to the public.
+
+**Example configuration:**
+
+```yaml
+uart:
+  - id: heatpump_uart
+    tx_pin: GPIO0
+    rx_pin: GPIO1
+    baud_rate: 9600
+    data_bits: 8
+    parity: EVEN
+    stop_bits: 1
+# optional UART for CZ-TAW1 remote controller
+  - id: remote_uart
+    tx_pin: GPIO2
+    rx_pin: GPIO3
+    baud_rate: 9600
+    data_bits: 8
+    parity: EVEN
+    stop_bits: 1
+
+panasonic_aquarea:
+  uart_id: heatpump_uart
+  external_controller_uart_id: remote_uart
+
+sensor:
+  - platform: panasonic_aquarea
+    top: 1
+  - platform: panasonic_aquarea
+    top: 5
+
+switch:
+  - platform: panasonic_aquarea
+    set: 1
+  - platform: panasonic_aquarea
+    set: 10
+```
+All available entities are listed in the catalogs:
+- [by Entity Type](docs/panasonic_aquarea/entities/by_entity_type.md)
+- [by Heishamon ID](docs/panasonic_aquarea/entities/by_id.md)
+- [by Name](docs/panasonic_aquarea/entities/by_name.md)
+
 ## `socket_transmitter`
 
 This component is used to send data to a remote server using a socket connection. It supports both TCP and UDP protocols. Especially is made for sending wM-Bus packets to a remote server for further processing.
