@@ -101,7 +101,7 @@ NUMERIC_FIELD_WITH_EXTRACTOR = Schema(
         Optional("info"): str,
         Optional("attributes", default=""): str,
         Required("quantity"): str,
-        Optional("vif_scaling", default=""): str,
+        Optional("vif_scaling", default="Auto"): str,
         Optional("dif_signedness", default=""): str,
         Required("match"): MATCHER_SCHEMA,
         Optional("display_unit", default=""): str,
