@@ -1,14 +1,14 @@
 name: Compilation check
 on:
-    pull_request:
- 
+  pull_request:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        name: 
+        name:
           - wmbus
           - panasonic_aquarea
     steps:
