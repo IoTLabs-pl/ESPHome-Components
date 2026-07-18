@@ -1,0 +1,18 @@
+{
+  "extends": ["config:recommended"],
+  "github-actions": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "managerFilePatterns": [".github/workflows/build.yaml"],
+      "fileFormat": "yaml",
+      "customType": "jsonata",
+      "matchStrings": [
+        "jobs.build.steps[id=\"esphome_build\"].{\"currentValue\":with.version}"
+      ],
+      "packageNameTemplate": "esphome/esphome",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
+}
