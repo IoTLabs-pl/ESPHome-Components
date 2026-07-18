@@ -13,7 +13,7 @@ jobs:
           - panasonic_aquarea
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
       - name: Build firmware
         id: esphome_build
         uses: esphome/build-action@v7
