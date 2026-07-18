@@ -18,7 +18,7 @@ class DriverManager:
         self._all_drivers[driver.name] = driver
 
     def load_drivers(self) -> None:
-        for p in LEGACY_DRIVERS_PATH.glob("driver_*.cc"):
+        for p in LEGACY_DRIVERS_PATH.glob("driver_*.cpp"):
             self.__add_driver(CppDriver.from_source(p))
 
         for p in XMQ_DRIVERS_PATH.glob("*.xmq"):

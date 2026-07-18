@@ -2,7 +2,7 @@ from pathlib import Path
 
 import esphome.config_validation as cv
 from esphome import codegen as cg
-from esphome.const import CONF_ID, CONF_NAME, SOURCE_FILE_EXTENSIONS
+from esphome.const import CONF_ID, CONF_NAME
 from esphome.core import CORE
 from esphome.yaml_util import ESPHomeDumper
 
@@ -14,12 +14,9 @@ CONF_DRIVERS = "drivers"
 CONF_FIELDS = "fields"
 
 CURRENT_DIR = Path(__file__).parent
-SOURCE_FILE_EXTENSIONS.add(".cc")
-
 
 wmbus_common_ns = cg.esphome_ns.namespace("wmbus_common")
 WMBusCommon = wmbus_common_ns.class_("WMBusCommon", cg.Component)
-
 
 ESPHomeDumper.add_multi_representer(
     Driver, lambda s, v: s.represent_stringify(v.name)
