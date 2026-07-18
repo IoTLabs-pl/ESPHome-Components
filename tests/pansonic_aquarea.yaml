@@ -1,0 +1,34 @@
+esphome:
+  name: test
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: ../components
+
+wifi:
+  ssid: TestSSID
+  password: TestPass
+
+uart:
+  - id: heatpump_uart
+    tx_pin: GPIO0
+    rx_pin: GPIO1
+    baud_rate: 9600
+    data_bits: 8
+    parity: EVEN
+    stop_bits: 1
+
+panasonic_aquarea:
+  uart_id: heatpump_uart
+
+sensor:
+  - platform: panasonic_aquarea
+    top: 1
+
+switch:
+  - platform: panasonic_aquarea
+    set: 1

@@ -1,6 +1,9 @@
 # ESPHome Components
 
-This repository contains custom [ESPHome](https://esphome.io/) components for devices developed by IoTLabs.
+![ESPHome](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FIoTLabs-pl%2FESPHome-Components%2Frefs%2Fheads%2Fmaster%2F.github%2Fworkflows%2Fbuild.yaml&query=%24.jobs.build.steps...with.version&label=ESPHome&style=for-the-badge&color=f3922d&labelColor=2b4c5a)
+![GitHub License](https://img.shields.io/github/license/IoTLabs-pl/esphome-components?style=for-the-badge&color=f3922d&labelColor=2b4c5a)
+
+This repository contains custom [ESPHome](https://esphome.io/) components for devices developed by [IoTLabs](https://iotlabs.pl).
 
 ## `panasonic_aquarea`
 This component allows to communicate with Panasonic Aquarea heat pumps using their serial interface. It supports reading various parameters from the heat pump, such as temperature, pressure, and operating mode.
@@ -191,3 +194,6 @@ wmbus_radio:
 For SX1276, `reset_pin` should be connected to the reset pin and `irq_pin` should be connected to the DIO1 pin of the radio module.
 
 The `on_frame` trigger can be used to send received wM-Bus packets to a remote server using `socket_transmitter` component. It can also be used to process packets in any other way, such as sending them to MQTT broker or HTTP server.
+
+### Disclaimer
+`wmbus_*` components are based on work of [SzczepanLeon's ESPHome Components repository](https://github.com/SzczepanLeon/esphome-components). Thanks to the authors for their work and making it available to the public.
