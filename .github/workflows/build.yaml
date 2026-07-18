@@ -1,17 +1,22 @@
 name: Compilation check
-on: 
-    pull_request:
+on:
+  pull_request:
 
 jobs:
-  build_and_upload:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+          - wmbus
+          - panasonic_aquarea
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build firmware
-        id: build_firmware
+        id: esphome_build
         uses: esphome/build-action@v7
         with:
-          yaml-file: test.yaml
-
-
+          yaml-file: tests/${{ matrix.name }}.yaml
+          version: "2026.6.5"
