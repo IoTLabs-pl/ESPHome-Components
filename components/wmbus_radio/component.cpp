@@ -22,7 +22,7 @@ namespace wmbus_radio {
 static const char *TAG = "wmbus";
 
 void Radio::setup() {
-  ASSERT_SETUP(this->packet_queue_ = xQueueCreate(3, sizeof(Packet *)));
+  ASSERT_SETUP((this->packet_queue_ = xQueueCreate(3, sizeof(Packet *))) != nullptr);
 
   ASSERT_SETUP(xTaskCreate((TaskFunction_t) this->receiver_task, "radio_recv", 3 * 1024, this, 2,
                            &(this->receiver_task_handle_)));

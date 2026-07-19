@@ -1,0 +1,12 @@
+// Auto-generated from loaded drivers list
+
+{% for n in names %}
+void register_wmbus_driver_{{ n }}();
+{% endfor %}
+
+void register_wmbus_drivers()
+{
+{% for n in names %}
+    register_wmbus_driver_{{ n }}();
+{% endfor %}
+}

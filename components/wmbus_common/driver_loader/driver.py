@@ -160,6 +160,8 @@ class Driver:
 
         source = ADD_LIBRARY_FIELD_METHOD_RE.sub(library_field_replacer, source)
 
+        source += f'\nextern "C" void register_wmbus_driver_{self.name}() {{}}'
+
         return source
 
 
