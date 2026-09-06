@@ -165,30 +165,31 @@ When you use `sensor` and `text_sensor` platforms, required fields will be autom
 For both `sensor` and `text_sensor`, all config from generic [Sensor](https://esphome.io/components/sensor/index.html) and [Text Sensor](https://esphome.io/components/text_sensor/index.html) components is available, so you can use filters, icons, etc.
 
 ## `wmbus_radio`
-This component provides a radio interface LoRa 868MHz transceivers allowing to receive wM-Bus packets. At the moment it support only Semtech SX1276 (RFM95/RFM96).
-As a dependency, it requires `spi` component to be configured in ESPHome.
+This component provides a radio interface for 868 MHz LoRa transceivers, allowing it to receive wM-Bus packets. It supports Semtech SX1276 (RFM95/RFM96).
+It needs ESPHome 2026.8.0 or newer and an `spi` component configured.
 
-**Example configuration:**
+**SX1276 example:**
 
 ```yaml
 spi:
-  clk_pin: GPIO1
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
   miso_pin: GPIO2
-  mosi_pin: GPIO3
   id: spi_bus
 
 wmbus_radio:
   id: radio_component
   radio_type: SX1276
+  cs_pin: GPIO3
   reset_pin: GPIO4
-  irq_pin: GPIO5
+  dio1_pin: GPIO5
   on_frame:
     - wmbus_radio.send_frame_with_socket:
         id: transmitter
         format: rtlwmbus
 ```
 
-For SX1276, `reset_pin` should be connected to the reset pin and `irq_pin` should be connected to the DIO1 pin of the radio module.
+`reset_pin` and `dio1_pin` go to the RESET and DIO1 pins of the radio module. `irq_pin` is the old name of `dio1_pin`; it still works with a deprecation warning and will be removed in 2027.3.0.
 
 The `on_frame` trigger can be used to send received wM-Bus packets to a remote server using `socket_transmitter` component. It can also be used to process packets in any other way, such as sending them to MQTT broker or HTTP server.
 

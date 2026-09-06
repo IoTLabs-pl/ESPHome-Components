@@ -54,7 +54,7 @@ wmbus_radio:
   radio_type: SX1276
   cs_pin: GPIO3
   reset_pin: GPIO4
-  irq_pin: GPIO5
+  dio1_pin: GPIO5
   on_packet:
     - then:
         - logger.log:
