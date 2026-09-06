@@ -1,0 +1,26 @@
+esphome:
+  name: test-sx1262
+
+esp32:
+  board: heltec_wifi_lora_32_V3
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: ../../components
+
+spi:
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
+  miso_pin: GPIO2
+
+wmbus_radio:
+  radio_type: SX1262
+  cs_pin: GPIO3
+  reset_pin: GPIO4
+  busy_pin: GPIO5
+  dio1_pin: GPIO6
+  tcxo_voltage: 1.8V
+  rf_switch: true
+  on_frame:
+    - lambda: ESP_LOGI("test", "Frame from %s", frame->meter_id().c_str());

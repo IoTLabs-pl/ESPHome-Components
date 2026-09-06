@@ -13,6 +13,7 @@ jobs:
       matrix:
         config:
           - wmbus/test
+          - wmbus/sx1262
           - panasonic_aquarea/test
     steps:
       - name: Checkout code
