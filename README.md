@@ -1,6 +1,6 @@
 # ESPHome Components
 
-![ESPHome](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FIoTLabs-pl%2FESPHome-Components%2Frefs%2Fheads%2Fmaster%2F.github%2Fworkflows%2Fbuild.yaml&query=%24.jobs.build.steps...with.version&label=ESPHome&style=for-the-badge&color=f3922d&labelColor=2b4c5a)
+![ESPHome](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FIoTLabs-pl%2FESPHome-Components%2Frefs%2Fheads%2Fmaster%2F.github%2Fworkflows%2Fbuild.yaml&query=%24.env.ESPHOME_VERSION&label=ESPHome&style=for-the-badge&color=f3922d&labelColor=2b4c5a)
 ![GitHub License](https://img.shields.io/github/license/IoTLabs-pl/esphome-components?style=for-the-badge&color=f3922d&labelColor=2b4c5a)
 
 This repository contains custom [ESPHome](https://esphome.io/) components for devices developed by [IoTLabs](https://iotlabs.pl).
