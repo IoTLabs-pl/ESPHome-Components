@@ -19,4 +19,4 @@ jobs:
         uses: esphome/build-action@v8.1.0
         with:
           yaml-file: tests/${{ matrix.name }}.yaml
-          version: "2026.8.2"
+          version: "2026.9.0"
