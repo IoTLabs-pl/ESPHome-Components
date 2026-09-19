@@ -2,10 +2,12 @@
 
 #include <ctime>
 
+#include "esphome/core/alloc_helpers.h"
 #include "esphome/core/helpers.h"
-#include "esphome/components/wmbus_common/meters.h"
+#include "esphome/components/wmbus_common/telegram.h"
 
 #include "decode3of6.h"
+#include "esphome/core/log.h"
 
 // 3 bytes for mode C marks + len or first 3 bytes of mode T to decode into 2 bytes
 #define WMBUS_FRAME_PRELOAD_SIZE (3)
@@ -20,18 +22,29 @@ namespace esphome {
 namespace wmbus_radio {
 static const char *TAG = "wmbus";
 
-const char *toString(BlockType type) {
-  switch (type) {
-    case BlockType::A:
-      return "a";
-    case BlockType::B:
-      return "b";
+const char *toString(LinkMode link_mode) {
+  switch (link_mode) {
+    case LinkMode::C1:
+      return "C1";
+    case LinkMode::T1:
+      return "T1";
     default:
       return "";
   }
 }
 
-Packet::Packet() { this->data_.reserve(WMBUS_FRAME_PRELOAD_SIZE); }
+const char *toString(BlockType type) {
+  switch (type) {
+    case BlockType::A:
+      return "A";
+    case BlockType::B:
+      return "B";
+    default:
+      return "";
+  }
+}
+
+Packet::Packet() : data_(WMBUS_FRAME_PRELOAD_SIZE) {}
 
 // Determine the link mode based on the first byte of the data
 LinkMode Packet::link_mode() {
@@ -128,20 +141,18 @@ size_t Packet::expected_size() {
   return this->expected_size_;
 }
 
-size_t Packet::rx_capacity() {
-  // TODO: Remove side effects?
-  auto cap = this->data_.capacity() - this->data_.size();
-  this->data_.resize(this->data_.capacity());
-  return cap;
-}
-
-uint8_t *Packet::rx_data_ptr() { return this->data_.data() + this->data_.size(); }
-
 bool Packet::calculate_payload_size() {
-  auto total_length = this->expected_size();
-  this->data_.reserve(total_length);
-  return total_length;
+  const size_t received = this->data_.size();
+  const size_t total_length = this->expected_size();
+  if (total_length < received)
+    return false;
+
+  this->data_.resize(total_length);
+  this->rx_span_ = std::span(this->data_).subspan(received);
+  return true;
 }
+
+std::span<uint8_t> Packet::rx_span() { return this->rx_span_; }
 
 bool Packet::validate_preamble() {
   bool is_preamble_valid = false;
@@ -190,10 +201,11 @@ std::optional<Frame> Packet::convert_to_frame() {
       this->data_ = decoded_data.value();
   }
 
-  removeAnyDLLCRCs(this->data_);
-  int dummy;
-  if (checkWMBusFrame(this->data_, (size_t *) &dummy, &dummy, &dummy, false) == FrameStatus::FullFrame)
+  // A failed CRC is a bit error: drop it before a meter reads a wrong value.
+  if (wmbus::remove_dll_crcs(this->data_) && wmbus::is_complete_frame(this->data_))
     frame.emplace(this);
+  else
+    ESP_LOGD(TAG, "Dropped a packet of %zu bytes: bad CRC or not a wM-Bus frame", this->data_.size());
 
   delete this;
 
@@ -224,21 +236,22 @@ std::string Frame::as_rtlwmbus() {
   auto output = std::string{};
   output.reserve(2 + 5 + 24 + 1 + 4 + 5 + 2 * this->data_.size() + 1);
 
-  output += linkModeName(this->link_mode_);  // size 2
-  output += ";1;1;";                         // size 5
-  output += time_buffer;                     // size 24
-  output += ';';                             // size 1
-  output += std::to_string(this->rssi_);     // size up to 4
-  output += ";;;0x";                         // size 5
-  output += this->as_hex();                  // size 2 * frame.size()
-  output += "\n";                            // size 1
+  output += toString(this->link_mode_);   // size 2
+  output += ";1;1;";                      // size 5
+  output += time_buffer;                  // size 24
+  output += ';';                          // size 1
+  output += std::to_string(this->rssi_);  // size up to 4
+  output += ";;;0x";                      // size 5
+  output += this->as_hex();               // size 2 * frame.size()
+  output += "\n";                         // size 1
 
   return output;
 }
 std::string Frame::meter_id() {
-  Telegram telegram;
-  telegram.parseWMBUSHeader(this->data_);
-  return telegram.addresses[0].str();
+  wmbus::Telegram telegram;
+  if (!telegram.parse_envelope(this->data_))
+    return "";
+  return str_sprintf("%08x", (unsigned) telegram.sender().id);
 }
 
 void Frame::mark_as_handled() { this->frame_handlers_count_++; }
