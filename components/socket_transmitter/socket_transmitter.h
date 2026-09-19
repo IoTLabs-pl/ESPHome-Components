@@ -1,4 +1,5 @@
 #pragma once
+#include <span>
 #include <string>
 #include <vector>
 
@@ -17,8 +18,7 @@ class SocketTransmitter : public Component {
   void set_port(int port) { this->port = port; };
   void set_protocol(int protocol) { this->protocol = protocol; };
   void send(std::string data);
-  void send(std::vector<uint8_t> data);
-  void send(const uint8_t *data, size_t length);
+  void send(std::span<const uint8_t> data);
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::AFTER_CONNECTION; }
 
