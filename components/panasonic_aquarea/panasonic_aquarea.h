@@ -91,7 +91,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
     EXTERNAL_TRANSACTION
   };
 
-  CommunicationState comm_state_;  // Mutex alike (we call all routines from single thread)
+  CommunicationState comm_state_{CommunicationState::IDLE};  // Mutex alike (we call all routines from single thread)
 
   bool start_response_timeout(bool internal);
   void stop_response_timeout();
