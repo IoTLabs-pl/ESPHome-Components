@@ -12,6 +12,7 @@ static const char *TAG = "panasonic_aquarea";
 static const char *RESPONSE_TIMEOUT_TAG = "response_timeout";
 static const char *UPDATE_ENABLER_TAG = "update_enabler";
 
+static constexpr uint32_t RESPONSE_TIMEOUT_MS = 2000;
 static constexpr size_t UART_CHUNK_SIZE = 64;
 
 // ============================================================================
@@ -66,7 +67,7 @@ bool Device::start_response_timeout(bool internal) {
   this->comm_state_ = internal ? CommunicationState::INTERNAL_TRANSACTION : CommunicationState::EXTERNAL_TRANSACTION;
 
   ESP_LOGD(TAG, "Starting %s transaction with heatpump", internal ? "internal" : "external");
-  this->set_timeout(RESPONSE_TIMEOUT_TAG, 1500, [this]() {
+  this->set_timeout(RESPONSE_TIMEOUT_TAG, RESPONSE_TIMEOUT_MS, [this]() {
     ESP_LOGW(TAG, "Response timeout occurred, resetting communication state");
     this->comm_state_ = CommunicationState::IDLE;
   });
