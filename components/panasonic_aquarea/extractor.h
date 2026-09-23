@@ -262,17 +262,19 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
       aligned_key[KeyLen - 1] <<= shift;
     }
 
+    // Field mask per byte
+    std::array<uint8_t, KeyLen> field_mask;
+    field_mask.fill(0xFF);
+
     // Mask left bits in first byte
-    const uint8_t left_mask = 0xFF >> (bit_ - 1);
-    aligned_key[0] &= left_mask;
+    field_mask[0] &= 0xFF >> (bit_ - 1);
 
     // Mask right bits in last byte
-    const uint8_t right_mask = 0xFF << (total_bits - data_end_bit);
-    aligned_key[KeyLen - 1] &= right_mask;
+    field_mask[KeyLen - 1] &= 0xFF << (total_bits - data_end_bit);
 
-    // Write the aligned key back to data
+    // Merge the aligned key into data, keeping bits outside the field (other entities may share these bytes)
     for (size_t i = 0; i < KeyLen; ++i) {
-      data[byte_ + i] = aligned_key[i];
+      data[byte_ + i] = (data[byte_ + i] & ~field_mask[i]) | (aligned_key[i] & field_mask[i]);
     }
   }
 
