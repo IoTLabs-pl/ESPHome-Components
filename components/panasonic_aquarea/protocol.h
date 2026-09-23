@@ -1,12 +1,8 @@
 #pragma once
 
-#include <forward_list>
-#include <vector>
-#include <array>
-#include <cstring>
 #include <cstdint>
-#include <functional>
 #include <numeric>
+#include <vector>
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
