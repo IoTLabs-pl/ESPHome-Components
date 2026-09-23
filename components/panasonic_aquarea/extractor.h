@@ -69,9 +69,6 @@ class BinaryExtractor : public ExtractorInterface<bool>, protected BitField {
   BinaryExtractor(size_t byte, uint8_t bit, uint8_t bit_width = 2) : BitField(byte, bit, bit_width) {}
 
   optional<bool> decode(std::span<const uint8_t> data) override {
-    if (data.size() <= byte_)
-      return {};
-
     uint8_t raw = read_bits(data);
 
     if (bit_width_ == 1)
@@ -90,9 +87,6 @@ class BinaryExtractor : public ExtractorInterface<bool>, protected BitField {
   }
 
   void encode(std::span<uint8_t> data, const bool &value) override {
-    if (data.size() <= byte_)
-      return;
-
     write_bits(data, bit_width_ == 1 ? value : (value ? 0b10 : 0b01));
   }
 
@@ -106,10 +100,6 @@ class FloatExtractor : public ExtractorInterface<float> {
       : byte_(byte), bit_width_(bit_width), offset_(offset), multiplier_(multiplier) {}
 
   optional<float> decode(std::span<const uint8_t> data) override {
-    size_t required_size = byte_ + (bit_width_ / 8);
-    if (data.size() < required_size)
-      return {};
-
     uint32_t raw = 0;
     for (size_t i = 0; i < bit_width_ / 8; ++i) {
       raw |= static_cast<uint32_t>(data[byte_ + i]) << (8 * i);
@@ -118,10 +108,6 @@ class FloatExtractor : public ExtractorInterface<float> {
   }
 
   void encode(std::span<uint8_t> data, const float &value) override {
-    size_t required_size = byte_ + (bit_width_ / 8);
-    if (data.size() < required_size)
-      return;
-
     uint32_t raw = static_cast<uint32_t>(value / multiplier_ - offset_);
     for (size_t i = 0; i < bit_width_ / 8; ++i) {
       data[byte_ + i] = (raw >> (8 * i)) & 0xFF;
@@ -142,9 +128,6 @@ template<size_t N> class StringArrayExtractor : public ExtractorInterface<std::s
       : BitField(byte, bit, bit_width), strings_(strings) {}
 
   optional<std::string> decode(std::span<const uint8_t> data) override {
-    if (data.size() <= byte_)
-      return {};
-
     auto raw_data = read_bits(data);
 
     if (raw_data == 0)
@@ -161,9 +144,6 @@ template<size_t N> class StringArrayExtractor : public ExtractorInterface<std::s
   }
 
   void encode(std::span<uint8_t> data, const std::string &value) override {
-    if (data.size() <= byte_)
-      return;
-
     auto it = std::find(strings_.begin(), strings_.end(), value);
     if (it == strings_.end()) {
       ESP_LOGW(TAG, "string '%s' not found in extractor array (byte %zu bit %u)", value.c_str(), byte_, bit_);
@@ -187,10 +167,6 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
       : byte_(byte), bit_(bit), bit_width_(bit_width), strings_(strings) {}
 
   optional<std::string> decode(std::span<const uint8_t> data) override {
-    size_t required_size = byte_ + KeyLen;
-    if (data.size() < required_size)
-      return {};
-
     std::array<uint8_t, KeyLen> key;
     std::ranges::copy(data.subspan(byte_, KeyLen), key.begin());
 
@@ -227,10 +203,6 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
   }
 
   void encode(std::span<uint8_t> data, const std::string &value) override {
-    size_t required_size = byte_ + KeyLen;
-    if (data.size() < required_size)
-      return;
-
     auto it = std::find_if(
         strings_.begin(), strings_.end(),
         [&value](const std::pair<std::array<uint8_t, KeyLen>, std::string> &pair) { return pair.second == value; });
