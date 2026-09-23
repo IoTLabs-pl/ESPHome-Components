@@ -18,11 +18,25 @@ class Device;
 
 // ==== Entity templates ====
 
+using ActiveCondition = bool (*)(std::span<const uint8_t> data);
+
 template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEntity {
  public:
   void set_extractor(ExtractorInterface<T> *extractor) { extractor_ = extractor; }
+  void set_active_condition(ActiveCondition condition) {
+    active_condition_ = condition;
+    active_ = false;
+  }
 
   void handle_update(std::span<const uint8_t> data) override {
+    active_ = active_condition_(data);
+    if (!active_) {
+      // Publish once on becoming inactive; the next active value is then published even if unchanged
+      if (publish_dedup_.next_unknown())
+        static_cast<Derived *>(this)->publish_inactive();
+      return;
+    }
+
     auto value = extractor_->decode(data);
 
     if (!value.has_value() || publish_dedup_.next(*value) == false) {
@@ -34,8 +48,13 @@ template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEnt
     static_cast<Derived *>(this)->publish_state(*value);
   }
 
+  // Hook for entities that can represent an unknown state; others keep their last state
+  void publish_inactive() {}
+
  protected:
   ExtractorInterface<T> *extractor_;
+  ActiveCondition active_condition_{[](std::span<const uint8_t>) { return true; }};
+  bool active_{true};
   Deduplicator<T> publish_dedup_;
 };
 
@@ -55,6 +74,15 @@ class ReadWriteEntity : public ReadOnlyEntity<Derived, T>, public WriteOnlyEntit
   void set_extractor(ExtractorInterface<T> *extractor) {
     ReadOnlyEntity<Derived, T>::set_extractor(extractor);
     WriteOnlyEntity<Derived, T>::set_extractor(extractor);
+  }
+
+  void send_command(const T &value) {
+    if (!this->active_) {
+      auto name = static_cast<Derived *>(this)->get_name();
+      ESP_LOGW("WritableEntity", "%s is inactive in the current heat pump state, command ignored", name.c_str());
+      return;
+    }
+    WriteOnlyEntity<Derived, T>::send_command(value);
   }
 };
 

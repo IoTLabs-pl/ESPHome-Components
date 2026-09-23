@@ -8,11 +8,14 @@ from esphome.cpp_generator import LambdaExpression
 
 panasonic_aquarea_ns = cg.esphome_ns.namespace("panasonic_aquarea")
 
+BitField = panasonic_aquarea_ns.class_("BitField")
 BinaryExtractor = panasonic_aquarea_ns.class_("BinaryExtractor")
 FloatExtractor = panasonic_aquarea_ns.class_("FloatExtractor")
 StringArrayExtractor = panasonic_aquarea_ns.class_("StringArrayExtractor")
 StringMapExtractor = panasonic_aquarea_ns.class_("StringMapExtractor")
 LambdaExtractor = panasonic_aquarea_ns.class_("LambdaExtractor")
+
+FRAME_PARAMETER = (cg.std_span.template(cg.uint8.operator("const")), cg.MockObj("data"))
 
 
 class ExtractorConfig(ABC):
@@ -77,6 +80,17 @@ class StringArrayExtractorConfig(ExtractorConfig):
             initializer,
         )
 
+    def active_condition(self, value: str) -> LambdaExpression:
+        raw = self.labels.index(value) + 1
+        field = BitField(self.byte, self.bit, self.bit_width)
+        _, data = FRAME_PARAMETER
+        return LambdaExpression(
+            ("return ", field.read_bits(data) == raw, ";"),
+            parameters=[FRAME_PARAMETER],
+            capture="",
+            return_type=cg.bool_,
+        )
+
 
 @dataclass(frozen=True)
 class StringMapExtractorConfig(ExtractorConfig):
@@ -123,12 +137,7 @@ class LambdaExtractorConfig(ExtractorConfig):
         return LambdaExtractor.template(self.value_type).new(
             LambdaExpression(
                 (self.decoder,),
-                parameters=[
-                    (
-                        cg.std_span.template(cg.uint8.operator("const")),
-                        "data",
-                    ),
-                ],
+                parameters=[FRAME_PARAMETER],
                 capture="",
                 return_type=cg.optional.template(self.value_type),
             )

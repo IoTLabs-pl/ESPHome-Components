@@ -8,6 +8,7 @@ namespace panasonic_aquarea {
 class Number : public number::Number, public Component, public panasonic_aquarea::ReadWriteEntity<Number, float> {
  public:
   void control(float value) override { this->send_command(value); }
+  void publish_inactive() { this->publish_state(NAN); }
   void dump_config() override {
     const char *TAG = "panasonic_aquarea.number";
     LOG_NUMBER("", "panasonic_aquarea", this);
