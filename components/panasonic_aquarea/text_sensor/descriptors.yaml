@@ -5,7 +5,7 @@
   bit_width: 2
   icon: "mdi:pipe-valve"
   labels:
-    - "Buffer Tank"
+    - "Room"
     - "DHW Tank"
 44:
   name: "Error"
@@ -29,24 +29,6 @@
 
     return str_sprintf("%c%02X", error_type, error_number - 17);
 
-58:
-  name: "DHW Heater State"
-  byte: 9
-  bit: 5
-  bit_width: 2
-  icon: "mdi:cancel"
-  labels:
-    - "Blocked"
-    - "Free"
-59:
-  name: "Room Heater State"
-  byte: 9
-  bit: 7
-  bit_width: 2
-  icon: "mdi:cancel"
-  labels:
-    - "Blocked"
-    - "Free"
 76:
   name: "Heating Mode"
   byte: 28
@@ -239,15 +221,6 @@
     - "Disabled"
     - "Buffer Tank"
     - "DHW Tank"
-106:
-  name: "Pump Flowrate Mode"
-  byte: 29
-  bit: 3
-  bit_width: 2
-  icon: "mdi:pump"
-  labels:
-    - "DeltaT"
-    - "Max flow"
 107:
   name: "Liquid Type"
   byte: 20
@@ -295,5 +268,5 @@
   bit_width: 2
   icon: "mdi:pipe-valve"
   labels:
-    - "Buffer Tank"
+    - "Room"
     - "DHW Tank"

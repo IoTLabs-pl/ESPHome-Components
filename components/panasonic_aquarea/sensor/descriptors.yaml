@@ -83,16 +83,6 @@
   byte: 158
   offset: -128
   device_class: "temperature"
-23:
-  name: "Heat Delta"
-  byte: 84
-  offset: -128
-  device_class: "temperature"
-24:
-  name: "Cool Delta"
-  byte: 94
-  offset: -128
-  device_class: "temperature"
 25:
   name: "DHW Holiday Shift Temperature"
   byte: 44
@@ -265,16 +255,6 @@
   offset: -1
   unit_of_measurement: "min"
   device_class: "duration"
-77:
-  name: "Heating Off Outdoor Temperature"
-  byte: 83
-  offset: -128
-  device_class: "temperature"
-78:
-  name: "Heater On Outdoor Temperature"
-  byte: 85
-  offset: -128
-  device_class: "temperature"
 79: 
   name: "Heat to Cool Temperature"
   byte: 95
@@ -325,11 +305,6 @@
 105: 
   name: "Solar High Limit"
   byte: 64
-  offset: -128
-  device_class: "temperature"
-113: 
-  name: "Buffer Tank Delta"
-  byte: 59
   offset: -128
   device_class: "temperature"
 115: 
@@ -386,6 +361,13 @@
   offset: -1
   unit_of_measurement: "min"
   device_class: "duration"
+142:
+  name: "Expansion Valve"
+  byte: 175
+  offset: -1
+  unit_of_measurement: "steps"
+  state_class: "measurement"
+  icon: "mdi:valve"
 x0: 
   name: "Heat Power Consumption Extra"
   byte: 14

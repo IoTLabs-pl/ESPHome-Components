@@ -82,3 +82,53 @@
     - "Alternative"
     - "Parallel"
     - "Advanced Parallel"
+
+39:
+  name: "Heating Control"
+  byte: 30
+  bit: 5
+  bit_width: 2
+  icon: "mdi:tune"
+  labels:
+    - "Comfort"
+    - "Efficiency"
+
+40:
+  name: "Smart DHW"
+  byte: 24
+  bit: 1
+  bit_width: 2
+  icon: "mdi:water-boiler"
+  labels:
+    - "Variable"
+    - "Standard"
+
+41:
+  name: "Quiet Mode Priority"
+  byte: 11
+  bit: 3
+  bit_width: 2
+  icon: "mdi:sleep"
+  labels:
+    - "Sound"
+    - "Capacity"
+
+42:
+  name: "Pump Flowrate Mode"
+  byte: 29
+  bit: 3
+  bit_width: 2
+  icon: "mdi:pump"
+  labels:
+    - "DeltaT"
+    - "Max flow"
+
+43:
+  name: "DHW Sensor Selection"
+  byte: 11
+  bit: 7
+  bit_width: 2
+  icon: "mdi:thermometer"
+  labels:
+    - "Top"
+    - "Center"
