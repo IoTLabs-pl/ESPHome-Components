@@ -65,13 +65,17 @@ template<typename T> class ExtractorInterface {
 
 class BinaryExtractor : public ExtractorInterface<bool>, protected BitField {
  public:
-  BinaryExtractor(size_t byte, uint8_t bit) : BitField(byte, bit, 2) {}
+  // bit_width 2: state field (0b01 = false, 0b10 = true), bit_width 1: single-bit flag (1 = true)
+  BinaryExtractor(size_t byte, uint8_t bit, uint8_t bit_width = 2) : BitField(byte, bit, bit_width) {}
 
   optional<bool> decode(std::span<const uint8_t> data) override {
     if (data.size() <= byte_)
       return {};
 
     uint8_t raw = read_bits(data);
+
+    if (bit_width_ == 1)
+      return raw == 1;
 
     switch (raw) {
       case 0b00:
@@ -89,7 +93,7 @@ class BinaryExtractor : public ExtractorInterface<bool>, protected BitField {
     if (data.size() <= byte_)
       return;
 
-    write_bits(data, value ? 0b10 : 0b01);
+    write_bits(data, bit_width_ == 1 ? value : (value ? 0b10 : 0b01));
   }
 
  private:
