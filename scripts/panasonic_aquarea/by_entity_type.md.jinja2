@@ -37,7 +37,7 @@
 | Name | Heishamon ID | Icon | Options | Example |
 |------|--------------|------|---------|---------|
 {%- for entity in text_sensor_entities %}
-| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.icon }} | {% if entity.options %}<ul>{% for opt in entity.options | sort %}<li>{{ opt }}</li>{% endfor %}</ul>{% else %}—{% endif %} | <pre lang="yaml"><code>text_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: {{ entity.id_value | tojson }}</code></pre> |
+| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.icon }} | {% if entity.options %}<ul>{% for opt in entity.options | sort %}<li>{{ opt }}</li>{% endfor %}</ul>{% endif %} | <pre lang="yaml"><code>text_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: {{ entity.id_value | tojson }}</code></pre> |
 {%- endfor %}
 
 ## `button`
