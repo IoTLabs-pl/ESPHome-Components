@@ -18,11 +18,6 @@
   byte: 112
   bit: 5
   device_class: running
-68:
-  name: Force Heater
-  byte: 5
-  bit: 5
-  device_class: running
 69:
   name: Sterilization
   byte: 117
