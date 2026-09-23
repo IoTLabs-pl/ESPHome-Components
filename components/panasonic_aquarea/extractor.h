@@ -28,32 +28,28 @@ class WritableEntity {
   virtual ~WritableEntity() = default;
 };
 
-// ==== Helper: Raw data extraction ====
+// ==== Base for extractors of a bit field within one byte ====
 
-class BitFieldReader {
- public:
-  static uint8_t read_bits(std::span<const uint8_t> data, size_t byte, uint8_t bit, uint8_t bit_width) {
+class BitField {
+ protected:
+  BitField(size_t byte, uint8_t bit, uint8_t bit_width) : byte_(byte), bit_(bit), bit_width_(bit_width) {}
+
+  uint8_t read_bits(std::span<const uint8_t> data) const {
     // Bits are numbered from MSB=1 to LSB=8
-    uint8_t mask = (1 << bit_width) - 1;
-    uint8_t shift = 8 - (bit + bit_width - 1);
-    return (data[byte] >> shift) & mask;
+    uint8_t mask = (1 << bit_width_) - 1;
+    uint8_t shift = 8 - (bit_ + bit_width_ - 1);
+    return (data[byte_] >> shift) & mask;
   }
 
-  // TODO: done inside esphome/helpers.h?
-  static uint32_t read_bytes(std::span<const uint8_t> data, size_t byte, uint8_t num_bytes) {
-    uint32_t result = 0;
-    for (int i = byte + num_bytes - 1; i >= static_cast<int>(byte); i--) {
-      result = (result << 8) | data[i];
-    }
-    return result;
+  void write_bits(std::span<uint8_t> data, uint8_t value) const {
+    uint8_t mask = (1 << bit_width_) - 1;
+    uint8_t shift = 8 - (bit_ + bit_width_ - 1);
+    data[byte_] = (data[byte_] & ~(mask << shift)) | ((value & mask) << shift);
   }
 
-  // TODO: done inside esphome/helpers.h?
-  template<size_t N> static std::array<uint8_t, N> read_array(std::span<const uint8_t> data, size_t byte) {
-    std::array<uint8_t, N> result;
-    std::ranges::copy(data.subspan(byte, N), result.begin());
-    return result;
-  }
+  size_t byte_;
+  uint8_t bit_;
+  uint8_t bit_width_;
 };
 
 // ==== Base interface for all extractors ====
@@ -67,22 +63,22 @@ template<typename T> class ExtractorInterface {
 
 // ==== Concrete extractors ====
 
-class BinaryExtractor : public ExtractorInterface<bool> {
+class BinaryExtractor : public ExtractorInterface<bool>, protected BitField {
  public:
-  BinaryExtractor(uint8_t byte, uint8_t bit) : byte_(byte), bit_(bit) {}
+  BinaryExtractor(size_t byte, uint8_t bit) : BitField(byte, bit, 2) {}
 
   optional<bool> decode(std::span<const uint8_t> data) override {
     if (data.size() <= byte_)
       return {};
 
-    uint8_t raw = BitFieldReader::read_bits(data, byte_, bit_, 2);
+    uint8_t raw = read_bits(data);
 
     switch (raw) {
       case 0b00:
-        ESP_LOGD(TAG, "no data for binary sensor (byte %u bit %u): %02x", byte_, bit_, data[byte_]);
+        ESP_LOGD(TAG, "no data for binary sensor (byte %zu bit %u): %02x", byte_, bit_, data[byte_]);
         return {};
       case 0b11:
-        ESP_LOGW(TAG, "invalid value 0b11 for binary sensor (byte %u bit %u): %02x", byte_, bit_, data[byte_]);
+        ESP_LOGW(TAG, "invalid value 0b11 for binary sensor (byte %zu bit %u): %02x", byte_, bit_, data[byte_]);
         return {};
       default:
         return raw == 0b10;
@@ -93,17 +89,11 @@ class BinaryExtractor : public ExtractorInterface<bool> {
     if (data.size() <= byte_)
       return;
 
-    constexpr uint8_t width = 2;
-    const uint8_t shift = 8 - (bit_ + width - 1);
-    const uint8_t mask = ((1u << width) - 1) << shift;
-    const uint8_t raw = value ? 0b10 : 0b01;
-    data[byte_] = (data[byte_] & ~mask) | (raw << shift);
+    write_bits(data, value ? 0b10 : 0b01);
   }
 
  private:
   static constexpr const char *TAG = "panasonic_aquarea.extractor.binary";
-  uint8_t byte_;
-  uint8_t bit_;
 };
 
 class FloatExtractor : public ExtractorInterface<float> {
@@ -116,7 +106,10 @@ class FloatExtractor : public ExtractorInterface<float> {
     if (data.size() < required_size)
       return {};
 
-    uint32_t raw = BitFieldReader::read_bytes(data, byte_, bit_width_ / 8);
+    uint32_t raw = 0;
+    for (size_t i = 0; i < bit_width_ / 8; ++i) {
+      raw |= static_cast<uint32_t>(data[byte_ + i]) << (8 * i);
+    }
     return (raw + offset_) * multiplier_;
   }
 
@@ -139,16 +132,16 @@ class FloatExtractor : public ExtractorInterface<float> {
   float multiplier_;
 };
 
-template<size_t N> class StringArrayExtractor : public ExtractorInterface<std::string> {
+template<size_t N> class StringArrayExtractor : public ExtractorInterface<std::string>, protected BitField {
  public:
   StringArrayExtractor(size_t byte, uint8_t bit, uint8_t bit_width, const std::array<std::string, N> &strings)
-      : byte_(byte), bit_(bit), bit_width_(bit_width), strings_(strings) {}
+      : BitField(byte, bit, bit_width), strings_(strings) {}
 
   optional<std::string> decode(std::span<const uint8_t> data) override {
     if (data.size() <= byte_)
       return {};
 
-    auto raw_data = BitFieldReader::read_bits(data, byte_, bit_, bit_width_);
+    auto raw_data = read_bits(data);
 
     if (raw_data == 0)
       return {};
@@ -157,7 +150,7 @@ template<size_t N> class StringArrayExtractor : public ExtractorInterface<std::s
     uint8_t index = raw_data - 1;
 
     if (index >= strings_.size()) {
-      ESP_LOGW(TAG, "invalid index %zu for string extractor (byte %zu bit %u)", index, byte_, bit_);
+      ESP_LOGW(TAG, "invalid index %u for string extractor (byte %zu bit %u)", index, byte_, bit_);
       return {};
     }
     return strings_[index];
@@ -175,16 +168,11 @@ template<size_t N> class StringArrayExtractor : public ExtractorInterface<std::s
 
     size_t index = std::distance(strings_.begin(), it) + 1;  // +1 for 1-based index
 
-    const uint8_t shift = 8 - (bit_ + bit_width_ - 1);
-    const uint8_t mask = ((1u << bit_width_) - 1) << shift;
-    data[byte_] = (data[byte_] & ~mask) | ((index << shift) & mask);
+    write_bits(data, index);
   }
 
  private:
   static constexpr const char *TAG = "panasonic_aquarea.extractor.stringarray";
-  size_t byte_;
-  uint8_t bit_;
-  uint8_t bit_width_;
   std::array<std::string, N> strings_;
 };
 
@@ -199,7 +187,8 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
     if (data.size() < required_size)
       return {};
 
-    auto key = BitFieldReader::read_array<KeyLen>(data, byte_);
+    std::array<uint8_t, KeyLen> key;
+    std::ranges::copy(data.subspan(byte_, KeyLen), key.begin());
 
     // Calculate total bits in key and actual data range
     const size_t total_bits = 8 * KeyLen;
