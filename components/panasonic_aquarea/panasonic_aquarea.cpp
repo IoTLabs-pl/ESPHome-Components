@@ -2,11 +2,17 @@
 #include "protocol.h"
 #include "extractor.h"
 
+#include <algorithm>
+#include <array>
+#include <span>
+
 namespace esphome {
 namespace panasonic_aquarea {
 static const char *TAG = "panasonic_aquarea";
 static const char *RESPONSE_TIMEOUT_TAG = "response_timeout";
 static const char *UPDATE_ENABLER_TAG = "update_enabler";
+
+static constexpr size_t UART_CHUNK_SIZE = 64;
 
 // ============================================================================
 // SupportsExtraQueryEntity Implementation
@@ -82,22 +88,23 @@ void Device::stop_response_timeout() {
 void Device::set_external_controller_uart(uart::UARTComponent *controller) { this->external_controller_ = controller; }
 
 void Device::process_heatpump_data() {
-  auto available = this->available();
-  if (available == 0)
-    return;
+  std::array<uint8_t, UART_CHUNK_SIZE> buf;
 
-  uint8_t buf[available];
+  while (size_t available = this->available()) {
+    auto chunk = std::span(buf).first(std::min(available, buf.size()));
 
-  // Read data from heatpump
-  this->read_array(buf, available);
-  this->response_buffer_.push(buf, available);
+    // Read data from heatpump
+    this->read_array(chunk.data(), chunk.size());
 
-  // Forward to external controller if connected (proxy mode)
-  if (this->external_controller_ && this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION)
-    this->external_controller_->write_array(buf, available);
+    // Forward to external controller if connected (proxy mode)
+    if (this->external_controller_ && this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION)
+      this->external_controller_->write_array(chunk.data(), chunk.size());
 
-  // Try to parse complete messages
-  this->parse_out_response();
+    for (uint8_t byte : chunk) {
+      if (this->response_parser_.feed(byte))
+        this->handle_response();
+    }
+  }
 }
 
 void Device::process_external_controller_data() {
@@ -209,38 +216,19 @@ void Device::add_entity(ReadableEntity *entity, bool extra) {
 }
 
 // ============================================================================
-// Protocol Parsing
+// Response Handling
 // ============================================================================
 
-bool Device::parse_out_response() {
-  // Parse response from buffer
-  auto handled = false;
-  auto response = Protocol::Parser::parse_response(this->response_buffer_);
+void Device::handle_response() {
+  const auto &frame = this->response_parser_.frame();
+  const auto &entities = this->response_parser_.category() == Protocol::CategoryByte::EXTRA
+                             ? this->extra_response_entities_
+                             : this->standard_response_entities_;
 
-  if (response.data.empty())
-    return handled;
-
-  switch (response.category) {
-    case Protocol::CategoryByte::STANDARD:
-      for (auto *entity : this->standard_response_entities_)
-        entity->handle_update(response.data);
-      handled = true;
-      break;
-    case Protocol::CategoryByte::EXTRA:
-      for (auto *entity : this->extra_response_entities_)
-        entity->handle_update(response.data);
-      handled = true;
-      break;
-    case Protocol::CategoryByte::INITIAL_REQUEST:
-      handled = true;
-      break;
-    default:
-      ESP_LOGW(TAG, "Received response with unknown category, ignoring");
-      break;
-  }
+  for (auto *entity : entities)
+    entity->handle_update(frame);
 
   this->stop_response_timeout();
-  return handled;
 }
 
 }  // namespace panasonic_aquarea
