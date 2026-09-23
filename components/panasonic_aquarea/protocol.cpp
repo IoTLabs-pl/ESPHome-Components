@@ -6,72 +6,44 @@ namespace panasonic_aquarea {
 namespace Protocol {
 static const char *const TAG = "panasonic_aquarea.protocol";
 
-bool Parser::find_and_align_to_preamble(ResponseBuffer &buffer) {
-  buffer.discard_until(static_cast<uint8_t>(PreambleByte::POLLING));
-
-  return buffer.size() > 0;  // Return true if preamble found at beginning
-}
-
-size_t Parser::validate_frame_header(const ResponseBuffer &buffer) {
+bool Parser::is_expected_byte(size_t index, uint8_t byte) {
   // Frame structure: preamble (1) + length (1) + direction+category (2) + payload (N) + checksum (1)
-  // Length field encodes (direction+category+payload) = (2 + N)
-  constexpr size_t MIN_PACKET_SIZE =
-      static_cast<size_t>(ByteIndex::CATEGORY) + 1 + 1;  // 4 header bytes + 1 checksum byte
-  // Check if we have enough bytes for the header
-  if (buffer.size() < MIN_PACKET_SIZE)
-    return 0;  // Incomplete header, need more data
-
-  const uint8_t payload_length = buffer.peek(static_cast<size_t>(ByteIndex::PAYLOAD_LENGTH));
-
-  if (payload_length <= MIN_PACKET_SIZE) {
-    ESP_LOGW(TAG, "Invalid payload length: %d", payload_length);
-    return MIN_PACKET_SIZE;
+  // Length field encodes (direction+category+payload) = (2 + N), so total frame size = length + 3
+  switch (static_cast<ByteIndex>(index)) {
+    case ByteIndex::PREAMBLE:
+      return byte == static_cast<uint8_t>(PreambleByte::POLLING);
+    case ByteIndex::PAYLOAD_LENGTH:
+      return byte + 3u == RESPONSE_FRAME_SIZE;
+    case ByteIndex::DIRECTION:
+      return byte == static_cast<uint8_t>(ThirdByte::X01);
+    case ByteIndex::CATEGORY:
+      return byte == static_cast<uint8_t>(CategoryByte::STANDARD) || byte == static_cast<uint8_t>(CategoryByte::EXTRA);
+    default:
+      return true;
   }
-
-  // Therefore total frame size = 1 + 1 + (2 + N) + 1 = N + 5 = payload_length + 3
-  const size_t frame_size = static_cast<size_t>(payload_length) + 3;
-
-  if (buffer.size() < frame_size)
-    return 0;  // Incomplete frame, need more data
-
-  return frame_size;
 }
 
-bool Parser::validate_frame_checksum(const std::vector<uint8_t> &buffer) { return calculate_checksum(buffer) == 0; }
+bool Parser::feed(uint8_t byte) {
+  if (this->frame_.size() == RESPONSE_FRAME_SIZE)
+    this->frame_.clear();  // Previous frame was already handed out
 
-CategoryByte Parser::validate_response_type(const std::vector<uint8_t> &frame) {
-  const auto category_byte = static_cast<CategoryByte>(frame[static_cast<size_t>(ByteIndex::CATEGORY)]);
-
-  if (category_byte != CategoryByte::STANDARD && category_byte != CategoryByte::EXTRA) {
-    ESP_LOGD(TAG, "Unknown category type: 0x%02X", category_byte);
-    return CategoryByte::UNKNOWN;
+  // Broken frame is dropped whole; resync on the next preamble costs at most one more frame
+  if (!is_expected_byte(this->frame_.size(), byte)) {
+    this->frame_.clear();
+    if (!is_expected_byte(0, byte))
+      return false;
   }
 
-  return category_byte;
-}
+  this->frame_.push_back(byte);
+  if (this->frame_.size() < RESPONSE_FRAME_SIZE)
+    return false;
 
-Parser::Response Parser::parse_response(ResponseBuffer &buffer) {
-  // Step 1: Find and align to frame preamble
-  if (!find_and_align_to_preamble(buffer))
-    return {};  // Need more data
+  if (calculate_checksum(this->frame_) == 0)
+    return true;
 
-  // Step 2: Validate frame header and get frame size
-  const size_t frame_size = validate_frame_header(buffer);
-  if (frame_size == 0)
-    return {};  // Incomplete or invalid header
-
-  std::vector<uint8_t> result;
-  result.reserve(frame_size);
-  for (size_t i = 0; i < frame_size; i++)
-    result.push_back(buffer.pop());
-
-  // Step 3: Validate checksum over this frame only
-  if (!validate_frame_checksum(result))
-    return {};
-
-  // Step 4: Determine response type
-  CategoryByte category = validate_response_type(result);
-  return Parser::Response{std::move(result), category};
+  ESP_LOGD(TAG, "Checksum mismatch, dropping frame");
+  this->frame_.clear();
+  return false;
 }
 
 // ---- Serializer implementation ----

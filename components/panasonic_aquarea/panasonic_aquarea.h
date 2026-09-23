@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ring_buffer.h"
 #include <forward_list>
 
 #include "esphome/core/component.h"
@@ -96,7 +95,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   bool start_response_timeout(bool internal);
   void stop_response_timeout();
 
-  ResponseBuffer response_buffer_;
+  Protocol::Parser response_parser_;
 
   uint32_t request_counter_{0};
 
@@ -107,8 +106,8 @@ class Device : public PollingComponent, public uart::UARTDevice {
   void process_heatpump_data();
   void process_external_controller_data();
 
-  // Protocol parsing
-  bool parse_out_response();
+  // Response handling
+  void handle_response();
 
  public:
   void set_external_controller_uart(uart::UARTComponent *controller);
