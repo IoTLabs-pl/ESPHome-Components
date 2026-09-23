@@ -10,9 +10,10 @@ namespace esphome {
 namespace panasonic_aquarea {
 static const char *TAG = "panasonic_aquarea";
 static const char *RESPONSE_TIMEOUT_TAG = "response_timeout";
-static const char *UPDATE_ENABLER_TAG = "update_enabler";
+static const char *RESUME_POLLING_TAG = "resume_polling";
 
 static constexpr uint32_t RESPONSE_TIMEOUT_MS = 2000;
+static constexpr uint32_t EXTERNAL_CONTROLLER_SILENCE_MS = 60000;  // CZ-TAW1 boots in ~35-40 s
 static constexpr size_t UART_CHUNK_SIZE = 64;
 
 // ============================================================================
@@ -60,7 +61,7 @@ void Device::handle_command_queue() {
 
 bool Device::start_response_timeout(bool internal) {
   if (this->comm_state_ != CommunicationState::IDLE) {
-    ESP_LOGE(TAG, "Attempted to start a transaction while another is active");
+    ESP_LOGV(TAG, "Bus busy, not starting %s transaction", internal ? "internal" : "external");
     return false;
   }
 
@@ -80,6 +81,18 @@ void Device::stop_response_timeout() {
 
   this->cancel_timeout(RESPONSE_TIMEOUT_TAG);
   this->comm_state_ = CommunicationState::IDLE;
+}
+
+// ============================================================================
+// Polling
+// ============================================================================
+
+void Device::yield_to_external_controller() {
+  this->stop_poller();
+  this->set_timeout(RESUME_POLLING_TAG, EXTERNAL_CONTROLLER_SILENCE_MS, [this]() {
+    ESP_LOGI(TAG, "External controller silent, resuming polling");
+    this->start_poller();
+  });
 }
 
 // ============================================================================
@@ -109,25 +122,26 @@ void Device::process_heatpump_data() {
 }
 
 void Device::process_external_controller_data() {
-  auto available_bytes = this->external_controller_ ? this->external_controller_->available() : 0;
-
-  if (available_bytes == 0)
+  if (this->external_controller_ == nullptr)
     return;
 
-  if (this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION || this->start_response_timeout(false)) {
-    auto available = this->external_controller_->available();
-    uint8_t buf[available];
+  // During our own transaction controller data waits in its UART RX buffer
+  if (this->comm_state_ == CommunicationState::INTERNAL_TRANSACTION)
+    return;
+
+  std::array<uint8_t, UART_CHUNK_SIZE> buf;
+
+  while (size_t available = this->external_controller_->available()) {
+    if (this->comm_state_ == CommunicationState::IDLE) {
+      this->start_response_timeout(false);
+      this->yield_to_external_controller();
+    }
+
+    auto chunk = std::span(buf).first(std::min(available, buf.size()));
 
     // Forward data from external controller to heatpump
-    this->external_controller_->read_array(buf, available);
-    this->write_array(buf, available);
-
-    // Disable automatic polling when external controller is active
-    if (this->request_counter_ == 0) {
-      ESP_LOGD(TAG, "Disabling polling due to external controller activity");
-      this->cancel_timeout(UPDATE_ENABLER_TAG);
-      this->request_counter_ = UINT32_MAX;
-    }
+    this->external_controller_->read_array(chunk.data(), chunk.size());
+    this->write_array(chunk.data(), chunk.size());
   }
 }
 
@@ -139,27 +153,8 @@ void Device::setup() {
   // Initialize extra query support entity
   this->add_entity(&this->supports_extra_query_entity_, false);
 
-  // Disable polling initially
-  this->stop_poller();
-
-  // Wait 15 seconds before attempting first communication
-  // This gives the heatpump time to fully initialize
-  this->set_timeout(UPDATE_ENABLER_TAG, 15000, [this]() {
-    ESP_LOGD(TAG, "Marking external controller as non-existent");
-    this->external_controller_ = nullptr;
-
-    if (this->start_response_timeout(true)) {
-      ESP_LOGD(TAG, "Sending initial request to heatpump");
-      auto init_msg = Protocol::Serializer::initial_request();
-      this->write_array(init_msg);
-
-      // After initial request, wait one update interval then start regular polling
-      this->set_timeout(this->get_update_interval(), [this]() {
-        ESP_LOGD(TAG, "Starting regular polling");
-        this->start_poller();
-      });
-    }
-  });
+  if (this->external_controller_)
+    this->yield_to_external_controller();
 }
 
 void Device::loop() {

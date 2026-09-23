@@ -99,6 +99,8 @@ class Device : public PollingComponent, public uart::UARTDevice {
 
   uint32_t request_counter_{0};
 
+  void yield_to_external_controller();
+
   // Command queue processing
   void handle_command_queue();
 
