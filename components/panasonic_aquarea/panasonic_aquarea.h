@@ -23,7 +23,7 @@ template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEnt
  public:
   void set_extractor(ExtractorInterface<T> *extractor) { extractor_ = extractor; }
 
-  void handle_update(const std::vector<uint8_t> &data) override {
+  void handle_update(std::span<const uint8_t> data) override {
     auto value = extractor_->decode(data);
 
     if (!value.has_value() || publish_dedup_.next(*value) == false) {

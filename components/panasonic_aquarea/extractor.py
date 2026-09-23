@@ -124,9 +124,7 @@ class LambdaExtractorConfig(ExtractorConfig):
                 (self.decoder,),
                 parameters=[
                     (
-                        cg.std_vector.template(cg.uint8)
-                        .operator("ref")
-                        .operator("const"),
+                        cg.std_span.template(cg.uint8.operator("const")),
                         "data",
                     ),
                 ],

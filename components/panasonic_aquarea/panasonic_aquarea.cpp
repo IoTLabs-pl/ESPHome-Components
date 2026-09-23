@@ -14,7 +14,7 @@ static const char *UPDATE_ENABLER_TAG = "update_enabler";
 
 Device::SupportsExtraQueryEntity::SupportsExtraQueryEntity() {
   // Lambda extractor that checks if extra query is supported
-  set_extractor(new LambdaExtractor<bool>([this](const std::vector<uint8_t> &data) -> optional<bool> {
+  set_extractor(new LambdaExtractor<bool>([this](std::span<const uint8_t> data) -> optional<bool> {
     if (data.size() <= EXTRA_SUPPORT_BYTE_INDEX) {
       return {};
     }
