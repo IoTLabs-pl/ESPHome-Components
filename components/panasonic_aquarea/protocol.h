@@ -23,21 +23,18 @@ enum class ByteIndex : size_t {
 enum class PreambleByte : uint8_t {
   POLLING = 0x71,  // Polling request/response
   COMMAND = 0xF1,  // Command message
-  INITIAL = 0x31,  // Initial handshake
 };
 
 enum class ThirdByte : uint8_t {
-  X10 = 0x10,
   X01 = 0x01,
 };
 
 enum class CategoryByte : uint8_t {
-  INITIAL_REQUEST = 0x01,  // Initial Request
-  STANDARD = 0x10,         // Standard data
-  EXTRA = 0x21,            // Extra/extended data
+  STANDARD = 0x10,  // Standard data
+  EXTRA = 0x21,     // Extra/extended data
 };
 
-static constexpr uint8_t STANDARD_PAYLOAD_LENGTH = 111;
+static constexpr size_t REQUEST_FRAME_SIZE = 111;
 static constexpr size_t RESPONSE_FRAME_SIZE = 203;
 
 template<typename T> static uint8_t calculate_checksum(const T &data) {
@@ -66,14 +63,11 @@ class Serializer {
  public:
   static std::vector<uint8_t> polling_message();
   static std::vector<uint8_t> polling_extra_message();
-  static std::vector<uint8_t> initial_request();
-  static std::vector<uint8_t> command_message(std::vector<uint8_t> &command_data);
+  static std::vector<uint8_t> command_message(std::vector<uint8_t> command_data);
 
  private:
-  static std::vector<uint8_t> serialize_message(PreambleByte preamble, ThirdByte direction, CategoryByte category,
-                                                size_t length);
-  static std::vector<uint8_t> serialize_message(PreambleByte preamble, ThirdByte direction, CategoryByte category,
-                                                std::vector<uint8_t> &data);
+  static std::vector<uint8_t> serialize_message(PreambleByte preamble, CategoryByte category,
+                                                std::vector<uint8_t> frame);
 };
 }  // namespace Protocol
 }  // namespace panasonic_aquarea

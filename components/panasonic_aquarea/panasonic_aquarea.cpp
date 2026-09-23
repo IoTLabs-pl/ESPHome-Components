@@ -48,9 +48,9 @@ void Device::handle_command_queue() {
   if (this->start_response_timeout(true)) {
     ESP_LOGD(TAG, "Sending command message");
 
-    auto msg_bytes = Protocol::Serializer::command_message(this->awaiting_command_data);
+    auto msg_bytes = Protocol::Serializer::command_message(std::move(this->awaiting_command_data));
     this->write_array(msg_bytes);
-    this->awaiting_command_data = std::vector<uint8_t>(Protocol::STANDARD_PAYLOAD_LENGTH);
+    this->awaiting_command_data = std::vector<uint8_t>(Protocol::REQUEST_FRAME_SIZE);
     this->awaiting_command_dirty_flag_ = false;
   }
 }

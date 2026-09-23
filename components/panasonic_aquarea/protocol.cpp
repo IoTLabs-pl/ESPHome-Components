@@ -47,49 +47,34 @@ bool Parser::feed(uint8_t byte) {
 }
 
 // ---- Serializer implementation ----
-std::vector<uint8_t> Serializer::serialize_message(PreambleByte preamble, ThirdByte direction, CategoryByte category,
-                                                   size_t length) {
-  std::vector<uint8_t> frame(length, 0);
-  // Delegate to rvalue overload that mutates in place
-  return serialize_message(preamble, direction, category, frame);
-}
-
-std::vector<uint8_t> Serializer::serialize_message(PreambleByte preamble, ThirdByte direction, CategoryByte category,
-                                                   std::vector<uint8_t> &frame) {
+std::vector<uint8_t> Serializer::serialize_message(PreambleByte preamble, CategoryByte category,
+                                                   std::vector<uint8_t> frame) {
   // Expect full, zero-filled frame of proper size.
   // Layout: PREAMBLE(0) LENGTH(1) DIRECTION(2) CATEGORY(3) PAYLOAD(...) CHECKSUM(last)
-  const size_t total_size = frame.size();
-  const size_t payload_length = total_size - 3;  // Exclude PREAMBLE, LENGTH, CHECKSUM
-
   frame[static_cast<size_t>(ByteIndex::PREAMBLE)] = static_cast<uint8_t>(preamble);
-  frame[static_cast<size_t>(ByteIndex::PAYLOAD_LENGTH)] = static_cast<uint8_t>(payload_length);
-  frame[static_cast<size_t>(ByteIndex::DIRECTION)] = static_cast<uint8_t>(direction);
+  frame[static_cast<size_t>(ByteIndex::PAYLOAD_LENGTH)] = frame.size() - 3;  // Exclude PREAMBLE, LENGTH, CHECKSUM
+  frame[static_cast<size_t>(ByteIndex::DIRECTION)] = static_cast<uint8_t>(ThirdByte::X01);
   frame[static_cast<size_t>(ByteIndex::CATEGORY)] = static_cast<uint8_t>(category);
 
   // Compute and write checksum
-  frame[total_size - 1] = 0u - calculate_checksum(frame);
+  frame.back() = 0u - calculate_checksum(frame);
 
   return frame;
 }
 
 std::vector<uint8_t> Serializer::polling_message() {
   // Message format: 0x71, 0x6C, 0x01, 0x10, ... (111 bytes total)
-  return serialize_message(PreambleByte::POLLING, ThirdByte::X01, CategoryByte::STANDARD, STANDARD_PAYLOAD_LENGTH);
+  return serialize_message(PreambleByte::POLLING, CategoryByte::STANDARD, std::vector<uint8_t>(REQUEST_FRAME_SIZE));
 }
 
 std::vector<uint8_t> Serializer::polling_extra_message() {
   // Message format: 0x71, 0x6C, 0x01, 0x21, ... (111 bytes total)
-  return serialize_message(PreambleByte::POLLING, ThirdByte::X01, CategoryByte::EXTRA, STANDARD_PAYLOAD_LENGTH);
+  return serialize_message(PreambleByte::POLLING, CategoryByte::EXTRA, std::vector<uint8_t>(REQUEST_FRAME_SIZE));
 }
 
-std::vector<uint8_t> Serializer::initial_request() {
-  // Message format: 0x31, 0x05, 0x10, 0x01, ... (8 bytes total)
-  return serialize_message(PreambleByte::INITIAL, ThirdByte::X10, CategoryByte::INITIAL_REQUEST, 8);
-}
-
-std::vector<uint8_t> Serializer::command_message(std::vector<uint8_t> &command) {
+std::vector<uint8_t> Serializer::command_message(std::vector<uint8_t> command_data) {
   // Message format: 0xF1, 0x6C, 0x01, 0x10, ... (111 bytes total)
-  return serialize_message(PreambleByte::COMMAND, ThirdByte::X01, CategoryByte::STANDARD, command);
+  return serialize_message(PreambleByte::COMMAND, CategoryByte::STANDARD, std::move(command_data));
 }
 }  // namespace Protocol
 

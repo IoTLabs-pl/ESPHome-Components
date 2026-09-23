@@ -80,7 +80,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   std::forward_list<ReadableEntity *> standard_response_entities_;
   std::forward_list<ReadableEntity *> extra_response_entities_;
 
-  std::vector<uint8_t> awaiting_command_data = std::vector<uint8_t>(Protocol::STANDARD_PAYLOAD_LENGTH);
+  std::vector<uint8_t> awaiting_command_data = std::vector<uint8_t>(Protocol::REQUEST_FRAME_SIZE);
   bool awaiting_command_dirty_flag_{false};
 
   enum class CommunicationState {
