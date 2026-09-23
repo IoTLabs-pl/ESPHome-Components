@@ -1,31 +1,75 @@
 5:
-  name: Heat Request Zone 1
+  name: Heat Request Shift Zone 1
   byte: 38
   offset: -128
   min: -5
   max: 5
   device_class: "temperature"
+  active_when:
+    TOP76: "Comp. Curve"
+"5:direct":
+  name: Heat Request Direct Zone 1
+  byte: 38
+  offset: -128
+  min: 20
+  max: 65
+  device_class: "temperature"
+  active_when:
+    TOP76: "Direct"
 6:
-  name: Cool Request Zone 1
+  name: Cool Request Shift Zone 1
   byte: 39
   offset: -128
   min: -5
   max: 5
   device_class: "temperature"
-7: 
-  name: Heat Request Zone 2
+  active_when:
+    TOP81: "Comp. Curve"
+"6:direct":
+  name: Cool Request Direct Zone 1
+  byte: 39
+  offset: -128
+  min: 5
+  max: 20
+  device_class: "temperature"
+  active_when:
+    TOP81: "Direct"
+7:
+  name: Heat Request Shift Zone 2
   byte: 40
   offset: -128
   min: -5
   max: 5
   device_class: "temperature"
+  active_when:
+    TOP76: "Comp. Curve"
+"7:direct":
+  name: Heat Request Direct Zone 2
+  byte: 40
+  offset: -128
+  min: 20
+  max: 65
+  device_class: "temperature"
+  active_when:
+    TOP76: "Direct"
 8:
-  name: Cool Request Zone 2
+  name: Cool Request Shift Zone 2
   byte: 41
   offset: -128
   min: -5
   max: 5
   device_class: "temperature"
+  active_when:
+    TOP81: "Comp. Curve"
+"8:direct":
+  name: Cool Request Direct Zone 2
+  byte: 41
+  offset: -128
+  min: 5
+  max: 20
+  device_class: "temperature"
+  active_when:
+    TOP81: "Direct"
 11:
   name: DHW Target Temperature
   byte: 42

@@ -52,6 +52,8 @@ select:
 number:
   - platform: panasonic_aquarea
     set: 46
+  - platform: panasonic_aquarea
+    set: "5:direct"
 
 button:
   - platform: panasonic_aquarea

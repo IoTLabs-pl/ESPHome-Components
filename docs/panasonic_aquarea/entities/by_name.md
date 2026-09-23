@@ -28,8 +28,10 @@
 | Cool Power Consumption Extra | `sensor` | `TOPx1` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: "x1"</code></pre> |
 | Cool Power Production | `sensor` | `TOP38` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 38</code></pre> |
 | Cool Power Production Extra | `sensor` | `TOPx4` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: "x4"</code></pre> |
-| Cool Request Zone 1 | `number` | `SET6` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 6</code></pre> |
-| Cool Request Zone 2 | `number` | `SET8` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 8</code></pre> |
+| Cool Request Direct Zone 1 | `number` | `SET6:direct` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "6:direct"</code></pre> |
+| Cool Request Direct Zone 2 | `number` | `SET8:direct` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "8:direct"</code></pre> |
+| Cool Request Shift Zone 1 | `number` | `SET6` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 6</code></pre> |
+| Cool Request Shift Zone 2 | `number` | `SET8` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 8</code></pre> |
 | Cool Target High Zone 1 | `number` | `SET16:9` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:9"</code></pre> |
 | Cool Target High Zone 2 | `number` | `SET16:13` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:13"</code></pre> |
 | Cool Target Low Zone 1 | `number` | `SET16:10` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:10"</code></pre> |
@@ -78,8 +80,10 @@
 | Heat Power Production | `sensor` | `TOP15` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 15</code></pre> |
 | Heat Power Production Extra | `sensor` | `TOPx3` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: "x3"</code></pre> |
 | Heat Pump Model | `text_sensor` | `TOP92` | <pre lang="yaml"><code>text_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 92</code></pre> |
-| Heat Request Zone 1 | `number` | `SET5` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 5</code></pre> |
-| Heat Request Zone 2 | `number` | `SET7` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 7</code></pre> |
+| Heat Request Direct Zone 1 | `number` | `SET5:direct` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "5:direct"</code></pre> |
+| Heat Request Direct Zone 2 | `number` | `SET7:direct` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "7:direct"</code></pre> |
+| Heat Request Shift Zone 1 | `number` | `SET5` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 5</code></pre> |
+| Heat Request Shift Zone 2 | `number` | `SET7` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 7</code></pre> |
 | Heat Target High Zone 1 | `number` | `SET16:1` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:1"</code></pre> |
 | Heat Target High Zone 2 | `number` | `SET16:5` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:5"</code></pre> |
 | Heat Target Low Zone 1 | `number` | `SET16:2` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:2"</code></pre> |

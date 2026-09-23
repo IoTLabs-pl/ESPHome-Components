@@ -77,10 +77,14 @@
 
 | Name | Heishamon ID | Device Class | Min | Max | Entity Category | Example |
 |------|--------------|--------------|-----|-----|-----------------|---------|
-| Heat Request Zone 1 | `SET5` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 5</code></pre> |
-| Cool Request Zone 1 | `SET6` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 6</code></pre> |
-| Heat Request Zone 2 | `SET7` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 7</code></pre> |
-| Cool Request Zone 2 | `SET8` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 8</code></pre> |
+| Heat Request Shift Zone 1 | `SET5` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 5</code></pre> |
+| Heat Request Direct Zone 1 | `SET5:direct` | temperature | 20 | 65 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "5:direct"</code></pre> |
+| Cool Request Shift Zone 1 | `SET6` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 6</code></pre> |
+| Cool Request Direct Zone 1 | `SET6:direct` | temperature | 5 | 20 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "6:direct"</code></pre> |
+| Heat Request Shift Zone 2 | `SET7` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 7</code></pre> |
+| Heat Request Direct Zone 2 | `SET7:direct` | temperature | 20 | 65 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "7:direct"</code></pre> |
+| Cool Request Shift Zone 2 | `SET8` | temperature | -5 | 5 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 8</code></pre> |
+| Cool Request Direct Zone 2 | `SET8:direct` | temperature | 5 | 20 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "8:direct"</code></pre> |
 | DHW Target Temperature | `SET11` | temperature | 40 | 75 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 11</code></pre> |
 | Max Pump Duty | `SET15` | - | 64 | 254 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 15</code></pre> |
 | Heat Target High Zone 1 | `SET16:1` | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:1"</code></pre> |
