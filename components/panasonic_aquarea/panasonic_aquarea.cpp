@@ -190,7 +190,7 @@ void Device::dump_config() {
       std::distance(this->extra_response_entities_.cbegin(), this->extra_response_entities_.cend());
 
   ESP_LOGCONFIG(TAG, "Panasonic Heatpump Device");
-  ESP_LOGCONFIG(TAG, "  External Controller Installed: ", YESNO(this->external_controller_));
+  ESP_LOGCONFIG(TAG, "  External Controller Installed: %s", YESNO(this->external_controller_));
   ESP_LOGCONFIG(TAG, "  Number of Dependent Entities: %d", entities_count);
   LOG_UPDATE_INTERVAL(this);
 }
