@@ -38,3 +38,15 @@
   name: Bivalent Control
   byte: 26
   bit: 7
+44:
+  name: DHW Heater Allowed
+  byte: 9
+  bit: 5
+45:
+  name: Room Heater Allowed
+  byte: 9
+  bit: 7
+47:
+  name: Force Heater
+  byte: 5
+  bit: 5

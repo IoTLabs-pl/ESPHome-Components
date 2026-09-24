@@ -2,11 +2,19 @@
 #include "protocol.h"
 #include "extractor.h"
 
+#include <algorithm>
+#include <array>
+#include <span>
+
 namespace esphome {
 namespace panasonic_aquarea {
 static const char *TAG = "panasonic_aquarea";
 static const char *RESPONSE_TIMEOUT_TAG = "response_timeout";
-static const char *UPDATE_ENABLER_TAG = "update_enabler";
+static const char *RESUME_POLLING_TAG = "resume_polling";
+
+static constexpr uint32_t RESPONSE_TIMEOUT_MS = 2000;
+static constexpr uint32_t EXTERNAL_CONTROLLER_SILENCE_MS = 60000;  // CZ-TAW1 boots in ~35-40 s
+static constexpr size_t UART_CHUNK_SIZE = 64;
 
 // ============================================================================
 // SupportsExtraQueryEntity Implementation
@@ -14,7 +22,7 @@ static const char *UPDATE_ENABLER_TAG = "update_enabler";
 
 Device::SupportsExtraQueryEntity::SupportsExtraQueryEntity() {
   // Lambda extractor that checks if extra query is supported
-  set_extractor(new LambdaExtractor<bool>([this](const std::vector<uint8_t> &data) -> optional<bool> {
+  set_extractor(new LambdaExtractor<bool>([this](std::span<const uint8_t> data) -> optional<bool> {
     if (data.size() <= EXTRA_SUPPORT_BYTE_INDEX) {
       return {};
     }
@@ -40,9 +48,9 @@ void Device::handle_command_queue() {
   if (this->start_response_timeout(true)) {
     ESP_LOGD(TAG, "Sending command message");
 
-    auto msg_bytes = Protocol::Serializer::command_message(this->awaiting_command_data);
+    auto msg_bytes = Protocol::Serializer::command_message(std::move(this->awaiting_command_data));
     this->write_array(msg_bytes);
-    this->awaiting_command_data = std::vector<uint8_t>(Protocol::STANDARD_PAYLOAD_LENGTH);
+    this->awaiting_command_data = std::vector<uint8_t>(Protocol::REQUEST_FRAME_SIZE);
     this->awaiting_command_dirty_flag_ = false;
   }
 }
@@ -53,14 +61,14 @@ void Device::handle_command_queue() {
 
 bool Device::start_response_timeout(bool internal) {
   if (this->comm_state_ != CommunicationState::IDLE) {
-    ESP_LOGE(TAG, "Attempted to start a transaction while another is active");
+    ESP_LOGV(TAG, "Bus busy, not starting %s transaction", internal ? "internal" : "external");
     return false;
   }
 
   this->comm_state_ = internal ? CommunicationState::INTERNAL_TRANSACTION : CommunicationState::EXTERNAL_TRANSACTION;
 
   ESP_LOGD(TAG, "Starting %s transaction with heatpump", internal ? "internal" : "external");
-  this->set_timeout(RESPONSE_TIMEOUT_TAG, 1500, [this]() {
+  this->set_timeout(RESPONSE_TIMEOUT_TAG, RESPONSE_TIMEOUT_MS, [this]() {
     ESP_LOGW(TAG, "Response timeout occurred, resetting communication state");
     this->comm_state_ = CommunicationState::IDLE;
   });
@@ -76,50 +84,64 @@ void Device::stop_response_timeout() {
 }
 
 // ============================================================================
+// Polling
+// ============================================================================
+
+void Device::yield_to_external_controller() {
+  this->stop_poller();
+  this->set_timeout(RESUME_POLLING_TAG, EXTERNAL_CONTROLLER_SILENCE_MS, [this]() {
+    ESP_LOGI(TAG, "External controller silent, resuming polling");
+    this->start_poller();
+  });
+}
+
+// ============================================================================
 // UART Communication - External Controller Proxy
 // ============================================================================
 
 void Device::set_external_controller_uart(uart::UARTComponent *controller) { this->external_controller_ = controller; }
 
 void Device::process_heatpump_data() {
-  auto available = this->available();
-  if (available == 0)
-    return;
+  std::array<uint8_t, UART_CHUNK_SIZE> buf;
 
-  uint8_t buf[available];
+  while (size_t available = this->available()) {
+    auto chunk = std::span(buf).first(std::min(available, buf.size()));
 
-  // Read data from heatpump
-  this->read_array(buf, available);
-  this->response_buffer_.push(buf, available);
+    // Read data from heatpump
+    this->read_array(chunk.data(), chunk.size());
 
-  // Forward to external controller if connected (proxy mode)
-  if (this->external_controller_ && this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION)
-    this->external_controller_->write_array(buf, available);
+    // Forward to external controller if connected (proxy mode)
+    if (this->external_controller_ && this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION)
+      this->external_controller_->write_array(chunk.data(), chunk.size());
 
-  // Try to parse complete messages
-  this->parse_out_response();
+    for (uint8_t byte : chunk) {
+      if (this->response_parser_.feed(byte))
+        this->handle_response();
+    }
+  }
 }
 
 void Device::process_external_controller_data() {
-  auto available_bytes = this->external_controller_ ? this->external_controller_->available() : 0;
-
-  if (available_bytes == 0)
+  if (this->external_controller_ == nullptr)
     return;
 
-  if (this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION || this->start_response_timeout(false)) {
-    auto available = this->external_controller_->available();
-    uint8_t buf[available];
+  // During our own transaction controller data waits in its UART RX buffer
+  if (this->comm_state_ == CommunicationState::INTERNAL_TRANSACTION)
+    return;
+
+  std::array<uint8_t, UART_CHUNK_SIZE> buf;
+
+  while (size_t available = this->external_controller_->available()) {
+    if (this->comm_state_ == CommunicationState::IDLE) {
+      this->start_response_timeout(false);
+      this->yield_to_external_controller();
+    }
+
+    auto chunk = std::span(buf).first(std::min(available, buf.size()));
 
     // Forward data from external controller to heatpump
-    this->external_controller_->read_array(buf, available);
-    this->write_array(buf, available);
-
-    // Disable automatic polling when external controller is active
-    if (this->request_counter_ == 0) {
-      ESP_LOGD(TAG, "Disabling polling due to external controller activity");
-      this->cancel_timeout(UPDATE_ENABLER_TAG);
-      this->request_counter_ = UINT32_MAX;
-    }
+    this->external_controller_->read_array(chunk.data(), chunk.size());
+    this->write_array(chunk.data(), chunk.size());
   }
 }
 
@@ -131,27 +153,8 @@ void Device::setup() {
   // Initialize extra query support entity
   this->add_entity(&this->supports_extra_query_entity_, false);
 
-  // Disable polling initially
-  this->stop_poller();
-
-  // Wait 15 seconds before attempting first communication
-  // This gives the heatpump time to fully initialize
-  this->set_timeout(UPDATE_ENABLER_TAG, 15000, [this]() {
-    ESP_LOGD(TAG, "Marking external controller as non-existent");
-    this->external_controller_ = nullptr;
-
-    if (this->start_response_timeout(true)) {
-      ESP_LOGD(TAG, "Sending initial request to heatpump");
-      auto init_msg = Protocol::Serializer::initial_request();
-      this->write_array(init_msg);
-
-      // After initial request, wait one update interval then start regular polling
-      this->set_timeout(this->get_update_interval(), [this]() {
-        ESP_LOGD(TAG, "Starting regular polling");
-        this->start_poller();
-      });
-    }
-  });
+  if (this->external_controller_)
+    this->yield_to_external_controller();
 }
 
 void Device::loop() {
@@ -190,7 +193,7 @@ void Device::dump_config() {
       std::distance(this->extra_response_entities_.cbegin(), this->extra_response_entities_.cend());
 
   ESP_LOGCONFIG(TAG, "Panasonic Heatpump Device");
-  ESP_LOGCONFIG(TAG, "  External Controller Installed: ", YESNO(this->external_controller_));
+  ESP_LOGCONFIG(TAG, "  External Controller Installed: %s", YESNO(this->external_controller_));
   ESP_LOGCONFIG(TAG, "  Number of Dependent Entities: %d", entities_count);
   LOG_UPDATE_INTERVAL(this);
 }
@@ -209,38 +212,19 @@ void Device::add_entity(ReadableEntity *entity, bool extra) {
 }
 
 // ============================================================================
-// Protocol Parsing
+// Response Handling
 // ============================================================================
 
-bool Device::parse_out_response() {
-  // Parse response from buffer
-  auto handled = false;
-  auto response = Protocol::Parser::parse_response(this->response_buffer_);
+void Device::handle_response() {
+  const auto &frame = this->response_parser_.frame();
+  const auto &entities = this->response_parser_.category() == Protocol::CategoryByte::EXTRA
+                             ? this->extra_response_entities_
+                             : this->standard_response_entities_;
 
-  if (response.data.empty())
-    return handled;
-
-  switch (response.category) {
-    case Protocol::CategoryByte::STANDARD:
-      for (auto *entity : this->standard_response_entities_)
-        entity->handle_update(response.data);
-      handled = true;
-      break;
-    case Protocol::CategoryByte::EXTRA:
-      for (auto *entity : this->extra_response_entities_)
-        entity->handle_update(response.data);
-      handled = true;
-      break;
-    case Protocol::CategoryByte::INITIAL_REQUEST:
-      handled = true;
-      break;
-    default:
-      ESP_LOGW(TAG, "Received response with unknown category, ignoring");
-      break;
-  }
+  for (auto *entity : entities)
+    entity->handle_update(frame);
 
   this->stop_response_timeout();
-  return handled;
 }
 
 }  // namespace panasonic_aquarea

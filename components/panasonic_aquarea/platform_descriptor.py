@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any, ClassVar, TypeVar, Generic
 from importlib import import_module
@@ -9,6 +9,7 @@ import yaml
 import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.core import ID
+from esphome.cpp_generator import LambdaExpression
 from esphome.const import CONF_NAME, CONF_ID
 
 from . import Device, ReadableEntity, WritableEntity
@@ -22,6 +23,7 @@ class PlatformDescriptor(ABC, Generic[T]):
     platform: "Platform"
     name: str
     extractor: ExtractorConfig
+    active_condition: LambdaExpression | None = field(default=None, kw_only=True)
 
     ALLOWED_EXTRACTORS: ClassVar[tuple[type[ExtractorConfig], ...]] = ()
 
@@ -64,6 +66,11 @@ class PlatformDescriptor(ABC, Generic[T]):
         data["extractor"] = extractor
         data[cls._id_field_name()] = key
 
+        if active_when := values.pop("active_when", None):
+            assert len(active_when) == 1, "active_when must name exactly one entity"
+            ((full_id, value),) = active_when.items()
+            data["active_condition"] = Platform.find(full_id).extractor.active_condition(value)
+
         return cls(**data, **values)
 
     @classmethod
@@ -98,12 +105,15 @@ class PlatformDescriptor(ABC, Generic[T]):
         # Create and set extractor
         cg.add(var.set_extractor(self.extractor.build()))
 
+        if self.active_condition is not None:
+            cg.add(var.set_active_condition(self.active_condition))
+
         # Register with parent
         parent = await cg.get_variable(config["parent_id"])
 
         # Register on hub component if needed (readable entities)
         if id.type.inherits_from(ReadableEntity):
-            cg.add(parent.add_entity(var, hasattr(self, "extra") and self.extra))
+            cg.add(parent.add_entity(var, getattr(self, "extra", False)))
 
         # Register as parented if needed (writable entities)
         if id.type.inherits_from(WritableEntity):
@@ -112,14 +122,6 @@ class PlatformDescriptor(ABC, Generic[T]):
         await cg.register_component(var, config)
 
         return var
-
-    @classmethod
-    def load(cls, module_path: Path) -> dict[int | str, "PlatformDescriptor"]:
-        yaml_path = module_path / "descriptors.yaml"
-
-        config: dict = yaml.full_load(yaml_path.read_text())
-
-        return {key: cls.from_yaml(key, values) for key, values in config.items()}
 
 
 class Platform:
@@ -161,6 +163,14 @@ class Platform:
         for platform in Path(__file__).parent.glob("*/descriptors.yaml"):
             import_module(f"..{platform.parent.name}", __name__)
         return cls.REGISTERED_PLATFORMS
+
+    @classmethod
+    def find(cls, full_id: str) -> PlatformDescriptor:
+        for platform in cls.auto_load():
+            for descriptor in platform._descriptors.values():
+                if descriptor.full_id == full_id:
+                    return descriptor
+        raise KeyError(f"No descriptor for {full_id}")
 
     @property
     def _id_field(self) -> str:

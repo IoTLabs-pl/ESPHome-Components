@@ -1,9 +1,9 @@
-from pathlib import Path
 import re
+from pathlib import Path
 from sys import path
 
+import esphome.config_validation as cv
 from jinja2 import Environment
-from voluptuous.schema_builder import Undefined
 
 root_dir = Path(__file__).parents[2]
 
@@ -12,25 +12,11 @@ path.insert(0, str(component_dir.parent))
 
 from panasonic_aquarea.platform_descriptor import Platform
 
-Undefined.__repr__ = lambda x: "—"
-
-
-class IntComparableStr(str):
-    """String that compares as greater than integers."""
-
-    def __lt__(self, other):
-        if isinstance(other, int):
-            return False
-        return super().__lt__(other)
-
 
 def id_sort_key(id_val):
-    """Format the numeric key for sorting."""
-    return tuple(
-        int(part) if part.isdigit() else IntComparableStr(part)
-        for part in re.match(r"^([A-Za-z]+)?(\d+)(?::(\d+))?$", str(id_val)).groups()
-        if part
-    )
+    """Natural order: 5 < 5:direct < 12 < 16:2 < 16:10 < x0."""
+    parts = re.split(r"(\d+)", str(id_val))
+    return [int(part) if part.isdigit() else part for part in parts]
 
 
 platforms = Platform.auto_load()
@@ -39,7 +25,7 @@ all_entities = [d for platform in platforms for d in platform._descriptors.value
 all_entities.sort(key=lambda d: (d._id_field_name(), id_sort_key(d.id_value)))
 
 
-env = Environment()
+env = Environment(finalize=lambda value: "-" if value is cv.UNDEFINED else value)
 
 
 # Create entity dictionaries by platform type
