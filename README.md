@@ -101,12 +101,6 @@ If you use `wmbus_meter` component, you may not need to configure `wmbus_common`
 
 However, if you want to load specific drivers or fields that are not required by any dependent component, you should specify them in `wmbus_common` configuration.
 
-`wmbusmeters` is included as a git subtree. To sync version from upstream repository, run:
-
-```bash
-./scripts/pull_wmbusmeters.py [GIT_REF]
-```
-
 ## `wmbus_meter`
 
 This component provides abstraction for Meter object for wM-Bus devices. Attaching instance to the `wmbus_radio` component allows to receive, decrypt and parse wM-Bus packets from the radio interface.

@@ -1,0 +1,398 @@
+/* This is the library of fields that can be referenced from
+   a driver with library { use = total_m3 }
+
+   The library speeds up creating drivers for meters with mostly
+   standardized values. It also helps normalize the names of the fields.
+
+   A field name is short. For a single direction meter with only consumption
+   values. Use for example:
+   total_m3 (for water/gas consumption volume)
+   total_kwh (for energy consumption) */
+library {
+    /* A template info has access to the following variables.
+       {media} is replaced with water/gas/electricity/heat/coolant.
+       {append_info} is normally empty, but can be replaced with additional driver help.
+       Also the entiry info can be replaced.
+       library { template { use = total_m3 append_info = 'More helpful info.' }
+                 template { use = total_m3 info = 'This is the box volume.' } }
+
+       The change=Increasing or change=Sample is further information
+       about the field to be used outside of wmbusmeters. */
+    template(id = total_m3)
+    {
+        name     = total
+        quantity = Volume
+        info     = 'The total {media} volume recorded.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Volume
+        }
+    }
+    template(id = total_kwh)
+    {
+        name     = total
+        quantity = Energy
+        info     = 'The total {media} energy recorded.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = AnyEnergyVIF
+        }
+    }
+    template(id = target_m3)
+    {
+        name     = target
+        quantity = Volume
+        info     = 'The {water} volume recorded at the last billing date.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Volume
+            storage_nr       = 1
+        }
+    }
+    template(id = target_kwh)
+    {
+        name     = target
+        quantity = Energy
+        info     = 'The {water} energy recorded at the last billing date.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = AnyEnergyVIF
+            storage_nr       = 1
+        }
+    }
+    template(id = status)
+    {
+        name       = status
+        // Kept working for old C++ drivers that use alias status-tpl-only
+        aliases    = status-tpl-only
+        info       = 'Status and error flags.'
+        attributes = STATUS,INCLUDE_TPL_STATUS
+    }
+    template(id = actuality_duration_s)
+    {
+        name         = actuality_duration
+        quantity     = Time
+        info         = 'Lapsed time between measurement and transmission.'
+        display_unit = s
+        match {
+            measurement_type = Instantaneous
+            vif_range        = ActualityDuration
+        }
+    }
+    template(id = actuality_duration_h)
+    {
+        name     = actuality_duration
+        quantity = Time
+        info     = 'Lapsed time between measurement and transmission.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = ActualityDuration
+        }
+    }
+    template(id = battery_v)
+    {
+        name     = battery
+        quantity = Voltage
+        info     = 'Battery voltage.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Voltage
+        }
+    }
+    template(id = battery_y)
+    {
+        name           = battery
+        quantity       = Time
+        info           = 'Remaining battery life in years.'
+        display_unit   = y
+        match {
+            measurement_type = Instantaneous
+            vif_range        = RemainingBattery
+        }
+    }
+    template(id = fabrication_no)
+    {
+        name     = fabrication_no
+        quantity = Text
+        info     = 'Fabrication number.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = FabricationNo
+        }
+    }
+    template(id = enhanced_id)
+    {
+        name     = enhanced_id
+        quantity = Text
+        info     = 'Enhanced identification number.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = EnhancedIdentification
+        }
+    }
+    template(id = software_version)
+    {
+        name     = software_version
+        quantity = Text
+        info     = 'Software version.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = SoftwareVersion
+        }
+    }
+    template(id = manufacturer)
+    {
+        name     = manufacturer
+        quantity = Text
+        info     = 'Meter manufacturer.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Manufacturer
+        }
+    }
+    template(id = model_version)
+    {
+        name     = model_version
+        quantity = Text
+        info     = 'Meter model version.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = ModelVersion
+        }
+    }
+    template(id = firmware_version)
+    {
+        name     = firmware_version
+        quantity = Text
+        info     = 'Meter firmware version.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = FirmwareVersion
+        }
+    }
+    template(id = parameter_set)
+    {
+        name     = parameter_set
+        quantity = Text
+        info     = 'Parameter set for this meter.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = ParameterSet
+        }
+    }
+    template(id = customer)
+    {
+        name     = customer
+        quantity = Text
+        info     = 'Customer name.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Customer
+        }
+    }
+    template(id = location)
+    {
+        name     = location
+        quantity = Text
+        info     = 'Meter installed at this customer location.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Location
+        }
+    }
+    template(id = operating_time_h)
+    {
+        name     = operating_time
+        quantity = Time
+        info     = 'How long the meter has been collecting data.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = OperatingTime
+        }
+    }
+    template(id = on_time_h)
+    {
+        name     = on_time
+        quantity = Time
+        info     = 'How long the meter has been powered up.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = OnTime
+        }
+    }
+    template(id = on_time_at_error_h)
+    {
+        name     = on_time_at_error
+        quantity = Time
+        info     = 'How long the meter has been in an error state while powered up.'
+        match {
+            measurement_type = AtError
+            vif_range        = OnTime
+        }
+    }
+    template(id = meter_date)
+    {
+        name         = meter_date
+        quantity     = Text
+        info         = 'Date when the meter sent the telegram.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Date
+        }
+    }
+    template(id = meter_date_at_error)
+    {
+        name         = meter_date_at_error
+        quantity     = Text
+        info         = 'Date when the meter was in error.'
+        match {
+            measurement_type = AtError
+            vif_range        = Date
+        }
+    }
+    template(id = meter_datetime)
+    {
+        name         = meter_datetime
+        quantity     = Text
+        info         = 'Date and time when the meter sent the telegram.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = DateTime
+        }
+    }
+    template(id = meter_datetime_at_error)
+    {
+        name         = meter_datetime_at_error
+        quantity     = Text
+        info         = 'Date and time when the meter was in error.'
+        match {
+            measurement_type = AtError
+            vif_range        = DateTime
+        }
+    }
+    template(id = target_date)
+    {
+        name         = target
+        quantity     = PointInTime
+        info         = 'The target date. Usually the end of the previous billing period.'
+        display_unit = date
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Date
+            storage_nr       = 1
+        }
+    }
+    template(id = total_forward_m3)
+    {
+        name     = total_forward
+        quantity = Volume
+        info     = 'The total {media} volume flowing forward.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Volume
+            add_combinable   = ForwardFlow
+        }
+    }
+    template(id = total_backward_m3)
+    {
+        name     = total_backward
+        quantity = Volume
+        info     = 'The total {media} volume flowing backward.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = Volume
+            add_combinable   = BackwardFlow
+        }
+    }
+    template(id = flow_temperature_c)
+    {
+        name     = flow_temperature
+        quantity = Temperature
+        info     = 'Forward media temperature.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = FlowTemperature
+        }
+    }
+    template(id = external_temperature_c)
+    {
+        name     = external_temperature
+        quantity = Temperature
+        info     = 'Temperature outside of meter.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = ExternalTemperature
+        }
+    }
+    template(id = return_temperature_c)
+    {
+        name     = return_temperature
+        quantity = Temperature
+        info     = 'Return media temperature.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = ReturnTemperature
+        }
+    }
+    template(id = flow_return_temperature_difference_c)
+    {
+        name     = flow_return_temperature_difference
+        quantity = Temperature
+        info     = 'The difference between flow and return media temperatures.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = TemperatureDifference
+        }
+    }
+    template(id = volume_flow_m3h)
+    {
+        name     = volume_flow
+        quantity = Flow
+        info     = 'Media volume flow.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = VolumeFlow
+        }
+    }
+    template(id = access_counter)
+    {
+        name           = access
+        quantity       = Dimensionless
+        info           = 'Meter access counter.'
+        vif_scaling    = None
+        dif_signedness = Unsigned
+        match {
+            measurement_type = Instantaneous
+            vif_range        = AccessNumber
+        }
+    }
+    template(id = consumption_hca)
+    {
+        name     = consumption
+        quantity = HCA
+        info     = 'The current heat cost allocation for this meter.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = HeatCostAllocation
+        }
+    }
+    template(id = target_hca)
+    {
+        name     = target
+        quantity = HCA
+        info     = 'The heat cost allocation recorded by this meter at the target date.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = HeatCostAllocation
+            storage_nr       = 1
+        }
+    }
+}
