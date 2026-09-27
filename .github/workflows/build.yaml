@@ -8,9 +8,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name:
-          - wmbus
-          - panasonic_aquarea
+        config:
+          - wmbus/test
+          - panasonic_aquarea/test
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -18,5 +18,19 @@ jobs:
         id: esphome_build
         uses: esphome/build-action@v8.1.0
         with:
-          yaml-file: tests/${{ matrix.name }}.yaml
+          yaml-file: tests/${{ matrix.config }}.yaml
           version: "2026.8.2"
+
+  telegrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install esphome
+        run: pip install esphome==2026.8.2 pytest
+      - name: Decode the upstream telegrams
+        run: pytest tests/wmbus/host -q
