@@ -74,7 +74,7 @@ interval:
 
 ## `wmbus_common`
 
-This component is a port of [wmbusmeters](https://wmbusmeters.org/) library to ESPHome. It provides common functionality for working with wM-Bus devices, including parsing and handling wM-Bus packets.
+This component decodes wM-Bus telegrams with the driver definitions of [wmbusmeters](https://wmbusmeters.org/), compiled into the firmware at build time. See [components/wmbus_common/README.md](components/wmbus_common/README.md) for details.
 
 **Example configuration:**
 
