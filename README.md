@@ -146,7 +146,7 @@ On the `wmbus_meter` platform, you can use the following sensors to provide data
       field: total_m3
   ```
 
-  By default, unit of measurement is picked from the field name, but you can override it by specifying `unit_of_measurement` parameter. Especially, if you want to do this, ESPHome's `multiply` filter may be useful to change numerical value to the desired unit.
+  By default, unit of measurement and accuracy decimals are picked from the field name, but you can override them. To publish the value in another unit, ESPHome's `multiply` filter may be useful.
 
 - **text_sensor**
   ```yaml
