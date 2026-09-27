@@ -2,6 +2,9 @@ name: Compilation check
 on:
   pull_request:
 
+env:
+  ESPHOME_VERSION: "2026.8.2"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,11 +18,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
       - name: Build firmware
-        id: esphome_build
         uses: esphome/build-action@v8.1.0
         with:
           yaml-file: tests/${{ matrix.config }}.yaml
-          version: "2026.8.2"
+          version: ${{ env.ESPHOME_VERSION }}
 
   telegrams:
     runs-on: ubuntu-latest
@@ -28,9 +30,7 @@ jobs:
         uses: actions/checkout@v7
       - name: Set up Python
         uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
       - name: Install esphome
-        run: pip install esphome==2026.8.2 pytest
+        run: pip install "esphome==$ESPHOME_VERSION" pytest
       - name: Decode the upstream telegrams
         run: pytest tests/wmbus/host -q
