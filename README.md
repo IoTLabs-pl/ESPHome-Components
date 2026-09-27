@@ -99,7 +99,7 @@ wmbus_common:
 
 If you use `wmbus_meter` component, you may not need to configure `wmbus_common` component, as it will be automatically included as a dependency. Dependent components will automatically load required drivers and fields based on their configuration, so specifying them on this level is redundant.
 
-However, if you want to load specific drivers or fields that are not required by any dependent component, you should specify them in `wmbus_common` configuration.
+However, if you want to load specific drivers or fields that are not required by any dependent component, you should specify them in `wmbus_common` configuration. These are also the drivers a meter with `type: auto` chooses from.
 
 ## `wmbus_meter`
 
@@ -114,7 +114,6 @@ wmbus_meter:
   meter_id: 12345678
   type: apator162
   key: "00000000000000000000000000000000"
-  mode: T1
   on_telegram:
     - socket_transmitter.send:
         id: transmitter
@@ -123,7 +122,7 @@ wmbus_meter:
         topic: test/topic
 ```
 
-`mode` parameter is optional and allows to filter received packets by mode. It can be set to `T1` or `C1`. If not set, all packets will be processed.
+`type` is the driver name, or `auto` to detect the driver from the first telegram among the drivers listed in `wmbus_common`.
 `key` parameter is optional and allows to decrypt packets using AES-128-CBC encryption. It should be provided as hexadecimal or ASCII encoded string. If not set, packets will be processed as unencrypted.
 
 **Attention!**
@@ -131,6 +130,8 @@ By default, component will not load any fields to reduce memory footprint. If yo
 
 Component provides `on_telegram` trigger that can be used to send data to a remote server or process it in any other way. It can be used to send data to MQTT broker, HTTP server, or any other service. `meter` variable is available in the following lambdas.
 Additionally, `wmbus_meter.send_telegram_with_mqtt` action can be used to send JSON-encoded meter data to MQTT broker. It requires `mqtt` component to be configured in ESPHome.
+
+`meter->as_json()` returns the media and the meter's fields: `{"media":"water","total_m3":123.456,"status":"OK"}`.
 
 On the `wmbus_meter` platform, you can use the following sensors to provide data to Home Assistant/MQTT:
 
@@ -156,6 +157,8 @@ On the `wmbus_meter` platform, you can use the following sensors to provide data
       name: My Water Meter Timestamp
       field: timestamp
   ```
+
+  Besides the driver's fields, `timestamp` and `media` are available.
 
 When you use `sensor` and `text_sensor` platforms, required fields will be automatically loaded for corresponding driver, so you don't need to specify them in `wmbus_common` component configuration.
 

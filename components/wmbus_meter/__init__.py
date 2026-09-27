@@ -6,16 +6,20 @@ from esphome.components.mqtt import (
     MQTTPublishAction,
     mqtt_publish_action_to_code,
 )
-from esphome.components.wmbus_common.driver_loader import DriverManager
+from esphome.components.wmbus_common.drivers.loader import (
+    AutoDriver,
+    DriverManager,
+    validate_meter_type,
+)
 from esphome.components.wmbus_radio import RadioComponent
 from esphome.const import (
     CONF_ID,
     CONF_KEY,
-    CONF_MODE,
     CONF_PAYLOAD,
     CONF_TRIGGER_ID,
     CONF_TYPE,
 )
+from esphome.core import HexInt
 
 CONF_METER_ID = "meter_id"
 CONF_RADIO_ID = "radio_id"
@@ -42,9 +46,10 @@ TelegramTrigger = wmbus_meter_ns.class_(
 def hex_key_validator(key):
     try:
         key = cv.bind_key(key)
-        return key
     except cv.Invalid as e:
         raise cv.Invalid(e.msg.replace("Bind key", "Key"))
+
+    return bytes.fromhex(key)
 
 
 def meter_id_validator(meter_id):
@@ -58,7 +63,7 @@ def meter_id_validator(meter_id):
     if value < 0:
         raise cv.Invalid("Meter ID must be a positive hexadecimal integer")
 
-    return f"{value:08x}"
+    return HexInt(value)
 
 
 CONFIG_SCHEMA = cv.Schema(
@@ -66,10 +71,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(): cv.declare_id(Meter),
         cv.GenerateID(CONF_RADIO_ID): cv.use_id(RadioComponent),
         cv.Required(CONF_METER_ID): meter_id_validator,
-        cv.Required(CONF_TYPE): cv.All(
-            cv.one_of(*DriverManager.available_drivers),
-            DriverManager.request_driver,
-        ),
+        cv.Required(CONF_TYPE): validate_meter_type,
         cv.Optional(CONF_KEY): cv.Any(
             cv.All(cv.string_strict, lambda s: s.encode().hex(), hex_key_validator),
             hex_key_validator,
@@ -77,22 +79,26 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_ON_TELEGRAM): automation.validate_automation(
             {cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(TelegramTrigger)},
         ),
-        cv.Optional(CONF_MODE): cv.one_of("c1", "t1", lower=True),
     },
 ).extend(cv.COMPONENT_SCHEMA)
 
 
 async def to_code(config):
     meter = cg.new_Pvariable(config[CONF_ID])
-    driver_type = config[CONF_TYPE].name
-    if CONF_MODE in config:
-        driver_type += ":" + config[CONF_MODE]
+    driver = config[CONF_TYPE]
 
+    # `auto` detects the driver from the first telegram.
+    if isinstance(driver, AutoDriver):
+        spec = cg.RawExpression("nullptr")
+    else:
+        index = DriverManager.registry_index(driver)
+        spec = cg.RawExpression(f"wmbus::registered_drivers[{index}] /* {driver.name} */")
+
+    key = config.get(CONF_KEY)
+    bytes_or_nothing = cg.ArrayInitializer(*map(HexInt, key)) if key else None
     cg.add(
-        meter.set_meter_params(
-            config[CONF_METER_ID],
-            driver_type,
-            config.get(CONF_KEY, ""),
+        meter.set_driver(
+            spec, config[CONF_METER_ID], cg.ArrayInitializer(bytes_or_nothing)
         )
     )
 

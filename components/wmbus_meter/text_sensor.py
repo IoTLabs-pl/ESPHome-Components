@@ -1,6 +1,6 @@
 from esphome import codegen as cg
 from esphome.components import text_sensor
-from esphome.components.wmbus_common.driver_loader import FieldType
+from esphome.components.wmbus_common.drivers.loader import FieldKind
 
 from . import wmbus_meter_ns
 from .base_sensor import (
@@ -14,7 +14,7 @@ TextSensor = wmbus_meter_ns.class_("TextSensor", BaseSensor, text_sensor.TextSen
 
 CONFIG_SCHEMA = BASE_SCHEMA.extend(text_sensor.text_sensor_schema(TextSensor))
 
-FINAL_VALIDATE_SCHEMA = make_field_validator(FieldType.STRING)
+FINAL_VALIDATE_SCHEMA = make_field_validator(FieldKind.Text)
 
 
 async def to_code(config):

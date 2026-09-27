@@ -1,8 +1,8 @@
 from esphome import codegen as cg
 from esphome import config_validation as cv
 from esphome.components import sensor
-from esphome.components.wmbus_common.driver_loader import (
-    FieldType,
+from esphome.components.wmbus_common.drivers.loader import (
+    FieldKind,
     get_human_readable_unit,
 )
 from esphome.const import CONF_ACCURACY_DECIMALS, CONF_UNIT_OF_MEASUREMENT
@@ -30,7 +30,7 @@ CONFIG_SCHEMA = cv.All(
     default_unit_of_measurement,
 )
 
-FINAL_VALIDATE_SCHEMA = make_field_validator(FieldType.NUMERIC)
+FINAL_VALIDATE_SCHEMA = make_field_validator(FieldKind.Numeric)
 
 
 async def to_code(config):
