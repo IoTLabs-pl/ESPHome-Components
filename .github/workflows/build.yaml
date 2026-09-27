@@ -25,3 +25,17 @@ jobs:
           yaml-file: tests/${{ matrix.config }}.yaml
           version: "2026.9.1"
           substitutions: variant=${{ matrix.variant }}
+
+  telegrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install esphome
+        run: pip install esphome==2026.9.1 pytest
+      - name: Decode the upstream telegrams
+        run: pytest tests/wmbus/host -q
