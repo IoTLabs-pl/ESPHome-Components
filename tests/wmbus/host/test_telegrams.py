@@ -1,6 +1,6 @@
 """Replays the XMQ drivers' tests{} telegrams through the host build against upstream's JSON.
 
-Needs esphome importable: run it from the esphome venv.
+Needs esphome importable and wmbus-test-runner, the compiled test.yaml, on PATH: run it from the esphome venv.
 """
 
 import json
@@ -18,8 +18,6 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[2]
 COMPONENTS_DIR = REPO_ROOT / "components"
 DRIVERS_DIR = COMPONENTS_DIR / "wmbus_common" / "drivers" / "src"
-CONFIG = HERE / "test.yaml"
-BINARY = HERE / ".esphome" / "build" / "wmbus-host-test" / ".pioenvs" / "wmbus-host-test" / "program"
 
 sys.path.insert(0, str(COMPONENTS_DIR))
 
@@ -234,7 +232,7 @@ def run_batch(as_auto: bool) -> dict[str, str]:
         for c in cases
     )
     result = subprocess.run(
-        [str(BINARY)],
+        ["wmbus-test-runner"],
         input=stdin,
         capture_output=True,
         text=True,
@@ -255,23 +253,12 @@ def run_batch(as_auto: bool) -> dict[str, str]:
 
 
 @pytest.fixture(scope="session")
-def binary(request) -> Path:
-    if not request.config.getoption("--no-build"):
-        subprocess.run(
-            [sys.executable, "-m", "esphome", "compile", CONFIG.name], cwd=HERE, check=True
-        )
-    if not BINARY.exists():
-        pytest.fail(f"no binary at {BINARY}; drop --no-build")
-    return BINARY
-
-
-@pytest.fixture(scope="session")
-def decoded(binary) -> dict[str, str]:
+def decoded() -> dict[str, str]:
     return run_batch(as_auto=False)
 
 
 @pytest.fixture(scope="session")
-def detected(binary) -> dict[str, str]:
+def detected() -> dict[str, str]:
     return run_batch(as_auto=True)
 
 
