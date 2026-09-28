@@ -38,5 +38,9 @@ jobs:
         uses: actions/setup-python@v6
       - name: Install esphome
         run: pip install "esphome==$ESPHOME_VERSION" pytest
+      - name: Build the telegram runner
+        run: |
+          esphome compile tests/wmbus/host/test.yaml
+          install -D "$(esphome idedata tests/wmbus/host/test.yaml | jq -r .prog_path)" ~/.local/bin/wmbus-test-runner
       - name: Decode the upstream telegrams
         run: pytest tests/wmbus/host -q
