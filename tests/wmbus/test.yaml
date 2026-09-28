@@ -1,0 +1,108 @@
+# Uses every knob of the wmbus_* components: no other configuration catches a codegen break.
+# One driver per generator path: all of them overflow the default 4 MB partition.
+
+esphome:
+  name: test-wmbus
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: ../../components
+
+logger:
+
+wifi:
+  ssid: TestSSID
+  password: TestPass
+
+mqtt:
+  broker: 192.168.1.1
+  port: 1883
+
+spi:
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
+  miso_pin: GPIO2
+
+socket_transmitter:
+  - id: tcp_transmitter
+    ip_address: 192.168.1.1
+    port: 12345
+    protocol: TCP
+  - id: udp_transmitter
+    ip_address: 192.168.1.1
+    port: 12346
+    protocol: UDP
+
+wmbus_common:
+  drivers:
+    - apator162   # ixml grammar
+    - kamwater    # compact frames, lookup
+    - rfmamb      # TPL status bits
+    - izarv2      # calculate, transform_payload, diehl_prios
+    - iem3000     # add_combinable_raw
+    - uiws        # null_value
+    - nemo        # link_mode
+    - name: esyswm  # readable_string, and the per-driver field list
+      fields:
+        - total_energy_consumption_kwh
+
+wmbus_radio:
+  radio_type: SX1276
+  cs_pin: GPIO3
+  reset_pin: GPIO4
+  irq_pin: GPIO5
+  on_packet:
+    - then:
+        - logger.log:
+            format: "packet of %d bytes"
+            args: ["(int) packet->get_raw_data().size()"]
+  on_frame:
+    - then:
+        - wmbus_radio.send_frame_with_socket:
+            id: tcp_transmitter
+            format: rtlwmbus
+    - mark_as_handled: true
+      then:
+        - wmbus_radio.send_frame_with_socket:
+            id: udp_transmitter
+            format: raw
+        - wmbus_radio.send_frame_with_socket:
+            id: udp_transmitter
+            format: hex
+
+wmbus_meter:
+  - id: test_meter
+    meter_id: "01234567"
+    type: apator162
+    key: "00000000000000000000000000000000"
+    on_telegram:
+      - wmbus_meter.send_telegram_with_mqtt:
+          topic: test_topic
+      - socket_transmitter.send:
+          id: tcp_transmitter
+          data: !lambda return meter->as_json();
+  - id: auto_meter
+    meter_id: "89abcdef"
+    type: auto
+
+sensor:
+  - platform: wmbus_meter
+    id: test_sensor
+    parent_id: test_meter
+    field: total_m3
+    name: "Test Water Consumption"
+
+text_sensor:
+  - platform: wmbus_meter
+    id: test_text_sensor
+    parent_id: test_meter
+    field: timestamp
+    name: "Test Meter Timestamp"
+  - platform: wmbus_meter
+    parent_id: test_meter
+    field: media
+    name: "Test Meter Media"

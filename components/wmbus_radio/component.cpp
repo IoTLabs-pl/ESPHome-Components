@@ -4,6 +4,7 @@
 #include "freertos/queue.h"
 
 #include "esphome/core/helpers.h"
+#include "esphome/core/log.h"
 
 #define ASSERT(expr, expected, before_exit) \
   { \
@@ -70,7 +71,7 @@ void Radio::receive_frame() {
     return;
   }
 
-  if (!this->radio->read(packet->rx_data_ptr(), packet->rx_capacity())) {
+  if (!this->radio->read(packet->rx_span())) {
     ESP_LOGV(TAG, "Failed to read preamble");
     return;
   }
@@ -87,7 +88,7 @@ void Radio::receive_frame() {
 
   packet->set_rssi(this->radio->get_rssi());
 
-  if (!this->radio->read(packet->rx_data_ptr(), packet->rx_capacity())) {
+  if (!this->radio->read(packet->rx_span())) {
     ESP_LOGW(TAG, "Failed to read data");
     return;
   }

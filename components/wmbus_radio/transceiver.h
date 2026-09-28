@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <span>
 #include "esphome/core/optional.h"
 #include "esphome/components/spi/spi.h"
 #include "freertos/FreeRTOS.h"
@@ -23,7 +24,8 @@ class RadioTransceiver : public Component,
   virtual int8_t get_rssi() = 0;
   virtual const char *get_name() = 0;
 
-  virtual bool read(uint8_t *buffer, size_t length) = 0;
+  // Fills the whole buffer; false when the radio went quiet first.
+  virtual bool read(std::span<uint8_t> buffer) = 0;
 
   void set_spi(spi::SPIDelegate *spi);
   void set_reset_pin(InternalGPIOPin *reset_pin);

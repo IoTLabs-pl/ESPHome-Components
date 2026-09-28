@@ -1,0 +1,26 @@
+// Auto-generated from the loaded drivers list; do not edit.
+#pragma once
+
+#include <array>
+
+namespace wmbus {
+struct DriverSpec;
+}
+
+namespace wmbus::drivers {
+
+{% for symbol in symbols %}
+extern const DriverSpec {{ symbol }};
+{% endfor %}
+
+}  // namespace wmbus::drivers
+
+namespace wmbus {
+
+inline constexpr std::array<const DriverSpec *, {{ symbols | length }}> registered_drivers = {
+{% for symbol in symbols %}
+    &drivers::{{ symbol }},
+{% endfor %}
+};
+
+}  // namespace wmbus

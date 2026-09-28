@@ -24,12 +24,10 @@ def get_driver(config):
     return fc.get_config_for_path(parent_type_path)["type"]
 
 
-def make_field_validator(field_type):
+def make_field_validator(kind):
     def field_validator(config):
         driver = get_driver(config)
-        field_name = config[CONF_FIELD]
-
-        driver.request_field(field_name, field_type)
+        driver.request_field(config[CONF_FIELD], kind)
 
     return field_validator
 

@@ -1,32 +1,18 @@
 #include "wmbus_meter.h"
+#include "esphome/core/alloc_helpers.h"
+#include "esphome/core/log.h"
+
+#include <cmath>
 
 namespace esphome {
 namespace wmbus_meter {
 static const char *TAG = "wmbus_meter";
 
-void Meter::set_meter_params(std::string id, std::string driver, std::string key) {
-  MeterInfo meter_info;
-  meter_info.parse(driver + '-' + id, driver, id + ',', key);
-
-  this->meter = createMeter(&meter_info);
+void Meter::set_driver(const wmbus::DriverSpec *spec, uint32_t id, std::optional<std::array<uint8_t, 16>> key) {
+  this->state_ = wmbus::MeterState(spec, id, std::move(key));
 }
 
-std::string Meter::get_id() const {
-  if (!this->meter)
-    return "";
-  return this->meter->addressExpressions()[0].id;
-}
-MeterType Meter::get_type() const {
-  if (!this->meter)
-    return MeterType::UnknownMeter;
-  return this->meter->driverInfo()->type();
-}
-std::string Meter::get_driver_name() const {
-  if (!this->meter)
-    return "";
-  return this->meter->driverName().str();
-}
-bool Meter::is_encrypted() const { return this->meter && this->meter->meterKeys()->hasConfidentialityKey(); }
+std::string Meter::get_id() const { return str_sprintf("%08x", (unsigned) this->state_.id); }
 
 void Meter::set_radio(wmbus_radio::Radio *radio) {
   this->radio = radio;
@@ -35,68 +21,74 @@ void Meter::set_radio(wmbus_radio::Radio *radio) {
 
 void Meter::dump_config() {
   ESP_LOGCONFIG(TAG, "wM-Bus Meter:");
-  ESP_LOGCONFIG(TAG, "  ID: %s", this->get_id().c_str());
-  ESP_LOGCONFIG(TAG, "  Driver: %s", this->get_driver_name().c_str());
-  ESP_LOGCONFIG(TAG, "  Key: %s", this->is_encrypted() ? "***" : "not-encrypted");
-}
-
-void Meter::handle_frame(wmbus_radio::Frame *frame) {
-  auto about = AboutTelegram(App.get_friendly_name(), frame->rssi(), frame->link_mode(), FrameType::WMBUS);
-
-  std::vector<Address> adresses;
-  bool id_match = false;
-  auto telegram = std::make_unique<Telegram>();
-
-  this->meter->handleTelegram(about, frame->data(), false, &adresses, &id_match, telegram.get());
-
-  if (id_match) {
-    this->last_telegram = std::move(telegram);
-    this->defer([this]() {
-      this->on_telegram_callback_manager();
-      this->last_telegram = nullptr;
-    });
-
-    frame->mark_as_handled();
-  }
-}
-
-std::string Meter::as_json(bool pretty_print) {
-  std::string json;
-  this->meter->printMeter(this->last_telegram.get(), nullptr, nullptr, '\t', &json, nullptr, nullptr, nullptr,
-                          pretty_print);
-  return json;
-}
-
-optional<std::string> Meter::get_string_field(std::string field_name) {
-  auto field_info = this->meter->findFieldInfo(field_name, Quantity::Text);
-  if (field_info)
-    return this->meter->getStringValue(field_info);
-
-  return {};
-}
-
-optional<float> Meter::get_numeric_field(std::string field_name) {
-  // RSSI is not handled by meter but by telegram :/
-  if (field_name == "rssi_dbm")
-    return this->last_telegram->about.rssi_dbm;
-
-  if (field_name == "timestamp")
-    return this->meter->timestampLastUpdate();
-
-  std::string name;
-  Unit unit;
-  extractUnit(field_name, &name, &unit);
-
-  auto value = this->meter->getNumericValue(name, unit);
-
-  if (!std::isnan(value))
-    return value;
-
-  return {};
+  ESP_LOGCONFIG(TAG, "  ID: %08x", (unsigned) this->state_.id);
+  ESP_LOGCONFIG(TAG, "  Driver: %s", this->state_.spec == nullptr ? "auto" : this->state_.spec->name);
+  ESP_LOGCONFIG(TAG, "  Key: %s", this->state_.key ? "***" : "not-encrypted");
 }
 
 void Meter::on_telegram(std::function<void()> &&callback) {
   this->on_telegram_callback_manager.add(std::move(callback));
+}
+
+void Meter::handle_frame(wmbus_radio::Frame *frame) {
+  switch (this->state_.handle_telegram(frame->data(), frame->rssi())) {
+    case wmbus::Result::NotForThisMeter:
+      return;
+
+    case wmbus::Result::NotDecoded:
+      // Ours but unreadable: sensors are not refreshed with stale values.
+      frame->mark_as_handled();
+      ESP_LOGW(TAG, "Telegram from %08x could not be decoded: %s", (unsigned) this->state_.id,
+               this->state_.last_error.c_str());
+      return;
+
+    case wmbus::Result::Ok:
+      frame->mark_as_handled();
+      this->defer([this]() { this->on_telegram_callback_manager(); });
+      return;
+  }
+}
+
+std::string Meter::as_json() {
+  if (!this->state_.timestamp)
+    return "{}";
+  return this->state_.to_json();
+}
+
+optional<std::string> Meter::get_string_field(std::string field_name) {
+  if (!this->state_.timestamp)
+    return {};
+  if (field_name == "media")
+    return std::string(this->state_.media_type);
+  if (field_name == "timestamp")
+    return wmbus::format_time((double) *this->state_.timestamp, wmbus::TimeFormat::TimestampUTC);
+
+  const wmbus::Value value = this->state_.value(field_name);
+  if (const double *number = std::get_if<double>(&value)) {
+    const wmbus::FieldSpec *f = this->state_.find_field(field_name);
+    if (f && f->json_date && !std::isnan(*number))
+      return wmbus::format_time(*number, *f->json_date);
+  }
+  if (!std::holds_alternative<std::string>(value))
+    return {};
+  return std::get<std::string>(value);
+}
+
+optional<float> Meter::get_numeric_field(std::string field_name) {
+  if (!this->state_.timestamp)
+    return {};
+
+  // RSSI and timestamp describe the reception, not the meter, so neither is a field.
+  if (field_name == "rssi_dbm")
+    return this->state_.rssi_dbm;
+  if (field_name == "timestamp")
+    return *this->state_.timestamp;
+
+  const wmbus::Value value = this->state_.value(field_name);
+  if (!std::holds_alternative<double>(value))
+    return {};
+  const double number = std::get<double>(value);
+  return std::isnan(number) ? optional<float>{} : optional<float>((float) number);
 }
 
 }  // namespace wmbus_meter

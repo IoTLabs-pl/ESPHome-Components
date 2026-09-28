@@ -86,8 +86,8 @@ void SX1276::setup() {
   ESP_LOGV(TAG, "SX1276 setup done");
 }
 
-bool IRAM_ATTR SX1276::read(uint8_t *buffer, size_t length) {
-  while (length > 0) {
+bool IRAM_ATTR SX1276::read(std::span<uint8_t> buffer) {
+  while (!buffer.empty()) {
     if (this->irq_pin_->digital_read()) {
       if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(2))) {
         return false;
@@ -96,9 +96,9 @@ bool IRAM_ATTR SX1276::read(uint8_t *buffer, size_t length) {
 
     this->delegate_->begin_transaction();
     this->delegate_->transfer(0x00);
-    while (length > 0 && !this->irq_pin_->digital_read()) {
-      *buffer++ = this->delegate_->transfer(0x00);
-      length--;
+    while (!buffer.empty() && !this->irq_pin_->digital_read()) {
+      buffer.front() = this->delegate_->transfer(0x00);
+      buffer = buffer.subspan(1);
     }
     this->delegate_->end_transaction();
   }

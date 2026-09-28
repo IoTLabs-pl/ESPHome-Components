@@ -3,17 +3,19 @@
 #include <cstddef>
 #include <ctime>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
 #include "esphome/core/helpers.h"
-#include "esphome/components/wmbus_common/wmbus.h"
 
 namespace esphome {
 namespace wmbus_radio {
 
-enum class BlockType { UNKNOWN = 0, A = 1, B = 2 };
+enum class LinkMode { UNKNOWN = 0, C1, T1 };
+enum class BlockType { UNKNOWN = 0, A, B };
 
+const char *toString(LinkMode link_mode);
 const char *toString(BlockType type);
 
 struct Frame;
@@ -24,8 +26,7 @@ struct Packet {
  public:
   Packet();
 
-  uint8_t *rx_data_ptr();
-  size_t rx_capacity();
+  std::span<uint8_t> rx_span();
   bool calculate_payload_size();
   void set_rssi(int8_t rssi);
   bool validate_preamble();
@@ -35,6 +36,7 @@ struct Packet {
 
  protected:
   std::vector<uint8_t> data_;
+  std::span<uint8_t> rx_span_{data_};
 
   size_t expected_size();
   size_t expected_size_ = 0;

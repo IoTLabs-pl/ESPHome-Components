@@ -1,0 +1,14 @@
+esphome:
+  name: wmbus-host-test
+
+host:
+
+external_components:
+  - source: ../../../components
+  - source: components
+
+wmbus_common:
+  # The runner picks drivers by name at run time.
+  drivers: all
+
+wmbus_test_runner:
