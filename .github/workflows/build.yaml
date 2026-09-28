@@ -12,9 +12,13 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - wmbus/test
+          - wmbus/sx1276
           - wmbus/sx1262
           - panasonic_aquarea/test
+        variant:
+          - esp32
+          - esp32s3
+          - esp32c3
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -23,6 +27,7 @@ jobs:
         with:
           yaml-file: tests/${{ matrix.config }}.yaml
           version: ${{ env.ESPHOME_VERSION }}
+          substitutions: variant=${{ matrix.variant }}
 
   telegrams:
     runs-on: ubuntu-latest

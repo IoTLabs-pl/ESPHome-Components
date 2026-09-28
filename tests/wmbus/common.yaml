@@ -1,11 +1,13 @@
-# Uses every knob of the wmbus_* components: no other configuration catches a codegen break.
 # One driver per generator path: all of them overflow the default 4 MB partition.
+
+substitutions:
+  variant: esp32
 
 esphome:
   name: test-wmbus
 
 esp32:
-  board: esp32dev
+  variant: ${variant}
   framework:
     type: esp-idf
 
@@ -51,10 +53,6 @@ wmbus_common:
         - total_energy_consumption_kwh
 
 wmbus_radio:
-  radio_type: SX1276
-  cs_pin: GPIO3
-  reset_pin: GPIO4
-  dio1_pin: GPIO5
   on_packet:
     - then:
         - logger.log:
@@ -62,6 +60,7 @@ wmbus_radio:
             args: ["(int) packet->get_raw_data().size()"]
   on_frame:
     - then:
+        - lambda: ESP_LOGI("test", "Frame from %s", frame->meter_id().c_str());
         - wmbus_radio.send_frame_with_socket:
             id: tcp_transmitter
             format: rtlwmbus
