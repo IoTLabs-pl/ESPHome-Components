@@ -1,6 +1,7 @@
 #include "decode3of6.h"
 
-#include <map>
+#include <algorithm>
+#include <array>
 
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
@@ -8,13 +9,12 @@
 namespace esphome {
 namespace wmbus_radio {
 static const char *TAG = "3of6";
-std::optional<std::vector<uint8_t>> decode3of6(std::span<const uint8_t> coded_data) {
-  static const std::map<uint8_t, uint8_t> lookupTable = {
-      {0b010110, 0x0}, {0b001101, 0x1}, {0b001110, 0x2}, {0b001011, 0x3}, {0b011100, 0x4}, {0b011001, 0x5},
-      {0b011010, 0x6}, {0b010011, 0x7}, {0b101100, 0x8}, {0b100101, 0x9}, {0b100110, 0xA}, {0b100011, 0xB},
-      {0b110100, 0xC}, {0b110001, 0xD}, {0b110010, 0xE}, {0b101001, 0xF},
-  };
+static constexpr std::array<uint8_t, 16> CODES = {
+    0b010110, 0b001101, 0b001110, 0b001011, 0b011100, 0b011001, 0b011010, 0b010011,
+    0b101100, 0b100101, 0b100110, 0b100011, 0b110100, 0b110001, 0b110010, 0b101001,
+};
 
+std::optional<std::vector<uint8_t>> decode3of6(std::span<const uint8_t> coded_data) {
   // ESP_LOGD(TAG, "Decoding 3of6 data: %s", format_hex(coded_data).c_str());
 
   std::vector<uint8_t> decodedBytes;
@@ -31,16 +31,17 @@ std::optional<std::vector<uint8_t>> decode3of6(std::span<const uint8_t> coded_da
       code |= (data[byte_idx + 1] >> (8 - bit_offset));
     code >>= 2;
 
-    auto it = lookupTable.find(code);
-    if (it == lookupTable.end()) {
+    auto it = std::ranges::find(CODES, code);
+    if (it == CODES.end()) {
       // ESP_LOGW(TAG, "Invalid code: 0x%02X", code);
       return {};
     }
+    uint8_t nibble = it - CODES.begin();
 
     if (i % 2 == 0)
-      decodedBytes.push_back(it->second << 4);
+      decodedBytes.push_back(nibble << 4);
     else
-      decodedBytes.back() |= it->second;
+      decodedBytes.back() |= nibble;
   }
 
   // ESP_LOGV(TAG, "Successfully decoded %zu bytes", decodedBytes.size());
