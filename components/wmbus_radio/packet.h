@@ -21,41 +21,26 @@ const char *toString(BlockType type);
 struct Frame;
 
 struct Packet {
-  friend class Frame;
-
  public:
   Packet();
 
-  std::span<uint8_t> rx_span();
-  bool calculate_payload_size();
+  std::span<uint8_t> head();
+  // Empty when the head does not start a valid packet
+  std::span<uint8_t> rest();
   void set_rssi(int8_t rssi);
-  bool validate_preamble();
 
   std::optional<Frame> convert_to_frame();
   const std::vector<uint8_t> &get_raw_data() const;
 
  protected:
   std::vector<uint8_t> data_;
-  std::span<uint8_t> rx_span_{data_};
-
-  size_t expected_size();
-  size_t expected_size_ = 0;
-
-  LinkMode link_mode();
   LinkMode link_mode_ = LinkMode::UNKNOWN;
-
-  BlockType block_type();
   BlockType block_type_ = BlockType::UNKNOWN;
-
-  void trim_preamble();
-  uint8_t l_field();
-
   int8_t rssi_;
 };
 
 struct Frame {
  public:
-  Frame(Packet *packet);
   Frame(std::vector<uint8_t> data, LinkMode lm, BlockType bt, int8_t rssi)
       : data_(std::move(data)), link_mode_(lm), block_type_(bt), rssi_(rssi){};
 

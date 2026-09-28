@@ -1,0 +1,8 @@
+packages:
+  wmbus: !include common.yaml
+
+wmbus_radio:
+  radio_type: SX1276
+  cs_pin: GPIO3
+  reset_pin: GPIO4
+  dio1_pin: GPIO5

@@ -1,46 +1,40 @@
 #include "component.h"
 
 #include "freertos/task.h"
-#include "freertos/queue.h"
 
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
-
-#define ASSERT(expr, expected, before_exit) \
-  { \
-    auto result = (expr); \
-    if (!!result != expected) { \
-      ESP_LOGE(TAG, "Assertion failed: %s -> %d", #expr, result); \
-      before_exit; \
-      return; \
-    } \
-  }
-
-#define ASSERT_SETUP(expr) ASSERT(expr, 1, this->mark_failed())
 
 namespace esphome {
 namespace wmbus_radio {
 static const char *TAG = "wmbus";
 
 void Radio::setup() {
-  ASSERT_SETUP((this->packet_queue_ = xQueueCreate(3, sizeof(Packet *))) != nullptr);
+  if (this->transceiver_->is_failed()) {
+    ESP_LOGE(TAG, "Transceiver failed, not starting the receiver");
+    this->mark_failed();
+    return;
+  }
 
-  ASSERT_SETUP(xTaskCreate((TaskFunction_t) this->receiver_task, "radio_recv", 3 * 1024, this, 2,
-                           &(this->receiver_task_handle_)));
+  if (xTaskCreate((TaskFunction_t) this->receiver_task, "radio_recv", 3 * 1024, this, 2, nullptr) != pdPASS) {
+    ESP_LOGE(TAG, "Failed to create receiver task");
+    this->mark_failed();
+    return;
+  }
 
-  ESP_LOGI(TAG, "Receiver task created [%p]", this->receiver_task_handle_);
-
-  this->radio->attach_data_interrupt(Radio::wakeup_receiver_task_from_isr, &(this->receiver_task_handle_));
+  ESP_LOGI(TAG, "Receiver task created");
 }
 
 void Radio::loop() {
-  Packet *p;
-  if (xQueueReceive(this->packet_queue_, &p, 0) != pdPASS)
+  std::unique_ptr<Packet> packet{this->packet_queue_.pop()};
+  if (!packet) {
+    this->disable_loop();
     return;
+  }
 
-  this->on_packet_callback_manager(p);
+  this->on_packet_callback_manager_(packet.get());
 
-  auto frame = p->convert_to_frame();
+  auto frame = packet->convert_to_frame();
 
   if (!frame)
     return;
@@ -48,74 +42,48 @@ void Radio::loop() {
   ESP_LOGI(TAG, "Frame created (%zu bytes) [RSSI: %d, mode:%s%s]", frame->data().size(), frame->rssi(),
            toString(frame->link_mode()), toString(frame->block_type()));
 
-  uint8_t packet_handled = 0;
-  for (auto &handler : this->frame_handlers_)
-    handler(&frame.value());
+  this->on_frame_callback_manager_(&frame.value());
 
   ESP_LOGI(TAG, "Telegram handled by %d handlers", frame->frame_handlers_count());
 }
 
-void IRAM_ATTR Radio::wakeup_receiver_task_from_isr(TaskHandle_t *arg) {
-  BaseType_t xHigherPriorityTaskWoken;
-  vTaskNotifyGiveFromISR(*arg, &xHigherPriorityTaskWoken);
-  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
 void Radio::receive_frame() {
-  this->radio->restart_rx();
+  this->transceiver_->reset_receiver();
 
   auto packet = std::make_unique<Packet>();
 
-  if (!ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(60000))) {
-    ESP_LOGD(TAG, "Radio interrupt timeout");
+  if (!this->transceiver_->read(packet->head(), pdMS_TO_TICKS(60000))) {
+    ESP_LOGV(TAG, "Failed to read packet head");
     return;
   }
 
-  if (!this->radio->read(packet->rx_span())) {
-    ESP_LOGV(TAG, "Failed to read preamble");
+  const auto rest = packet->rest();
+  if (rest.empty()) {
+    ESP_LOGV(TAG, "Received invalid packet head: [%s]", format_hex_pretty(packet->get_raw_data()).c_str());
     return;
   }
 
-  if (!packet->validate_preamble()) {
-    ESP_LOGV(TAG, "Received invalid preamble: [%s]", format_hex_pretty(packet->get_raw_data()).c_str());
-    return;
-  }
+  packet->set_rssi(this->transceiver_->get_rssi());
 
-  if (!packet->calculate_payload_size()) {
-    ESP_LOGV(TAG, "Cannot calculate payload size");
-    return;
-  }
-
-  packet->set_rssi(this->radio->get_rssi());
-
-  if (!this->radio->read(packet->rx_span())) {
+  if (!this->transceiver_->read(rest, Transceiver::SINGLE_BYTE_TIMEOUT)) {
     ESP_LOGW(TAG, "Failed to read data");
     return;
   }
 
-  auto packet_ptr = packet.get();
-
-  if (xQueueSend(this->packet_queue_, &packet_ptr, 0) == pdTRUE) {
-    ESP_LOGV(TAG, "Queue items: %zu", uxQueueMessagesWaiting(this->packet_queue_));
-    ESP_LOGV(TAG, "Queue send success");
+  if (this->packet_queue_.push(packet.get())) {
     packet.release();
-  } else
+    this->enable_loop_soon_any_context();
+    ESP_LOGV(TAG, "Queue items: %zu", this->packet_queue_.size());
+    ESP_LOGV(TAG, "Queue send success");
+  } else {
     ESP_LOGW(TAG, "Queue send failed");
+  }
 }
 
 void Radio::receiver_task(Radio *arg) {
-  ESP_LOGE(TAG, "Hello from radio task!");
-  int counter = 0;
+  arg->transceiver_->start_receiver(xTaskGetCurrentTaskHandle());
   while (true)
     arg->receive_frame();
-}
-
-void Radio::add_frame_handler(std::function<void(Frame *)> &&callback) {
-  this->frame_handlers_.push_back(std::move(callback));
-}
-
-void Radio::on_packet(std::function<void(Packet *)> &&callback) {
-  this->on_packet_callback_manager.add(std::move(callback));
 }
 
 }  // namespace wmbus_radio

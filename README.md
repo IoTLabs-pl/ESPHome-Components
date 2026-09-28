@@ -1,6 +1,6 @@
 # ESPHome Components
 
-![ESPHome](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FIoTLabs-pl%2FESPHome-Components%2Frefs%2Fheads%2Fmaster%2F.github%2Fworkflows%2Fbuild.yaml&query=%24.jobs.build.steps...with.version&label=ESPHome&style=for-the-badge&color=f3922d&labelColor=2b4c5a)
+![ESPHome](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FIoTLabs-pl%2FESPHome-Components%2Frefs%2Fheads%2Fmaster%2F.github%2Fworkflows%2Fbuild.yaml&query=%24.env.ESPHOME_VERSION&label=ESPHome&style=for-the-badge&color=f3922d&labelColor=2b4c5a)
 ![GitHub License](https://img.shields.io/github/license/IoTLabs-pl/esphome-components?style=for-the-badge&color=f3922d&labelColor=2b4c5a)
 
 This repository contains custom [ESPHome](https://esphome.io/) components for devices developed by [IoTLabs](https://iotlabs.pl).
@@ -165,30 +165,53 @@ When you use `sensor` and `text_sensor` platforms, required fields will be autom
 For both `sensor` and `text_sensor`, all config from generic [Sensor](https://esphome.io/components/sensor/index.html) and [Text Sensor](https://esphome.io/components/text_sensor/index.html) components is available, so you can use filters, icons, etc.
 
 ## `wmbus_radio`
-This component provides a radio interface LoRa 868MHz transceivers allowing to receive wM-Bus packets. At the moment it support only Semtech SX1276 (RFM95/RFM96).
-As a dependency, it requires `spi` component to be configured in ESPHome.
+This component provides a radio interface for 868 MHz LoRa transceivers, allowing it to receive wM-Bus packets. It supports Semtech SX1276 (RFM95/RFM96) and SX1262 modules.
+It needs ESPHome 2026.8.0 or newer and an `spi` component configured.
 
-**Example configuration:**
+**SX1276 example:**
 
 ```yaml
 spi:
-  clk_pin: GPIO1
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
   miso_pin: GPIO2
-  mosi_pin: GPIO3
   id: spi_bus
 
 wmbus_radio:
   id: radio_component
   radio_type: SX1276
+  cs_pin: GPIO3
   reset_pin: GPIO4
-  irq_pin: GPIO5
+  dio1_pin: GPIO5
   on_frame:
     - wmbus_radio.send_frame_with_socket:
         id: transmitter
         format: rtlwmbus
 ```
 
-For SX1276, `reset_pin` should be connected to the reset pin and `irq_pin` should be connected to the DIO1 pin of the radio module.
+`reset_pin` and `dio1_pin` go to the RESET and DIO1 pins of the radio module. `irq_pin` is the old name of `dio1_pin`; it still works with a deprecation warning and will be removed in 2027.3.0.
+
+**SX1262 example:**
+
+```yaml
+spi:
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
+  miso_pin: GPIO2
+
+wmbus_radio:
+  id: radio_component
+  radio_type: SX1262
+  cs_pin: GPIO3
+  reset_pin: GPIO4
+  busy_pin: GPIO5
+  dio1_pin: GPIO6
+  rf_switch: true
+  tcxo_voltage: 1.8V
+  use_dcdc: true
+```
+
+SX1262 also needs `busy_pin` wired to its BUSY pin. `tcxo_voltage` is optional and accepts the supported SX1262 voltages: `1.6V`, `1.7V`, `1.8V`, `2.2V`, `2.4V`, `2.7V`, `3.0V`, or `3.3V`. It defaults to `0V`, for modules where DIO3 does not control a TCXO. `rf_switch` defaults to `false`; enable it only when DIO2 drives the RF switch. `use_dcdc` defaults to `true`. `rx_boost` (default `false`) switches the receiver to boosted gain, trading a little more current for better sensitivity.
 
 The `on_frame` trigger can be used to send received wM-Bus packets to a remote server using `socket_transmitter` component. It can also be used to process packets in any other way, such as sending them to MQTT broker or HTTP server.
 

@@ -8,7 +8,7 @@
 namespace esphome {
 namespace wmbus_radio {
 static const char *TAG = "3of6";
-std::optional<std::vector<uint8_t>> decode3of6(std::vector<uint8_t> &coded_data) {
+std::optional<std::vector<uint8_t>> decode3of6(std::span<const uint8_t> coded_data) {
   static const std::map<uint8_t, uint8_t> lookupTable = {
       {0b010110, 0x0}, {0b001101, 0x1}, {0b001110, 0x2}, {0b001011, 0x3}, {0b011100, 0x4}, {0b011001, 0x5},
       {0b011010, 0x6}, {0b010011, 0x7}, {0b101100, 0x8}, {0b100101, 0x9}, {0b100110, 0xA}, {0b100011, 0xB},

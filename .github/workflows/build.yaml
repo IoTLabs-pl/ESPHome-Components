@@ -4,6 +4,7 @@ on:
 
 env:
   ESPHOME_VERSION: "2026.8.2"
+  PYTHON_VERSION: "3.14"
 
 jobs:
   build:
@@ -12,8 +13,13 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - wmbus/test
+          - wmbus/sx1276
+          - wmbus/sx1262
           - panasonic_aquarea/test
+        variant:
+          - esp32
+          - esp32s3
+          - esp32c3
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -22,6 +28,7 @@ jobs:
         with:
           yaml-file: tests/${{ matrix.config }}.yaml
           version: ${{ env.ESPHOME_VERSION }}
+          substitutions: variant=${{ matrix.variant }}
 
   telegrams:
     runs-on: ubuntu-latest
@@ -30,7 +37,13 @@ jobs:
         uses: actions/checkout@v7
       - name: Set up Python
         uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install esphome
         run: pip install "esphome==$ESPHOME_VERSION" pytest
+      - name: Build the telegram runner
+        run: |
+          esphome compile tests/wmbus/host/test.yaml
+          install -D "$(esphome idedata tests/wmbus/host/test.yaml | jq -r .prog_path)" ~/.local/bin/wmbus-test-runner
       - name: Decode the upstream telegrams
         run: pytest tests/wmbus/host -q
