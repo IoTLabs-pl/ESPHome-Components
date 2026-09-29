@@ -42,4 +42,4 @@ def split_name_unit(field_with_suffix):
 
 def get_human_readable_unit(field_unit: str):
     _, unit = split_name_unit(field_unit)
-    return units_dict().get(unit.lower(), unit or "?")
+    return units_dict().get(unit.lower(), unit and "?")

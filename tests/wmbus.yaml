@@ -56,3 +56,9 @@ sensor:
     field: total_m3
     name: "Test Water Consumption"
 
+  - platform: wmbus_meter
+    id: test_timestamp_sensor
+    parent_id: test_meter
+    field: timestamp
+    name: "Test Last Update"
+    device_class: timestamp
