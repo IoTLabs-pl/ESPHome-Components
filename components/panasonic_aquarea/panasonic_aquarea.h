@@ -80,7 +80,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   std::forward_list<ReadableEntity *> standard_response_entities_;
   std::forward_list<ReadableEntity *> extra_response_entities_;
 
-  std::vector<uint8_t> awaiting_command_data = std::vector<uint8_t>(Protocol::REQUEST_FRAME_SIZE);
+  Protocol::RequestFrame awaiting_command_data{};
   bool awaiting_command_dirty_flag_{false};
 
   enum class CommunicationState {
@@ -119,7 +119,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   void dump_config() override;
   float get_setup_priority() const override;
   void add_entity(ReadableEntity *entity, bool extra = false);
-  std::vector<uint8_t> &get_command_data() {
+  Protocol::RequestFrame &get_command_data() {
     this->awaiting_command_dirty_flag_ = true;
     return this->awaiting_command_data;
   }

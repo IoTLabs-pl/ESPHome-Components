@@ -48,9 +48,9 @@ void Device::handle_command_queue() {
   if (this->start_response_timeout(true)) {
     ESP_LOGD(TAG, "Sending command message");
 
-    auto msg_bytes = Protocol::Serializer::command_message(std::move(this->awaiting_command_data));
+    auto msg_bytes = Protocol::Serializer::command_message(this->awaiting_command_data);
     this->write_array(msg_bytes);
-    this->awaiting_command_data = std::vector<uint8_t>(Protocol::REQUEST_FRAME_SIZE);
+    this->awaiting_command_data.fill(0);
     this->awaiting_command_dirty_flag_ = false;
   }
 }
@@ -176,7 +176,7 @@ void Device::update() {
     auto commands_range = this->supports_extra_query_entity_.state ? 2 : 1;
     auto idx = this->request_counter_ % commands_range;
 
-    const static std::vector<uint8_t> requests[] = {
+    const static Protocol::RequestFrame requests[] = {
         Protocol::Serializer::polling_message(),
         Protocol::Serializer::polling_extra_message(),
     };

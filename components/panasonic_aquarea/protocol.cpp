@@ -46,8 +46,7 @@ bool Parser::feed(uint8_t byte) {
 }
 
 // ---- Serializer implementation ----
-std::vector<uint8_t> Serializer::serialize_message(PreambleByte preamble, CategoryByte category,
-                                                   std::vector<uint8_t> frame) {
+RequestFrame Serializer::serialize_message(PreambleByte preamble, CategoryByte category, RequestFrame frame) {
   // Expect full, zero-filled frame of proper size.
   // Layout: PREAMBLE(0) LENGTH(1) DIRECTION(2) CATEGORY(3) PAYLOAD(...) CHECKSUM(last)
   frame[static_cast<size_t>(ByteIndex::PREAMBLE)] = static_cast<uint8_t>(preamble);
@@ -61,19 +60,19 @@ std::vector<uint8_t> Serializer::serialize_message(PreambleByte preamble, Catego
   return frame;
 }
 
-std::vector<uint8_t> Serializer::polling_message() {
+RequestFrame Serializer::polling_message() {
   // Message format: 0x71, 0x6C, 0x01, 0x10, ... (111 bytes total)
-  return serialize_message(PreambleByte::POLLING, CategoryByte::STANDARD, std::vector<uint8_t>(REQUEST_FRAME_SIZE));
+  return serialize_message(PreambleByte::POLLING, CategoryByte::STANDARD, RequestFrame{});
 }
 
-std::vector<uint8_t> Serializer::polling_extra_message() {
+RequestFrame Serializer::polling_extra_message() {
   // Message format: 0x71, 0x6C, 0x01, 0x21, ... (111 bytes total)
-  return serialize_message(PreambleByte::POLLING, CategoryByte::EXTRA, std::vector<uint8_t>(REQUEST_FRAME_SIZE));
+  return serialize_message(PreambleByte::POLLING, CategoryByte::EXTRA, RequestFrame{});
 }
 
-std::vector<uint8_t> Serializer::command_message(std::vector<uint8_t> command_data) {
+RequestFrame Serializer::command_message(RequestFrame command_data) {
   // Message format: 0xF1, 0x6C, 0x01, 0x10, ... (111 bytes total)
-  return serialize_message(PreambleByte::COMMAND, CategoryByte::STANDARD, std::move(command_data));
+  return serialize_message(PreambleByte::COMMAND, CategoryByte::STANDARD, command_data);
 }
 }  // namespace Protocol
 

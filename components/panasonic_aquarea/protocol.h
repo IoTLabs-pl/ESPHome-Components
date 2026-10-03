@@ -37,6 +37,7 @@ template<typename T> static uint8_t calculate_checksum(const T &data) {
   return std::accumulate(data.begin(), data.end(), uint8_t{});
 }
 
+using RequestFrame = std::array<uint8_t, REQUEST_FRAME_SIZE>;
 using ResponseFrame = StaticVector<uint8_t, RESPONSE_FRAME_SIZE>;
 
 class Parser {
@@ -57,13 +58,12 @@ class Parser {
 
 class Serializer {
  public:
-  static std::vector<uint8_t> polling_message();
-  static std::vector<uint8_t> polling_extra_message();
-  static std::vector<uint8_t> command_message(std::vector<uint8_t> command_data);
+  static RequestFrame polling_message();
+  static RequestFrame polling_extra_message();
+  static RequestFrame command_message(RequestFrame command_data);
 
  private:
-  static std::vector<uint8_t> serialize_message(PreambleByte preamble, CategoryByte category,
-                                                std::vector<uint8_t> frame);
+  static RequestFrame serialize_message(PreambleByte preamble, CategoryByte category, RequestFrame frame);
 };
 }  // namespace Protocol
 }  // namespace panasonic_aquarea
