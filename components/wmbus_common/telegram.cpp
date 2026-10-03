@@ -6,6 +6,7 @@
 #include "crypto.h"
 #include "quirks.h"
 #include "walk.h"
+#include "esphome/core/helpers.h"
 
 namespace wmbus {
 
@@ -84,11 +85,11 @@ const Address &Telegram::meter_address() const { return tpl && tpl->address ? *t
 const char *Telegram::media_type() const { return media_type_of(sender().type, sender().mfct); }
 
 static uint32_t id_of(std::span<const uint8_t, 4> bytes) {
-  return (uint32_t) bytes[3] << 24 | (uint32_t) bytes[2] << 16 | (uint32_t) bytes[1] << 8 | bytes[0];
+  return esphome::encode_uint32(bytes[3], bytes[2], bytes[1], bytes[0]);
 }
 
 Address Address::parse(std::span<const uint8_t, 8> b) {
-  return {(uint16_t) (b[1] << 8 | b[0]), id_of(b.subspan<2, 4>()), b[6], b[7]};
+  return {esphome::encode_uint16(b[1], b[0]), id_of(b.subspan<2, 4>()), b[6], b[7]};
 }
 
 static std::array<uint8_t, 8> bytes_of(const Address &a) {
@@ -128,7 +129,7 @@ static bool carries_records(uint8_t ci) {
 }
 
 static bool payload_crc_ok(std::span<const uint8_t> frame, size_t at) {
-  const uint16_t crc = frame[at + 1] << 8 | frame[at];
+  const uint16_t crc = esphome::encode_uint16(frame[at + 1], frame[at]);
   return crc == wmbus::crc16_en13757(frame.subspan(at + 2));
 }
 
@@ -202,7 +203,7 @@ std::optional<Afl> Afl::parse(std::span<const uint8_t> frame, size_t at) {
   size_t pos = at + 2;  // CI and the AFL length
   const auto left = [&] { return frame.size() - pos; };
 
-  const uint16_t fc = frame[pos + 1] << 8 | frame[pos];
+  const uint16_t fc = esphome::encode_uint16(frame[pos + 1], frame[pos]);
   pos += 2;
   const bool has_key_info = fc & 0x0200;
   const bool has_mac = fc & 0x0400;
@@ -251,7 +252,7 @@ std::optional<Tpl> Tpl::parse(std::span<const uint8_t> frame, size_t at) {
         return {};
       // id(4) M(2) version type
       const std::span<const uint8_t, 8> b = frame.subspan(pos).first<8>();
-      tpl.address = Address{(uint16_t) (b[5] << 8 | b[4]), id_of(b.first<4>()), b[6], b[7]};
+      tpl.address = Address{esphome::encode_uint16(b[5], b[4]), id_of(b.first<4>()), b[6], b[7]};
       pos += 8;
       [[fallthrough]];
     }
@@ -261,7 +262,7 @@ std::optional<Tpl> Tpl::parse(std::span<const uint8_t> frame, size_t at) {
         return {};
       tpl.acc = frame[pos++];
       tpl.sts = frame[pos++];
-      const uint16_t cfg = frame[pos + 1] << 8 | frame[pos];
+      const uint16_t cfg = esphome::encode_uint16(frame[pos + 1], frame[pos]);
       pos += 2;
 
       tpl.sec_mode = (cfg >> 8) & 0x1f;
@@ -277,7 +278,7 @@ std::optional<Tpl> Tpl::parse(std::span<const uint8_t> frame, size_t at) {
         // Mode 10 extension: tag size, KDF, key id, key version flag; then a 4 byte message counter.
         if (left() < 2)
           return {};
-        const uint16_t cfe = frame[pos + 1] << 8 | frame[pos];
+        const uint16_t cfe = esphome::encode_uint16(frame[pos + 1], frame[pos]);
         pos += 2;
         CcmHeader ccm{};
         ccm.tag_size = (uint8_t) (4 + ((cfe >> 8) & 0x03) * 4);
@@ -401,7 +402,7 @@ bool Telegram::potentially_decrypt(Key &key) {
 bool Telegram::parse_compact_apl(CompactFormats &formats) {
   if (left() < 2)
     return false;
-  const uint16_t signature = frame[pos_ + 1] << 8 | frame[pos_];
+  const uint16_t signature = esphome::encode_uint16(frame[pos_ + 1], frame[pos_]);
   pos_ += 2;
 
   // Unknown until a full frame from this meter has arrived.
@@ -594,7 +595,7 @@ DerivedKeys Telegram::derive_keys(std::span<const uint8_t, 16> key) const {
 
 static bool crc_ok(std::span<const uint8_t> data, std::span<const uint8_t, 2> crc_bytes) {
   uint16_t calc = wmbus::crc16_en13757(data);
-  uint16_t check = crc_bytes[0] << 8 | crc_bytes[1];
+  uint16_t check = esphome::encode_uint16(crc_bytes[0], crc_bytes[1]);
   return calc == check;
 }
 
@@ -683,7 +684,8 @@ void Telegram::read_records(std::optional<std::span<const uint8_t>> format, Comp
 }
 
 IxmlEntry &Telegram::ixml_entry_for(std::span<const uint8_t> key) {
-  const auto held = std::ranges::find_if(ixml_entries, [key](const IxmlEntry &e) { return std::ranges::equal(e.id, key); });
+  const auto held =
+      std::ranges::find_if(ixml_entries, [key](const IxmlEntry &e) { return std::ranges::equal(e.id, key); });
   return held != ixml_entries.end() ? *held : ixml_entries.emplace_back();
 }
 

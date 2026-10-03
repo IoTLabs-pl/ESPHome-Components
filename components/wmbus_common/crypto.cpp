@@ -1,6 +1,7 @@
 #include "crypto.h"
 
 #include "esphome/core/defines.h"
+#include "esphome/core/helpers.h"
 
 #if defined(USE_HOST)
 #include <openssl/evp.h>
@@ -105,19 +106,7 @@ std::array<uint8_t, 16> aes_cmac(std::span<const uint8_t, 16> key, std::span<con
 }
 
 uint16_t crc16_en13757(std::span<const uint8_t> data) {
-  static const uint16_t POLY = 0x3D65;
-
-  uint16_t crc = 0x0000;
-  for (uint8_t b : data) {
-    for (int bit = 0; bit < 8; ++bit) {
-      if (((crc & 0x8000) >> 8) ^ (b & 0x80))
-        crc = (uint16_t) ((crc << 1) ^ POLY);
-      else
-        crc = (uint16_t) (crc << 1);
-      b = (uint8_t) (b << 1);
-    }
-  }
-  return (uint16_t) ~crc;
+  return esphome::crc16be(data.data(), data.size(), 0x0000, 0x3D65, false, true);
 }
 
 }  // namespace wmbus

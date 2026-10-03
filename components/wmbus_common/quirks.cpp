@@ -71,7 +71,7 @@ static DiehlFrameInterpretation diehl_interpretation(const Telegram &t) {
   if (t.frame.size() < 15)
     return DiehlFrameInterpretation::NA;
   const std::span<const uint8_t> f = t.frame;
-  return diehl_interpretation(f[1], f[3] << 8 | f[2], f[10], f[14] << 8 | f[13]);
+  return diehl_interpretation(f[1], esphome::encode_uint16(f[3], f[2]), f[10], esphome::encode_uint16(f[14], f[13]));
 }
 
 void diehl_preprocess(Telegram &t) {
@@ -96,8 +96,7 @@ void diehl_preprocess(Telegram &t) {
 }
 
 static uint32_t uint32_from_bytes(std::span<const uint8_t> data, size_t offset) {
-  return ((uint32_t) data[offset] << 24) | ((uint32_t) data[offset + 1] << 16) | ((uint32_t) data[offset + 2] << 8) |
-         (uint32_t) data[offset + 3];
+  return esphome::encode_uint32(data[offset], data[offset + 1], data[offset + 2], data[offset + 3]);
 }
 
 static uint32_t convert_key(std::span<const uint8_t, 8> bytes) {
@@ -154,8 +153,8 @@ void add_default_key(Key &key, const Telegram &t) {
 bool diehl_decrypt_real_data(Telegram &t, size_t pos, const Key &key) {
   std::vector<uint8_t> decoded;
   for (uint32_t candidate : diehl_candidates(key)) {
-    decoded = decode_diehl_lfsr(t.dll_as_received, t.frame, candidate, DiehlLfsrCheck::CHECKSUM_AND_0XEF,
-                                t.frame[14] & 0xEF);
+    decoded =
+        decode_diehl_lfsr(t.dll_as_received, t.frame, candidate, DiehlLfsrCheck::CHECKSUM_AND_0XEF, t.frame[14] & 0xEF);
     if (!decoded.empty())
       break;
   }
@@ -188,7 +187,7 @@ std::optional<SapPriosIdentity> sap_prios_identity(const Telegram &t) {
   if (diehl_interpretation(t) != DiehlFrameInterpretation::SAP_PRIOS)
     return {};
   const std::span<const uint8_t> o = t.dll_as_received;
-  const uint32_t number = ((uint32_t) (o[7] & 0x03) << 24) | ((uint32_t) o[6] << 16) | ((uint32_t) o[5] << 8) | o[4];
+  const uint32_t number = esphome::encode_uint32(o[7] & 0x03, o[6], o[5], o[4]);
   // Eight digits: two-digit year of manufacture, then the serial number.
   const uint32_t yy = (number / 1000000) % 100;
   const uint32_t serial = number % 1000000;
