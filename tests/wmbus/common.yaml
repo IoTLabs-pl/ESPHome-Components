@@ -1,0 +1,92 @@
+substitutions:
+  variant: esp32
+
+esphome:
+  name: test-wmbus
+
+esp32:
+  variant: ${variant}
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: ../../components
+
+logger:
+
+wifi:
+  ssid: TestSSID
+  password: TestPass
+
+mqtt:
+  broker: 192.168.1.1
+  port: 1883
+
+spi:
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
+  miso_pin: GPIO2
+
+socket_transmitter:
+  - id: tcp_transmitter
+    ip_address: 192.168.1.1
+    port: 12345
+    protocol: TCP
+  - id: udp_transmitter
+    ip_address: 192.168.1.1
+    port: 12346
+    protocol: UDP
+
+wmbus_common:
+  drivers: all
+
+wmbus_radio:
+  on_packet:
+    - then:
+        - logger.log:
+            format: "packet of %d bytes"
+            args: ["(int) packet->get_raw_data().size()"]
+  on_frame:
+    - then:
+        - lambda: ESP_LOGI("test", "Frame from %s", frame->meter_id().c_str());
+        - wmbus_radio.send_frame_with_socket:
+            id: tcp_transmitter
+            format: rtlwmbus
+    - mark_as_handled: true
+      then:
+        - wmbus_radio.send_frame_with_socket:
+            id: udp_transmitter
+            format: raw
+        - wmbus_radio.send_frame_with_socket:
+            id: udp_transmitter
+            format: hex
+
+wmbus_meter:
+  - id: test_meter
+    meter_id: "01234567"
+    type: apator162
+    key: "00000000000000000000000000000000"
+    on_telegram:
+      - wmbus_meter.send_telegram_with_mqtt:
+          topic: test_topic
+      - socket_transmitter.send:
+          id: tcp_transmitter
+          data: !lambda return meter->as_json();
+
+sensor:
+  - platform: wmbus_meter
+    id: test_sensor
+    parent_id: test_meter
+    field: total_m3
+    name: "Test Water Consumption"
+
+text_sensor:
+  - platform: wmbus_meter
+    id: test_text_sensor
+    parent_id: test_meter
+    field: timestamp
+    name: "Test Meter Timestamp"
+  - platform: wmbus_meter
+    parent_id: test_meter
+    field: media
+    name: "Test Meter Media"

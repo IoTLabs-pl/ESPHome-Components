@@ -8,15 +8,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name:
-          - wmbus
-          - panasonic_aquarea
+        config:
+          - wmbus/sx1276
+          - wmbus/sx1262
+          - panasonic_aquarea/test
+        variant:
+          - esp32
+          - esp32s3
+          - esp32c3
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
       - name: Build firmware
-        id: esphome_build
         uses: esphome/build-action@v8.1.0
         with:
-          yaml-file: tests/${{ matrix.name }}.yaml
+          yaml-file: tests/${{ matrix.config }}.yaml
           version: "2026.9.1"
+          substitutions: variant=${{ matrix.variant }}
