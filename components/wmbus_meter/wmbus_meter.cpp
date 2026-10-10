@@ -30,7 +30,7 @@ bool Meter::is_encrypted() const { return this->meter && this->meter->meterKeys(
 
 void Meter::set_radio(wmbus_radio::Radio *radio) {
   this->radio = radio;
-  radio->add_frame_handler([this](wmbus_radio::Frame *frame) { return this->handle_frame(frame); });
+  radio->on_frame([this](wmbus_radio::Frame *frame) { return this->handle_frame(frame); });
 }
 
 void Meter::dump_config() {

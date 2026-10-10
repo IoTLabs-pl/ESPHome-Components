@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <ctime>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -12,48 +13,33 @@
 namespace esphome {
 namespace wmbus_radio {
 
-enum class BlockType { UNKNOWN = 0, A = 1, B = 2 };
+enum class BlockType { UNKNOWN = 0, A, B };
 
 const char *toString(BlockType type);
 
 struct Frame;
 
 struct Packet {
-  friend class Frame;
-
  public:
   Packet();
 
-  uint8_t *rx_data_ptr();
-  size_t rx_capacity();
-  bool calculate_payload_size();
+  std::span<uint8_t> head();
+  // Empty when the head does not start a valid packet
+  std::span<uint8_t> rest();
   void set_rssi(int8_t rssi);
-  bool validate_preamble();
 
   std::optional<Frame> convert_to_frame();
   const std::vector<uint8_t> &get_raw_data() const;
 
  protected:
   std::vector<uint8_t> data_;
-
-  size_t expected_size();
-  size_t expected_size_ = 0;
-
-  LinkMode link_mode();
   LinkMode link_mode_ = LinkMode::UNKNOWN;
-
-  BlockType block_type();
   BlockType block_type_ = BlockType::UNKNOWN;
-
-  void trim_preamble();
-  uint8_t l_field();
-
   int8_t rssi_;
 };
 
 struct Frame {
  public:
-  Frame(Packet *packet);
   Frame(std::vector<uint8_t> data, LinkMode lm, BlockType bt, int8_t rssi)
       : data_(std::move(data)), link_mode_(lm), block_type_(bt), rssi_(rssi){};
 
@@ -62,7 +48,7 @@ struct Frame {
   BlockType block_type();
   int8_t rssi();
 
-  std::vector<uint8_t> as_raw();
+  std::span<const uint8_t> as_raw() const;
   std::string as_hex();
   std::string as_rtlwmbus();
   std::string meter_id();
