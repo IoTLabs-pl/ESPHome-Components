@@ -25,10 +25,11 @@ ButtonClass = panasonic_aquarea_ns.class_(
 class ButtonDescriptor(PlatformDescriptor):
     """
     Describes a writable button (momentary) entity.
-    The corresponding bit is toggled when pressed.
+    The corresponding bits are set to `press_value` when pressed.
     """
 
     set: int | str
+    press_value: bool = True
 
     ALLOWED_EXTRACTORS: ClassVar = (BinaryExtractorConfig,)
 
@@ -36,7 +37,9 @@ class ButtonDescriptor(PlatformDescriptor):
         return button.button_schema(class_=ButtonClass)
 
     async def create_entity(self, config: dict):
-        return await button.new_button(config)
+        var = await button.new_button(config)
+        cg.add(var.set_press_value(self.press_value))
+        return var
 
 
 # Create platform instance

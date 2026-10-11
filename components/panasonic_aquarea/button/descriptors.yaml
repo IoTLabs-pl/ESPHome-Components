@@ -2,15 +2,23 @@
   name: Force Defrosting
   byte: 8
   bit: 7
+  bit_width: 1
 13:
   name: Force Sterilization
   byte: 8
-  bit: 5
-14_1:
-  name: Set Pump Service Mode
+  bit: 6
+  bit_width: 1
+"14:0":
+  name: Stop Pump Max Speed
   byte: 4
-  bit: 4
-14_2:
+  bit: 3
+  press_value: false
+"14:1":
   name: Set Pump Max Speed
   byte: 4
   bit: 3
+48:
+  name: Reset Error
+  byte: 8
+  bit: 8
+  bit_width: 1

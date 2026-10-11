@@ -34,9 +34,10 @@ class ExtractorConfig(ABC):
 class BinaryExtractorConfig(ExtractorConfig):
     byte: int
     bit: int
+    bit_width: int = 2
 
     def build(self) -> cg.MockObj:
-        return BinaryExtractor.new(self.byte, self.bit)
+        return BinaryExtractor.new(self.byte, self.bit, self.bit_width)
 
 
 @dataclass(frozen=True)

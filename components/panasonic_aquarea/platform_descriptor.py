@@ -103,7 +103,7 @@ class PlatformDescriptor(ABC, Generic[T]):
 
         # Register on hub component if needed (readable entities)
         if id.type.inherits_from(ReadableEntity):
-            cg.add(parent.add_entity(var, hasattr(self, "extra") and self.extra))
+            cg.add(parent.add_entity(var, getattr(self, "extra", False)))
 
         # Register as parented if needed (writable entities)
         if id.type.inherits_from(WritableEntity):
@@ -112,14 +112,6 @@ class PlatformDescriptor(ABC, Generic[T]):
         await cg.register_component(var, config)
 
         return var
-
-    @classmethod
-    def load(cls, module_path: Path) -> dict[int | str, "PlatformDescriptor"]:
-        yaml_path = module_path / "descriptors.yaml"
-
-        config: dict = yaml.full_load(yaml_path.read_text())
-
-        return {key: cls.from_yaml(key, values) for key, values in config.items()}
 
 
 class Platform:

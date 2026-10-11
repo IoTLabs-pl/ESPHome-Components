@@ -244,4 +244,10 @@
   min: -10
   max: 0
   device_class: "temperature"
-  
+46:
+  name: Heater On Outdoor Temp
+  byte: 85
+  offset: -128
+  min: -15
+  max: 20
+  device_class: "temperature"

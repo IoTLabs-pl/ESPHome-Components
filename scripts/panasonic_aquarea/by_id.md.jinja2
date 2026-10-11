@@ -3,5 +3,5 @@
 | Heishamon ID | Entity Type | Name | Example code |
 |--------------|-------------|------|--------------|
 {%- for entity in all_entities %}
-| `{{ entity.full_id }}` | `{{ entity.platform.name }}` | {{ entity.name }} | <pre lang="yaml"><code>{{ entity.platform.name }}:&#13;  - platform: panasonic_aquarea&#13;    {{ entity._id_field_name() }}: {{ entity.id_value }}</code></pre> |
+| `{{ entity.full_id }}` | `{{ entity.platform.name }}` | {{ entity.name }} | <pre lang="yaml"><code>{{ entity.platform.name }}:&#13;  - platform: panasonic_aquarea&#13;    {{ entity._id_field_name() }}: {{ entity.id_value | tojson }}</code></pre> |
 {%- endfor %}
