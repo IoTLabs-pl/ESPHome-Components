@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from math import log10, ceil
+from math import ceil, log10
 from pathlib import Path
 from typing import ClassVar
 
@@ -7,14 +7,13 @@ import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.components import sensor
 
-from .. import panasonic_aquarea_ns, ReadableEntity
-from ..descriptor_defaults import DEFAULT_UNITS, DEFAULT_STATE_CLASS
+from .. import ReadableEntity, panasonic_aquarea_ns
+from ..descriptor_defaults import DEFAULT_STATE_CLASS, DEFAULT_UNITS
 from ..extractor import (
     FloatExtractorConfig,
     LambdaExtractorConfig,
 )
-from ..platform_descriptor import PlatformDescriptor, Platform
-
+from ..platform_descriptor import Platform, PlatformDescriptor
 
 SensorClass = panasonic_aquarea_ns.class_(
     "Sensor",

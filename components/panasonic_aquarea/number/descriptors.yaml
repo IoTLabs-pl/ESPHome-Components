@@ -2,30 +2,66 @@
   name: Heat Request Zone 1
   byte: 38
   offset: -128
-  min: -5
-  max: 5
+  min: 10
+  max: 30
   device_class: "temperature"
+  variants:
+    - condition:
+        TOP76: "Direct"
+      min: 20
+      max: 65
+    - condition:
+        TOP76: "Comp. Curve"
+      min: -5
+      max: 5
 6:
   name: Cool Request Zone 1
   byte: 39
   offset: -128
-  min: -5
-  max: 5
+  min: 18
+  max: 28
   device_class: "temperature"
-7: 
+  variants:
+    - condition:
+        TOP81: "Direct"
+      min: 5
+      max: 20
+    - condition:
+        TOP81: "Comp. Curve"
+      min: -5
+      max: 5
+7:
   name: Heat Request Zone 2
   byte: 40
   offset: -128
-  min: -5
-  max: 5
+  min: 10
+  max: 30
   device_class: "temperature"
+  variants:
+    - condition:
+        TOP76: "Direct"
+      min: 20
+      max: 65
+    - condition:
+        TOP76: "Comp. Curve"
+      min: -5
+      max: 5
 8:
   name: Cool Request Zone 2
   byte: 41
   offset: -128
-  min: -5
-  max: 5
+  min: 18
+  max: 28
   device_class: "temperature"
+  variants:
+    - condition:
+        TOP81: "Direct"
+      min: 5
+      max: 20
+    - condition:
+        TOP81: "Comp. Curve"
+      min: -5
+      max: 5
 11:
   name: DHW Target Temperature
   byte: 42

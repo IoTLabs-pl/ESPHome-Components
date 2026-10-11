@@ -1,10 +1,12 @@
 #pragma once
 
+#include <array>
 #include <forward_list>
 
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
+#include "esphome/core/preferences.h"
 #include "esphome/components/uart/uart.h"
 
 #include "protocol.h"
@@ -20,6 +22,8 @@ class Device;
 
 template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEntity {
  public:
+  ReadOnlyEntity() = default;
+
   void set_extractor(ExtractorInterface<T> *extractor) { extractor_ = extractor; }
 
   void handle_update(std::span<const uint8_t> data) override {
@@ -35,7 +39,7 @@ template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEnt
   }
 
  protected:
-  ExtractorInterface<T> *extractor_;
+  ExtractorInterface<T> *extractor_{nullptr};
   Deduplicator<T> publish_dedup_;
 };
 
@@ -46,16 +50,78 @@ template<typename Derived, typename T> class WriteOnlyEntity : public WritableEn
   void send_command(const T &value);  // Definition after Device class
 
  protected:
-  ExtractorInterface<T> *extractor_;
+  ExtractorInterface<T> *extractor_{nullptr};
 };
 
 template<typename Derived, typename T>
 class ReadWriteEntity : public ReadOnlyEntity<Derived, T>, public WriteOnlyEntity<Derived, T> {
  public:
+  ReadWriteEntity() = default;
+
   void set_extractor(ExtractorInterface<T> *extractor) {
     ReadOnlyEntity<Derived, T>::set_extractor(extractor);
     WriteOnlyEntity<Derived, T>::set_extractor(extractor);
   }
+};
+
+template<typename Target> struct Variant {
+  using Condition = bool (*)(std::span<const uint8_t> data);
+  using Apply = void (*)(Target *);
+
+  Condition condition;
+  Apply apply;
+};
+
+template<typename Derived, typename Target = Derived> class VariantMixin {
+ public:
+  using VariantType = Variant<Target>;
+
+  VariantMixin() = default;
+
+  void set_variants(uint32_t pref_key, std::span<const VariantType> variants) {
+    this->pref_key_ = pref_key;
+    this->variants_ = variants;
+  }
+
+  void setup_variants() {
+    this->variant_pref_ = global_preferences->make_preference<uint8_t>(this->pref_key_);
+
+    uint8_t saved_index = 0;
+    if (this->variant_pref_.load(&saved_index) && saved_index <= this->variants_.size()) {
+      this->variant_index_ = saved_index;
+    }
+
+    auto name = static_cast<Derived *>(this)->get_name();
+    ESP_LOGI("panasonic_aquarea", "%s loaded variant %u from preferences", name.c_str(), this->variant_index_);
+
+    if (this->variant_index_ > 0) {
+      this->variants_[this->variant_index_ - 1].apply(static_cast<Target *>(static_cast<Derived *>(this)));
+    }
+  }
+
+  void evaluate_variants(std::span<const uint8_t> data) {
+    uint8_t matched_variant = 0;
+    for (size_t i = 0; i < this->variants_.size(); i++) {
+      if (this->variants_[i].condition(data)) {
+        matched_variant = static_cast<uint8_t>(i + 1);
+        break;
+      }
+    }
+
+    if (this->variant_index_ != matched_variant) {
+      this->variant_index_ = matched_variant;
+      this->variant_pref_.save(&this->variant_index_);
+      auto name = static_cast<Derived *>(this)->get_name();
+      ESP_LOGI("panasonic_aquarea", "%s detected variant %u, saved to preferences (applied after restart)",
+               name.c_str(), matched_variant);
+    }
+  }
+
+ protected:
+  uint32_t pref_key_{0};
+  uint8_t variant_index_{0};
+  std::span<const VariantType> variants_{};
+  ESPPreferenceObject variant_pref_;
 };
 
 class Device : public PollingComponent, public uart::UARTDevice {
