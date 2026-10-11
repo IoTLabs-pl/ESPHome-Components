@@ -8,9 +8,9 @@ from esphome.components import text_sensor
 
 from .. import ReadableEntity, panasonic_aquarea_ns
 from ..extractor import (
+    LambdaExtractorConfig,
     StringArrayExtractorConfig,
     StringMapExtractorConfig,
-    LambdaExtractorConfig,
 )
 from ..platform_descriptor import Platform, PlatformDescriptor
 

@@ -6,10 +6,9 @@ import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.components import switch
 
-from .. import panasonic_aquarea_ns, WritableEntity, ReadableEntity
+from .. import ReadableEntity, WritableEntity, panasonic_aquarea_ns
 from ..extractor import BinaryExtractorConfig
-from ..platform_descriptor import PlatformDescriptor, Platform
-
+from ..platform_descriptor import Platform, PlatformDescriptor
 
 SwitchClass = panasonic_aquarea_ns.class_(
     "Switch",

@@ -6,13 +6,12 @@ import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.components import select
 
-from .. import panasonic_aquarea_ns, ReadableEntity, WritableEntity
+from .. import ReadableEntity, WritableEntity, panasonic_aquarea_ns
 from ..extractor import (
     StringArrayExtractorConfig,
     StringMapExtractorConfig,
 )
-from ..platform_descriptor import PlatformDescriptor, Platform
-
+from ..platform_descriptor import Platform, PlatformDescriptor
 
 SelectClass = panasonic_aquarea_ns.class_(
     "Select",

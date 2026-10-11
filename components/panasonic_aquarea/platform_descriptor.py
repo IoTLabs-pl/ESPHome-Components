@@ -9,6 +9,7 @@ import yaml
 import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.core import ID
+from esphome.cpp_generator import LambdaExpression
 from esphome.const import CONF_NAME, CONF_ID
 
 from . import Device, ReadableEntity, WritableEntity
@@ -154,6 +155,14 @@ class Platform:
             import_module(f"..{platform.parent.name}", __name__)
         return cls.REGISTERED_PLATFORMS
 
+    @classmethod
+    def find(cls, full_id: str) -> PlatformDescriptor:
+        for platform in cls.auto_load():
+            for descriptor in platform._descriptors.values():
+                if descriptor.full_id == full_id:
+                    return descriptor
+        raise KeyError(f"No descriptor for {full_id}")
+
     @property
     def _id_field(self) -> str:
         return self._descriptor_class._id_field_name()
@@ -175,3 +184,10 @@ class Platform:
 
     async def to_code(self, config: dict) -> Any:
         return await self._descriptors[config[self._id_field]].to_code(config)
+
+
+def variant_condition(spec: dict) -> LambdaExpression:
+    assert len(spec) == 1, "condition must name exactly one entity"
+    ((full_id, value),) = spec.items()
+    return Platform.find(full_id).extractor.condition(value)
+

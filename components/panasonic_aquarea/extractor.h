@@ -31,7 +31,7 @@ class WritableEntity {
 // ==== Base for extractors of a bit field within one byte ====
 
 class BitField {
- protected:
+ public:
   BitField(size_t byte, uint8_t bit, uint8_t bit_width) : byte_(byte), bit_(bit), bit_width_(bit_width) {}
 
   uint8_t read_bits(std::span<const uint8_t> data) const {
@@ -41,6 +41,7 @@ class BitField {
     return (data[byte_] >> shift) & mask;
   }
 
+ protected:
   void write_bits(std::span<uint8_t> data, uint8_t value) const {
     uint8_t mask = (1 << bit_width_) - 1;
     uint8_t shift = 8 - (bit_ + bit_width_ - 1);

@@ -6,10 +6,9 @@ import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.components import binary_sensor
 
-from .. import panasonic_aquarea_ns, ReadableEntity
+from .. import ReadableEntity, panasonic_aquarea_ns
 from ..extractor import BinaryExtractorConfig
-from ..platform_descriptor import PlatformDescriptor, Platform
-
+from ..platform_descriptor import Platform, PlatformDescriptor
 
 BinarySensorClass = panasonic_aquarea_ns.class_(
     "BinarySensor",
