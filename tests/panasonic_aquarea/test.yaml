@@ -1,13 +1,16 @@
+substitutions:
+  variant: esp32
+
 esphome:
   name: test
 
 esp32:
-  board: esp32dev
+  variant: ${variant}
   framework:
     type: esp-idf
 
 external_components:
-  - source: ../components
+  - source: ../../components
 
 wifi:
   ssid: TestSSID
