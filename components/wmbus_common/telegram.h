@@ -211,10 +211,4 @@ struct Telegram {
   DerivedKeys derive_keys(std::span<const uint8_t, 16> key) const;
 };
 
-// For a buffer after remove_dll_crcs: only the C field is left to check.
-bool is_complete_frame(std::span<const uint8_t> data);
-
-// Format A has a CRC every 16 bytes, format B at the end; false when neither holds.
-bool remove_dll_crcs(std::vector<uint8_t> &payload);
-
 }  // namespace wmbus
