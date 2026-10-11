@@ -5,6 +5,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/gpio.h"
 #include "esphome/core/lock_free_queue.h"
+#include "esphome/core/static_task.h"
 
 #include "esphome/components/spi/spi.h"
 
@@ -31,6 +32,7 @@ class Radio : public Component {
 
   Transceiver *transceiver_{nullptr};
   LockFreeQueue<Packet, 4> packet_queue_;
+  StaticTask receiver_task_;
 
   CallbackManager<void(Frame *)> on_frame_callback_manager_;
   LazyCallbackManager<void(Packet *)> on_packet_callback_manager_;

@@ -16,7 +16,7 @@ void Radio::setup() {
     return;
   }
 
-  if (xTaskCreate((TaskFunction_t) this->receiver_task, "radio_recv", 3 * 1024, this, 2, nullptr) != pdPASS) {
+  if (!this->receiver_task_.create((TaskFunction_t) this->receiver_task, "radio_recv", 3 * 1024, this, 2, false)) {
     ESP_LOGE(TAG, "Failed to create receiver task");
     this->mark_failed();
     return;
