@@ -39,8 +39,11 @@ DEFAULT_ACCURACY_DECIMALS = {
 
 def unit_defaults(config):
     _, unit = split_unit(config[CONF_FIELD])
-    config.setdefault(CONF_UNIT_OF_MEASUREMENT, UNITS[unit].display if unit else "?")
-    config.setdefault(CONF_ACCURACY_DECIMALS, DEFAULT_ACCURACY_DECIMALS.get(unit, 0))
+    if unit:
+        config.setdefault(CONF_UNIT_OF_MEASUREMENT, UNITS[unit].display)
+        config.setdefault(CONF_ACCURACY_DECIMALS, DEFAULT_ACCURACY_DECIMALS.get(unit, 0))
+    else:
+        config.setdefault(CONF_ACCURACY_DECIMALS, 0)
     return config
 
 
