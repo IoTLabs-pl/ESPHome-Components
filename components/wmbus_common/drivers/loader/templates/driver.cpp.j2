@@ -1,0 +1,33 @@
+// Auto-generated from {{ origin }}; do not edit.
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+
+#include "esphome/components/wmbus_common/meter.h"
+
+namespace {
+
+using namespace wmbus;
+
+{% for d in declarations %}
+{% if d.kind == "formula" %}
+static double {{ d.symbol }}(const MeterState &state, const Record *dve) {
+  (void) state;
+  (void) dve;
+  return {{ d.value }};
+}
+{% elif d.kind == "array" %}
+static const {{ d.type }} {{ d.symbol }}[] = {{ d.value }};
+{% else %}
+static const {{ d.type }} {{ d.symbol }} = {{ d.value }};
+{% endif %}
+
+{% endfor %}
+}  // namespace
+
+namespace wmbus::drivers {
+
+extern const DriverSpec {{ symbol }} = {{ spec }};
+
+}  // namespace wmbus::drivers

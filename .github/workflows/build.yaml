@@ -2,6 +2,10 @@ name: Compilation check
 on:
   pull_request:
 
+env:
+  ESPHOME_VERSION: "2026.9.1"
+  PYTHON_VERSION: "3.14"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,5 +27,23 @@ jobs:
         uses: esphome/build-action@v8.1.0
         with:
           yaml-file: tests/${{ matrix.config }}.yaml
-          version: "2026.9.1"
+          version: ${{ env.ESPHOME_VERSION }}
           substitutions: variant=${{ matrix.variant }}
+
+  telegrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install esphome
+        run: pip install "esphome==$ESPHOME_VERSION" pytest
+      - name: Build the telegram runner
+        run: |
+          esphome compile tests/wmbus/host/test.yaml
+          install -D "$(esphome idedata tests/wmbus/host/test.yaml | jq -r .prog_path)" ~/.local/bin/wmbus-test-runner
+      - name: Decode the upstream telegrams
+        run: pytest tests/wmbus/host -q
