@@ -338,6 +338,7 @@ SCHEMA = All(
                 Required("default_fields"): str,
                 Required("detect"): {Required("mvt"): ensure_list(CSV_LIST, parse_mvt)},
                 Optional("fields"): {Required("field"): ensure_list(FIELD_SCHEMA)},
+                Remove("flags"): object,
                 Remove("tests"): object,
                 Remove("test"): object,
             }

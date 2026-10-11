@@ -32,11 +32,15 @@ ENVELOPE_KEYS = {"_", "driver", "id", "name", "timestamp", "rssi_dbm"}
 KNOWN_DECODE_DIFFS = {
     "actislink-ANYID": "addressed as ANYID and encrypted with DES",
     "hcae2-54423117#4": "delta_14_half_months_ago_hca untraced",
+    "kamwater-52525252#2": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
+    "kamwater-52525252#3": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
 }
 
 # Overlapping mvt lines: `type: auto` picks whichever driver the registry holds first.
 KNOWN_DETECTION_DIFFS = {
     "actislink-ANYID": "addressed as ANYID and encrypted with DES",
+    "kamwater-52525252#2": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
+    "kamwater-52525252#3": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
     "mkradio4a-01770002": "same mvt line as weh_07",
 }
 
