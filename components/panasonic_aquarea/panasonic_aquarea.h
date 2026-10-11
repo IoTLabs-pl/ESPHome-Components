@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ring_buffer.h"
 #include <forward_list>
 
 #include "esphome/core/component.h"
@@ -23,7 +22,7 @@ template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEnt
  public:
   void set_extractor(ExtractorInterface<T> *extractor) { extractor_ = extractor; }
 
-  void handle_update(const std::vector<uint8_t> &data) override {
+  void handle_update(std::span<const uint8_t> data) override {
     auto value = extractor_->decode(data);
 
     if (!value.has_value() || publish_dedup_.next(*value) == false) {
@@ -81,7 +80,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   std::forward_list<ReadableEntity *> standard_response_entities_;
   std::forward_list<ReadableEntity *> extra_response_entities_;
 
-  std::vector<uint8_t> awaiting_command_data = std::vector<uint8_t>(Protocol::STANDARD_PAYLOAD_LENGTH);
+  Protocol::RequestFrame awaiting_command_data{};
   bool awaiting_command_dirty_flag_{false};
 
   enum class CommunicationState {
@@ -91,14 +90,16 @@ class Device : public PollingComponent, public uart::UARTDevice {
     EXTERNAL_TRANSACTION
   };
 
-  CommunicationState comm_state_;  // Mutex alike (we call all routines from single thread)
+  CommunicationState comm_state_{CommunicationState::IDLE};  // Mutex alike (we call all routines from single thread)
 
   bool start_response_timeout(bool internal);
   void stop_response_timeout();
 
-  ResponseBuffer response_buffer_;
+  Protocol::Parser response_parser_;
 
   uint32_t request_counter_{0};
+
+  void yield_to_external_controller();
 
   // Command queue processing
   void handle_command_queue();
@@ -107,8 +108,8 @@ class Device : public PollingComponent, public uart::UARTDevice {
   void process_heatpump_data();
   void process_external_controller_data();
 
-  // Protocol parsing
-  bool parse_out_response();
+  // Response handling
+  void handle_response();
 
  public:
   void set_external_controller_uart(uart::UARTComponent *controller);
@@ -118,7 +119,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   void dump_config() override;
   float get_setup_priority() const override;
   void add_entity(ReadableEntity *entity, bool extra = false);
-  std::vector<uint8_t> &get_command_data() {
+  Protocol::RequestFrame &get_command_data() {
     this->awaiting_command_dirty_flag_ = true;
     return this->awaiting_command_data;
   }
