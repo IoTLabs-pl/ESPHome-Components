@@ -12,9 +12,6 @@ from esphome.const import (
     CONF_ID,
     CONF_KEY,
     CONF_PAYLOAD,
-    CONF_QOS,
-    CONF_RETAIN,
-    CONF_TOPIC,
     CONF_TRIGGER_ID,
     CONF_TYPE,
 )
@@ -39,9 +36,6 @@ MeterPtr = Meter.operator("ptr")
 TelegramTrigger = wmbus_meter_ns.class_(
     "TelegramTrigger",
     automation.Trigger.template(MeterPtr),
-)
-SendTelegramWithMQTTAction = wmbus_meter_ns.class_(
-    "SendTelegramWithMQTTAction", automation.Action
 )
 
 
@@ -129,21 +123,11 @@ TELEGRAM_MQTT_PUBLISH_ACTION_SCHEMA = cv.All(
 )
 
 
-@automation.register_action(
+_MQTT_PUBLISH = automation.ACTION_REGISTRY["mqtt.publish"]
+
+automation.register_action(
     "wmbus_meter.send_telegram_with_mqtt",
-    SendTelegramWithMQTTAction,
+    _MQTT_PUBLISH.type_id,
     TELEGRAM_MQTT_PUBLISH_ACTION_SCHEMA,
     synchronous=True,
-)
-async def send_telegram_with_mqtt_to_code(config, action_id, template_arg, args):
-    paren = await cg.get_variable(config[CONF_ID])
-    var = cg.new_Pvariable(action_id, template_arg, paren)
-    template_ = await cg.templatable(config[CONF_TOPIC], args, cg.std_string)
-    cg.add(var.set_topic(template_))
-    template_ = await cg.templatable(config[CONF_PAYLOAD], args, cg.std_string)
-    cg.add(var.set_payload(template_))
-    template_ = await cg.templatable(config[CONF_QOS], args, cg.uint8)
-    cg.add(var.set_qos(template_))
-    template_ = await cg.templatable(config[CONF_RETAIN], args, cg.bool_)
-    cg.add(var.set_retain(template_))
-    return var
+)(_MQTT_PUBLISH.fun)
