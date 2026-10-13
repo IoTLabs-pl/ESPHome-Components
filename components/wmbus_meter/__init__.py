@@ -1,11 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation
-from esphome.components.mqtt import (
-    MQTT_PUBLISH_ACTION_SCHEMA,
-    MQTTPublishAction,
-    mqtt_publish_action_to_code,
-)
+from esphome.components.mqtt import MQTT_PUBLISH_ACTION_SCHEMA
 from esphome.components.wmbus_common.drivers.loader import (
     AutoDriver,
     DriverManager,
@@ -127,9 +123,11 @@ TELEGRAM_MQTT_PUBLISH_ACTION_SCHEMA = cv.All(
 )
 
 
+_MQTT_PUBLISH = automation.ACTION_REGISTRY["mqtt.publish"]
+
 automation.register_action(
     "wmbus_meter.send_telegram_with_mqtt",
-    MQTTPublishAction,
+    _MQTT_PUBLISH.type_id,
     TELEGRAM_MQTT_PUBLISH_ACTION_SCHEMA,
     synchronous=True,
-)(mqtt_publish_action_to_code)
+)(_MQTT_PUBLISH.fun)
