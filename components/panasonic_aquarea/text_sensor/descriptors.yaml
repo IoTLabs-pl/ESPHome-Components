@@ -27,7 +27,9 @@
             return std::string{"OK"};
     }        
 
-    return str_sprintf("%c%02X", error_type, error_number - 17);
+    char code[sizeof("H00")];
+    snprintf(code, sizeof(code), "%c%02X", error_type, (uint8_t) (error_number - 17));
+    return std::string{code};
 
 76:
   name: "Heating Mode"
