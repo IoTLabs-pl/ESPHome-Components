@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 import esphome.config_validation as cv
@@ -11,6 +12,9 @@ from .drivers.loader import GENERATED_DIR, AutoDriver, Driver, DriverManager, va
 CODEOWNERS = ["@kubasaw"]
 # to_json renders through ArduinoJson.
 AUTO_LOAD = ["json"]
+
+# Drivers were generated here before v1.3.0.
+LEGACY_GENERATED_DIR = "wmbusmeters_drivers"
 
 UPSTREAM_REF = (Path(__file__).parent / ".wmbusmeters_tag").read_text().strip()
 
@@ -87,6 +91,9 @@ async def to_code(config):
         cg.add_build_flag("-lcrypto")
 
     cg.add_define("WMBUSMETERS_VERSION", UPSTREAM_REF)
+    # esp-idf globs src/ recursively, so leftovers from an older release would
+    # still compile against headers that no longer exist.
+    shutil.rmtree(CORE.relative_src_path(LEGACY_GENERATED_DIR), ignore_errors=True)
     DriverManager.sync_to_directory(CORE.relative_src_path(GENERATED_DIR))
 
     var = cg.new_Pvariable(config[CONF_ID])
