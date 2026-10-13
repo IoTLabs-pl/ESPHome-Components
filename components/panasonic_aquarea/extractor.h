@@ -195,8 +195,9 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
 
     auto it = strings_.find(key);
     if (it == strings_.end()) {
+      char hex[format_hex_pretty_size(KeyLen)];
       ESP_LOGW(TAG, "key not found for string extractor (byte %zu, %zu bytes): %s", byte_, KeyLen,
-               format_hex_pretty(key.data(), KeyLen).c_str());
+               format_hex_pretty_to(hex, key));
       return {"undefined"};
     }
 

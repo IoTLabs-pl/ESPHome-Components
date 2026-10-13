@@ -5,6 +5,7 @@
 
 #include "decode3of6.h"
 #include "esphome/components/wmbus_common/telegram.h"
+#include "esphome/core/alloc_helpers.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 

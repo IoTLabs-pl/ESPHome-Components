@@ -59,7 +59,8 @@ void Radio::receive_frame() {
 
   const auto rest = packet->rest();
   if (rest.empty()) {
-    ESP_LOGV(TAG, "Received invalid packet head: [%s]", format_hex_pretty(packet->get_raw_data()).c_str());
+    char hex[format_hex_pretty_size(Packet::HEAD_SIZE)];
+    ESP_LOGV(TAG, "Received invalid packet head: [%s]", format_hex_pretty_to(hex, packet->get_raw_data()));
     return;
   }
 
