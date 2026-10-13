@@ -5,6 +5,7 @@
 #include <numeric>
 
 #include "crypto.h"
+#include "esphome/core/alloc_helpers.h"
 #include "esphome/core/helpers.h"
 
 namespace wmbus::quirks {
