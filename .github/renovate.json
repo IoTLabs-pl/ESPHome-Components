@@ -30,7 +30,8 @@
   "packageRules": [
     {
       "matchPackageNames": ["esphome/esphome"],
-      "ignoreUnstable": false
+      "ignoreUnstable": false,
+      "separateMinorPatch": true
     },
     {
       "matchPackageNames": ["esphome/esphome"],
