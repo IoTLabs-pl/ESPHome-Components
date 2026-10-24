@@ -13,7 +13,8 @@
         "{\"currentValue\": env.ESPHOME_VERSION}"
       ],
       "packageNameTemplate": "esphome/esphome",
-      "datasourceTemplate": "github-releases"
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "pep440"
     },
     {
       "managerFilePatterns": [".github/workflows/build.yaml"],
@@ -24,6 +25,18 @@
       ],
       "depNameTemplate": "python",
       "datasourceTemplate": "python-version"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["esphome/esphome"],
+      "ignoreUnstable": false,
+      "separateMinorPatch": true
+    },
+    {
+      "matchPackageNames": ["esphome/esphome"],
+      "matchNewValue": "/b\\d+$/",
+      "draftPR": true
     }
   ]
 }
