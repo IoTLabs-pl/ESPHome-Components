@@ -3,7 +3,7 @@ on:
   pull_request:
 
 env:
-  ESPHOME_VERSION: "2026.9.1"
+  ESPHOME_VERSION: "2026.10.0"
   PYTHON_VERSION: "3.14"
 
 jobs:
