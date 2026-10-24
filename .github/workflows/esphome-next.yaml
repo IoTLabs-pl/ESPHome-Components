@@ -1,0 +1,28 @@
+name: Upcoming ESPHome check
+on:
+  # Weekly, so breaking changes in ESPHome betas show up before they are released.
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        esphome:
+          - beta
+          - dev
+        config:
+          - wmbus/sx1276
+          - wmbus/sx1262
+          - panasonic_aquarea/test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Build firmware
+        uses: esphome/build-action@v8.1.0
+        with:
+          yaml-file: tests/${{ matrix.config }}.yaml
+          version: ${{ matrix.esphome }}
