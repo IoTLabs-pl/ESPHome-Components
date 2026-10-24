@@ -1,7 +1,5 @@
 """C++ emitted for the compiler only; not formatted."""
 
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass
 from functools import partial
@@ -11,7 +9,6 @@ from typing import Literal
 import jinja2
 from esphome.cpp_generator import (
     ArrayInitializer,
-    BinOpExpression,
     Expression,
     FloatLiteral,
     MockObj,
@@ -49,12 +46,20 @@ class Tables:
 
     def __init__(self):
         self.declarations: list[Declaration] = []
+        self.shared: dict[str, dict] = {}
 
     def span(self, type_: str, symbol: str, rows: list) -> Expression:
         if not rows:
             return ArrayInitializer()
         self.declarations.append(Declaration("array", type_, symbol, ArrayInitializer(*rows, multiline=True)))
         return ArrayInitializer(literal(symbol), len(rows))
+
+    def shared_span(self, type_: str, prefix: str, key, rows: list) -> Expression:
+        """One table per distinct key, named prefix_0, prefix_1..."""
+        made = self.shared.setdefault(prefix, {})
+        if key not in made:
+            made[key] = self.span(type_, f"{prefix}_{len(made)}", rows)
+        return made[key]
 
     def define(self, type_: str, symbol: str, value: Expression) -> Expression:
         self.declarations.append(Declaration("value", type_, symbol, value))
@@ -77,14 +82,6 @@ def double(value: float) -> MockObj:
     return MockObj(_DoubleLiteral(value))
 
 
-def cast(type_: str, expr: Expression) -> MockObj:
-    return literal("static_cast").template(literal(type_))(expr)
-
-
-def ternary(cond: Expression, if_true: Expression, if_false: Expression) -> MockObj:
-    return MockObj(RawExpression(f"({cond} ? {if_true} : {if_false})"))
-
-
-def bin_op(left: Expression, op: str, right: Expression) -> MockObj:
-    """For && and ||, which Python cannot overload."""
-    return MockObj(BinOpExpression(left, op, right))
+def enumerator(enum: str, name: str) -> MockObj:
+    """wmbus::enum::name"""
+    return getattr(wmbus_ns.enum(enum, is_class=True), name)

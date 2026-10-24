@@ -328,7 +328,7 @@ string LookupRule::bit_to_string(uint64_t bits) const {
     }
   }
   if (bits != 0)
-    s += esphome::str_sprintf("%s_%X ", name, (unsigned) bits);
+    s += esphome::str_sprintf(map.empty() && strcmp(name, "TPL_STS") == 0 ? "%s_%u " : "%s_%X ", name, (unsigned) bits);
   if (s.empty())
     s = default_message;
   return s;

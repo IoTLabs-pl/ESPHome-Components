@@ -201,10 +201,9 @@ def collect_cases() -> list[Case]:
 
 def driver_names() -> dict[str, str]:
     """Every driver name this build knows, aliases included, mapped to the driver it resolves to."""
-    from wmbus_common.drivers.loader.driver_manager import DriverManager as Manager
+    from wmbus_common.drivers.loader.driver import DriverManager as Manager
 
     manager = Manager()
-    manager.load_drivers()
     return {name: manager.request_driver(name).name for name in manager.available_drivers}
 
 
@@ -275,12 +274,12 @@ def expected_fields(expected: dict) -> dict:
 def hidden_fields(driver: str) -> set[str]:
     """The names upstream leaves out of its JSON: those whose every definition is HIDE."""
     from wmbus_common.drivers.loader.xmq import parse_xmq
-    from wmbus_common.drivers.loader.xmq_loader import SCHEMA, Attribute, concrete_fields
+    from wmbus_common.drivers.loader.xmq_loader import SCHEMA, concrete_fields
 
     path = DRIVERS_DIR / f"{driver}.xmq"
     hidden: dict[str, bool] = {}
     for f in concrete_fields(SCHEMA(parse_xmq(path.read_text()))["driver"]):
-        hidden[f.json_name] = hidden.get(f.json_name, True) and Attribute.Hide in f.definition.attributes
+        hidden[f.json_name] = hidden.get(f.json_name, True) and "HIDE" in f.definition.attributes
     return {name for name, is_hidden in hidden.items() if is_hidden}
 
 

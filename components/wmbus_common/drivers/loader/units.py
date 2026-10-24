@@ -38,21 +38,17 @@ class SIExp:
         return SIExp(tuple(int(a / 2) for a in self.exps))
 
 
-def _str_enum(name: str, names) -> type[StrEnum]:
+def str_enum(name: str, names) -> type[StrEnum]:
     # The functional StrEnum would lowercase the C++ enumerator names.
     return StrEnum(name, [(n, n) for n in names])
 
 
 # "Any" is the matcher's neutral value, not one of upstream's names, and
 # "Unknown" is the quantity a computed unit has.
-VifRange = _str_enum("VifRange", ["Any"] + list(table("vif_ranges")))
-VifCombinable = _str_enum("VifCombinable", ["Any"] + list(table("vif_combinables")))
-MeasurementType = _str_enum("MeasurementType", ["Any", "Instantaneous", "Minimum", "Maximum", "AtError"])
-Quantity = _str_enum("Quantity", ["Unknown"] + list(table("quantities")))
-Unit = _str_enum("Unit", table("units"))
-# "None" is one of the enumerators and not a name Python can spell.
-VifScaling = _str_enum("VifScaling", ["Auto", "None"])
-DifSignedness = _str_enum("DifSignedness", ["Signed", "Unsigned"])
+VifRange = str_enum("VifRange", ["Any", *table("vif_ranges")])
+VifCombinable = str_enum("VifCombinable", ["Any", *table("vif_combinables")])
+Quantity = str_enum("Quantity", ["Unknown", *table("quantities")])
+Unit = str_enum("Unit", table("units"))
 
 
 @dataclass(frozen=True)
@@ -60,7 +56,7 @@ class UnitInfo:
     symbol: str  # the field name suffix: total_m3
     display: str
     quantity: Quantity
-    si: tuple[float, SIExp] | None  # scale and exponents; None for text and dates
+    si: tuple[float, SIExp] | None  # None for text and dates
 
 
 UNITS = {
@@ -90,14 +86,6 @@ def split_unit(name: str) -> tuple[str, Unit | None]:
 SECONDS_PER_YEAR = 3600.0 * 24.0 * 365.2425
 
 
-def _in_seconds(si: tuple[float, SIExp]) -> tuple[float, tuple[int, ...]]:
-    scale, exp = si
-    exps = dict(zip(EXPONENT_KEYS, exp.exps))
-    years = exps.pop("year")
-    exps["s"] += years
-    return scale * SECONDS_PER_YEAR**years, tuple(exps.values())
-
-
 def unit_factor(src: Unit, dst: Unit) -> float:
     """NaN where the two do not differ by a factor: text, dates, dBm, temperature scales."""
     if src == dst:
@@ -105,5 +93,12 @@ def unit_factor(src: Unit, dst: Unit) -> float:
     a, b = UNITS[src].si, UNITS[dst].si
     if a is None or b is None or a[1].nonlinear or b[1].nonlinear:
         return math.nan
-    (a_scale, a_exps), (b_scale, b_exps) = _in_seconds(a), _in_seconds(b)
+
+    def in_seconds(scale: float, exp: SIExp) -> tuple[float, tuple[int, ...]]:
+        exps = dict(zip(EXPONENT_KEYS, exp.exps))
+        years = exps.pop("year")
+        exps["s"] += years
+        return scale * SECONDS_PER_YEAR**years, tuple(exps.values())
+
+    (a_scale, a_exps), (b_scale, b_exps) = in_seconds(*a), in_seconds(*b)
     return a_scale / b_scale if a_exps == b_exps else math.nan

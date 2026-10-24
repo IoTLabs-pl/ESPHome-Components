@@ -1,13 +1,11 @@
 import esphome.config_validation as cv
 
-from .driver import AutoDriver, Driver
-from .driver_manager import GENERATED_DIR
-from .driver_manager import DriverManager as _DriverManagerClass
-from .units import UNITS, Unit, split_unit
-from .xmq_loader import FieldKind
+from . import driver
+from .driver import GENERATED_DIR, AutoDriver, Driver  # noqa: F401
+from .units import UNITS, Unit, split_unit  # noqa: F401
+from .xmq_loader import FieldKind  # noqa: F401
 
-DriverManager = _DriverManagerClass()
-DriverManager.load_drivers()
+DriverManager = driver.DriverManager()
 
 AUTO = "auto"
 
@@ -19,18 +17,3 @@ def validate_meter_type(value):
         return DriverManager.request_auto_driver()
 
     return validate_driver_name(value)
-
-
-__all__ = [
-    "AUTO",
-    "AutoDriver",
-    "DriverManager",
-    "GENERATED_DIR",
-    "UNITS",
-    "Unit",
-    "validate_driver_name",
-    "validate_meter_type",
-    "Driver",
-    "FieldKind",
-    "split_unit",
-]

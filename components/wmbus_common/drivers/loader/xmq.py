@@ -1,61 +1,35 @@
 """The XMQ subset upstream's drivers use; a repeated key becomes a list of dicts."""
 
 import re
-from dataclasses import dataclass, field
-from typing import ClassVar
+
+TOKEN = re.compile(
+    r"""[ \t\r\n]+|//[^\n]*\n?|/\*.*?\*/"""
+    r"""|(?P<quote>'{3,}|"{3,}|'|")(?P<quoted>.*?)(?P=quote)"""
+    r"""|(?P<punct>[{}()=,])"""
+    r"""|(?P<bare>[^ \t\r\n{}()=]+)""",
+    re.DOTALL,
+)
 
 
-@dataclass(frozen=True)
-class Token:
-    text: str
-    column: int = field(default=0, compare=False)
-    pattern: ClassVar[re.Pattern]
-
-    @classmethod
-    def at(cls, text: str, position: int) -> "Token":
-        column = position - (text.rfind("\n", 0, position) + 1)
-        for kind in cls.__subclasses__():
-            if match := kind.pattern.match(text, position):
-                return kind(match.group(), column)
+def dedent(text: str, column: int) -> str:
+    """Continuation lines lose their common indent, at most up to the quote's column."""
+    first, *rest = text.split("\n")
+    indents = [len(line) - len(line.lstrip(" ")) for line in rest if line.strip()]
+    strip = min(min(indents, default=0), column + 1)
+    return "\n".join([first] + [line[strip:] for line in rest])
 
 
-class Blank(Token):
-    pattern = re.compile(r"[ \t\r\n]+|//[^\n]*\n?|/\*.*?\*/", re.DOTALL)
-
-
-class Quoted(Token):
-    """'' is the empty string; a run of N>=3 quotes wraps content ending in the same run."""
-
-    pattern = re.compile(r"""('{3,}|"{3,}|'|")(.*?)\1""", re.DOTALL)
-
-    @property
-    def value(self) -> str:
-        # Continuation lines lose their common indent, at most up to the quote's column.
-        first, *rest = self.pattern.match(self.text).group(2).split("\n")
-        indents = [len(line) - len(line.lstrip(" ")) for line in rest if line.strip()]
-        strip = min(min(indents, default=0), self.column + 1)
-        return "\n".join([first] + [line[strip:] for line in rest])
-
-
-class Punct(Token):
-    pattern = re.compile(r"[{}()=,]")
-
-
-class Bare(Token):
-    pattern = re.compile(r"[^ \t\r\n{}()=]+")
-
-    @property
-    def value(self) -> str:
-        return self.text
-
-
-def tokenize(text: str):
-    position = 0
-    while position < len(text):
-        token = Token.at(text, position)
-        position += len(token.text)
-        if not isinstance(token, Blank):
-            yield token
+def tokenize(text: str) -> list[tuple[str | None, str | None]]:
+    """(punctuation, None) or (None, value); '' is the empty string, N>=3 quotes wrap text ending in the same run."""
+    tokens = []
+    for m in TOKEN.finditer(text):
+        if m["punct"]:
+            tokens.append((m["punct"], None))
+        elif m["bare"]:
+            tokens.append((None, m["bare"]))
+        elif m["quote"]:
+            tokens.append((None, dedent(m["quoted"], m.start() - text.rfind("\n", 0, m.start()) - 1)))
+    return tokens
 
 
 def _add(parent: dict, key: str, value) -> None:
@@ -67,49 +41,50 @@ def _add(parent: dict, key: str, value) -> None:
         parent[key] = [parent[key], value]
 
 
-class _Parser:
-    def __init__(self, text: str):
-        self.tokens = list(tokenize(text))
-        self.pos = 0
+def parse_xmq(content: str) -> dict:
+    tokens = tokenize(content)[::-1]
 
-    def peek(self) -> Token | None:
-        return self.tokens[self.pos] if self.pos < len(self.tokens) else None
+    def peek() -> str | None:
+        return tokens[-1][0] if tokens else None
 
-    def take(self) -> Token:
-        token = self.peek()
-        self.pos += 1
-        return token
+    def value() -> str:
+        punct, text = tokens.pop() if tokens else ("the end", None)
+        if text is None:
+            raise ValueError(f"XMQ: expected a name or a value, got {punct!r}")
+        return text
 
-    def parse_block(self) -> dict:
-        node: dict = {}
-        while (token := self.take()) not in (None, Punct("}")):
-            name = token.value
-            attrs = self.parse_attributes() if self.peek() == Punct("(") else {}
-
-            match self.peek():
-                case Punct("{"):
-                    self.take()
-                    _add(node, name, {**attrs, **self.parse_block()})
-                case Punct("="):
-                    self.take()
-                    value = self.take().value
-                    _add(node, name, {**attrs, "_content": value} if attrs else value)
-                case _:
-                    _add(node, name, attrs or "")
-        return node
-
-    def parse_attributes(self) -> dict:
-        self.take()  # (
+    def attributes() -> dict:
+        tokens.pop()  # (
         attrs = {}
-        while (token := self.take()) != Punct(")"):
-            if token == Punct(","):
+        while peek() != ")":
+            if peek() == ",":
+                tokens.pop()
                 continue
-            attrs[token.value] = ""
-            if self.peek() == Punct("="):
-                self.take()
-                attrs[token.value] = self.take().value
+            name = value()
+            attrs[name] = ""
+            if peek() == "=":
+                tokens.pop()
+                attrs[name] = value()
+        tokens.pop()
         return attrs
 
+    def block() -> dict:
+        node: dict = {}
+        while tokens and peek() != "}":
+            name = value()
+            attrs = attributes() if peek() == "(" else {}
+            match peek():
+                case "{":
+                    tokens.pop()
+                    _add(node, name, attrs | block())
+                case "=":
+                    tokens.pop()
+                    text = value()
+                    _add(node, name, attrs | {"_content": text} if attrs else text)
+                case _:
+                    _add(node, name, attrs or "")
+        if tokens:
+            tokens.pop()  # }
+        return node
 
-def parse_xmq(content: str) -> dict:
-    return _Parser(content).parse_block()
+    return block()
