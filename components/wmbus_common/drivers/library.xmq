@@ -55,11 +55,6 @@ library {
             name = TEMPORARY_ERROR
             info = 'Temporary meter error. (tpl sts)'
         }
-        // The following flag is wmbusmeters specific.
-        flag {
-            name = FAILED_DECODE
-            info = 'The telegram failed a manufacturer specific decode or decryption.'
-        }
     }
     template(id = total_m3)
     {
@@ -112,6 +107,7 @@ library {
         name = status
         // Kept working for old C++ drivers that use alias status-tpl-only
         aliases    = status-tpl-only
+        quantity   = Flags
         info       = 'Status and error flags.'
         attributes = STATUS,INCLUDE_TPL_STATUS
     }

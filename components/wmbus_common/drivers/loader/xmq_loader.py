@@ -472,7 +472,7 @@ def field_def(d: dict) -> FieldDef:
     match = d.get("match")
     calculate = d.get("calculate")
 
-    if quantity is not Quantity.Text:
+    if quantity not in (Quantity.Text, Quantity.Flags):
         display_unit = d.get("display_unit") or DEFAULT_UNIT[quantity]
         if calculate:
             return FieldDef(
@@ -683,7 +683,7 @@ def lookup_spec(tables: Tables, symbol: str, lookups: list[Lookup]) -> Expressio
 
 
 def tpl_status_rules(mfct_bits: dict | None) -> list[Lookup]:
-    """Driver bits reaching bits 0-4 replace the standard rules, else cover the top three (UNKNOWN_XX without them)."""
+    """Driver bits reaching bits 0-4 replace the standard rules, else cover the top three (TPL_STS_<dec> without them)."""
     mfct = build_lookup("TPL_STS", MapType.BitToString, mfct_bits) if mfct_bits else None
     if mfct is not None and mfct.mask & 0x1F:
         return [mfct]
@@ -696,7 +696,7 @@ def tpl_status_rules(mfct_bits: dict | None) -> list[Lookup]:
             (HexInt(0x04), "POWER_LOW", TestBit.Set), (HexInt(0x08), "PERMANENT_ERROR", TestBit.Set),
             (HexInt(0x10), "TEMPORARY_ERROR", TestBit.Set),
         ]),
-        replace(mfct, mask=HexInt(mfct.mask & 0xE0)) if mfct else Lookup("UNKNOWN", MapType.BitToString, HexInt(0xE0), "", []),
+        replace(mfct, mask=HexInt(mfct.mask & 0xE0)) if mfct else Lookup("TPL_STS", MapType.BitToString, HexInt(0xE0), "", []),
     ]
 
 
