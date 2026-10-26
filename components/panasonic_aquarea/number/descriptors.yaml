@@ -7,6 +7,14 @@
   device_class: "temperature"
   variants:
     - condition:
+        TOP111: "Internal Thermostat"
+      min: 10
+      max: 30
+    - condition:
+        TOP111: "Thermistor"
+      min: 10
+      max: 30
+    - condition:
         TOP76: "Direct"
       min: 20
       max: 65
@@ -22,6 +30,14 @@
   max: 28
   device_class: "temperature"
   variants:
+    - condition:
+        TOP111: "Internal Thermostat"
+      min: 18
+      max: 28
+    - condition:
+        TOP111: "Thermistor"
+      min: 18
+      max: 28
     - condition:
         TOP81: "Direct"
       min: 5
@@ -39,6 +55,14 @@
   device_class: "temperature"
   variants:
     - condition:
+        TOP112: "Internal Thermostat"
+      min: 10
+      max: 30
+    - condition:
+        TOP112: "Thermistor"
+      min: 10
+      max: 30
+    - condition:
         TOP76: "Direct"
       min: 20
       max: 65
@@ -54,6 +78,14 @@
   max: 28
   device_class: "temperature"
   variants:
+    - condition:
+        TOP112: "Internal Thermostat"
+      min: 18
+      max: 28
+    - condition:
+        TOP112: "Thermistor"
+      min: 18
+      max: 28
     - condition:
         TOP81: "Direct"
       min: 5
