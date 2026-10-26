@@ -6,6 +6,7 @@ import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.components import number
 from esphome.cpp_generator import LambdaExpression, statement
+from esphome.helpers import fnv1a_32bit_hash
 
 from .. import ReadableEntity, WritableEntity, panasonic_aquarea_ns
 from ..descriptor_defaults import DEFAULT_UNITS
@@ -60,32 +61,16 @@ class NumberDescriptor(PlatformDescriptor, NumberTraits):
     def from_yaml(
         cls, platform: "Platform", key: int | str, values: dict
     ) -> "NumberDescriptor":
-        values = dict(values)
         if "variants" in values:
-            variants_raw = list(values.pop("variants"))
-            common = {k: values.pop(k) for k in ("min", "max", "step") if k in values}
-            common.setdefault("step", 1.0)
-
-            if "min" not in common or "max" not in common:
-                base = {**common, **variants_raw.pop(0)}
-            elif variants_raw and "condition" not in variants_raw[0]:
-                base = {**common, **variants_raw.pop(0)}
-            else:
-                base = common
-
-            values["min"] = base["min"]
-            values["max"] = base["max"]
-            values["step"] = base.get("step", 1.0)
-
-            values["variants"] = tuple(
-                NumberVariant(
-                    condition=v["condition"],
-                    min=v.get("min", values["min"]),
-                    max=v.get("max", values["max"]),
-                    step=v.get("step", values["step"]),
-                )
-                for v in variants_raw
-            )
+            variants = tuple(NumberVariant(**v) for v in values["variants"])
+            base = variants[0]
+            values = {
+                **values,
+                "variants": variants,
+                "min": base.min,
+                "max": base.max,
+                "step": base.step,
+            }
 
         return super().from_yaml(platform, key, values)
 
@@ -117,26 +102,15 @@ class NumberDescriptor(PlatformDescriptor, NumberTraits):
         )
 
         if self.variants:
-            all_variants = (self, *self.variants)
-            min_varies = len({v.min for v in all_variants}) > 1
-            max_varies = len({v.max for v in all_variants}) > 1
-            step_varies = len({v.step for v in all_variants}) > 1
-
-            pref_key = cg.RawExpression(f'fnv1a_hash("{self.name}")')
             num = cg.MockObj("num", "->")
             variant_inits = []
             for v in self.variants:
-                cond_fn = variant_condition(v.condition)
-                apply_stmts = []
-                if min_varies:
-                    apply_stmts.append(statement(num.traits.set_min_value(v.min)))
-                if max_varies:
-                    apply_stmts.append(statement(num.traits.set_max_value(v.max)))
-                if step_varies:
-                    apply_stmts.append(statement(num.traits.set_step(v.step)))
-
                 apply_fn = LambdaExpression(
-                    apply_stmts,
+                    [
+                        statement(num.traits.set_min_value(v.min)),
+                        statement(num.traits.set_max_value(v.max)),
+                        statement(num.traits.set_step(v.step)),
+                    ],
                     parameters=[(VariantNumberClass.operator("ptr"), cg.MockObj("num"))],
                     capture="",
                     return_type=cg.void,
@@ -144,14 +118,15 @@ class NumberDescriptor(PlatformDescriptor, NumberTraits):
                 variant_inits.append(
                     cg.StructInitializer(
                         VariantNumberClass.struct("Variant"),
-                        ("condition", cond_fn),
+                        ("condition", variant_condition(v.condition)),
                         ("apply", apply_fn),
                     )
                 )
 
-            arr_id = config[CONF_VARIANTS_ID]
-            arr = cg.static_const_array(arr_id, cg.ArrayInitializer(*variant_inits))
-            cg.add(var.set_variants(pref_key, arr))
+            arr = cg.static_const_array(
+                config[CONF_VARIANTS_ID], cg.ArrayInitializer(*variant_inits)
+            )
+            cg.add(var.set_variants(fnv1a_32bit_hash(self.name), arr))
 
         return var
 

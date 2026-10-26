@@ -64,21 +64,14 @@ class ReadWriteEntity : public ReadOnlyEntity<Derived, T>, public WriteOnlyEntit
   }
 };
 
-template<typename Target> struct Variant {
-  using Condition = bool (*)(std::span<const uint8_t> data);
-  using Apply = void (*)(Target *);
-
-  Condition condition;
-  Apply apply;
-};
-
-template<typename Derived, typename Target = Derived> class VariantMixin {
+template<typename Derived> class VariantMixin {
  public:
-  using VariantType = Variant<Target>;
+  struct Variant {
+    bool (*condition)(std::span<const uint8_t> data);
+    void (*apply)(Derived *);
+  };
 
-  VariantMixin() = default;
-
-  void set_variants(uint32_t pref_key, std::span<const VariantType> variants) {
+  void set_variants(uint32_t pref_key, std::span<const Variant> variants) {
     this->pref_key_ = pref_key;
     this->variants_ = variants;
   }
@@ -87,23 +80,21 @@ template<typename Derived, typename Target = Derived> class VariantMixin {
     this->variant_pref_ = global_preferences->make_preference<uint8_t>(this->pref_key_);
 
     uint8_t saved_index = 0;
-    if (this->variant_pref_.load(&saved_index) && saved_index <= this->variants_.size()) {
+    if (this->variant_pref_.load(&saved_index) && saved_index < this->variants_.size()) {
       this->variant_index_ = saved_index;
     }
 
     auto name = static_cast<Derived *>(this)->get_name();
     ESP_LOGI("panasonic_aquarea", "%s loaded variant %u from preferences", name.c_str(), this->variant_index_);
 
-    if (this->variant_index_ > 0) {
-      this->variants_[this->variant_index_ - 1].apply(static_cast<Target *>(static_cast<Derived *>(this)));
-    }
+    this->variants_[this->variant_index_].apply(static_cast<Derived *>(this));
   }
 
   void evaluate_variants(std::span<const uint8_t> data) {
     uint8_t matched_variant = 0;
     for (size_t i = 0; i < this->variants_.size(); i++) {
       if (this->variants_[i].condition(data)) {
-        matched_variant = static_cast<uint8_t>(i + 1);
+        matched_variant = static_cast<uint8_t>(i);
         break;
       }
     }
@@ -120,7 +111,7 @@ template<typename Derived, typename Target = Derived> class VariantMixin {
  protected:
   uint32_t pref_key_{0};
   uint8_t variant_index_{0};
-  std::span<const VariantType> variants_{};
+  std::span<const Variant> variants_{};
   ESPPreferenceObject variant_pref_;
 };
 
