@@ -1,5 +1,4 @@
 #pragma once
-#include <array>
 #include "esphome/core/component.h"
 #include "esphome/components/number/number.h"
 #include "../panasonic_aquarea.h"
@@ -18,8 +17,6 @@ class Number : public number::Number, public Component, public panasonic_aquarea
 
 class VariantNumber : public Number, public panasonic_aquarea::VariantMixin<VariantNumber> {
  public:
-  using Variant = typename panasonic_aquarea::VariantMixin<VariantNumber>::VariantType;
-
   void setup() override { this->setup_variants(); }
   void handle_update(std::span<const uint8_t> data) override {
     this->evaluate_variants(data);

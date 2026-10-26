@@ -2,8 +2,6 @@
   name: Heat Request Zone 1
   byte: 38
   offset: -128
-  min: 10
-  max: 30
   device_class: "temperature"
   variants:
     - condition:
@@ -26,8 +24,6 @@
   name: Cool Request Zone 1
   byte: 39
   offset: -128
-  min: 18
-  max: 28
   device_class: "temperature"
   variants:
     - condition:
@@ -50,8 +46,6 @@
   name: Heat Request Zone 2
   byte: 40
   offset: -128
-  min: 10
-  max: 30
   device_class: "temperature"
   variants:
     - condition:
@@ -74,8 +68,6 @@
   name: Cool Request Zone 2
   byte: 41
   offset: -128
-  min: 18
-  max: 28
   device_class: "temperature"
   variants:
     - condition:
