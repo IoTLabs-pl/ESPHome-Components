@@ -1,6 +1,7 @@
 #include "records.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <ranges>
@@ -472,6 +473,14 @@ std::string format_time(const struct tm &t, TimeFormat f) {
   return std::string(buf);
 }
 
+time_t epoch_utc(const struct tm &t) {
+  using namespace std::chrono;
+  // Added months and days carry a month outside 0-11 or a day past a month's end over, as mktime does.
+  const sys_days month_start{(year{t.tm_year + 1900} / January + months{t.tm_mon}) / 1};
+  const sys_seconds at = month_start + days{t.tm_mday - 1} + hours{t.tm_hour} + minutes{t.tm_min} + seconds{t.tm_sec};
+  return at.time_since_epoch().count();
+}
+
 std::string format_time(double epoch_seconds, TimeFormat f) {
   time_t t = (time_t) epoch_seconds;
   struct tm broken_down;
@@ -526,7 +535,7 @@ double add_months(double t, int months) {
   struct tm time;
   gmtime_r(&ut, &time);
   add_months(time, months);
-  return (double) mktime(&time);
+  return (double) epoch_utc(time);
 }
 
 }  // namespace wmbus

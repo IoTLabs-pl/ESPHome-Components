@@ -69,7 +69,7 @@ void MeterState::extract_numeric(const FieldSpec &f, const Record &dve) {
   if (f.date_record) {
     DecodedDate date = dve.extract_date();
     // An unset date (0xffff and its like) is null, not a year 2127.
-    value = date.valid ? (double) mktime(&date.value) : NOT_A_NUMBER;
+    value = date.valid ? (double) epoch_utc(date.value) : NOT_A_NUMBER;
   }
   value *= f.scale;
   if (!f.any_factors.empty())
@@ -584,8 +584,7 @@ double datetime_literal(int year, int month, int day, int hour, int minute, int 
   t.tm_hour = hour;
   t.tm_min = minute;
   t.tm_sec = second;
-  t.tm_isdst = 0;
-  return (double) mktime(&t);
+  return (double) epoch_utc(t);
 }
 
 double make_date(double year, double month, double day) {
@@ -599,8 +598,7 @@ double make_date(double year, double month, double day) {
   t.tm_year = y - 1900;
   t.tm_mon = m - 1;
   t.tm_mday = d;
-  t.tm_isdst = 0;
-  return (double) mktime(&t);
+  return (double) epoch_utc(t);
 }
 
 }  // namespace wmbus

@@ -1,6 +1,7 @@
 """Replays the XMQ drivers' tests{} telegrams through the host build against upstream's JSON.
 
 Needs esphome importable and wmbus-test-runner, the compiled test.yaml, on PATH: run it from the esphome venv.
+Set WMBUS_TEST_TZ to exercise another time zone; the default is Europe/Warsaw.
 """
 
 import json
@@ -239,7 +240,8 @@ def run_batch(as_auto: bool) -> dict[str, str]:
         input=stdin,
         capture_output=True,
         text=True,
-        env={**os.environ, "TZ": "UTC"},
+        # Not UTC by default: decoded dates must not depend on the device's time zone.
+        env={**os.environ, "TZ": os.environ.get("WMBUS_TEST_TZ", "Europe/Warsaw")},
     )
 
     answers = [

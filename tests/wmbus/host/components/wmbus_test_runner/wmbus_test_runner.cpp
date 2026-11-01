@@ -104,8 +104,6 @@ void run_case(const std::string &line) {
 }  // namespace
 
 void TestRunner::setup() {
-  setenv("TZ", "UTC", 1);
-  tzset();
   std::string line;
   while (std::getline(std::cin, line)) {
     if (!line.empty() && line.back() == '\r')
