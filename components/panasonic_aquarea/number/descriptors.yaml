@@ -2,10 +2,16 @@
   name: Heat Request Zone 1
   byte: 38
   offset: -128
-  min: 10
-  max: 30
   device_class: "temperature"
   variants:
+    - condition:
+        TOP111: "Internal Thermostat"
+      min: 10
+      max: 30
+    - condition:
+        TOP111: "Thermistor"
+      min: 10
+      max: 30
     - condition:
         TOP76: "Direct"
       min: 20
@@ -18,10 +24,16 @@
   name: Cool Request Zone 1
   byte: 39
   offset: -128
-  min: 18
-  max: 28
   device_class: "temperature"
   variants:
+    - condition:
+        TOP111: "Internal Thermostat"
+      min: 18
+      max: 28
+    - condition:
+        TOP111: "Thermistor"
+      min: 18
+      max: 28
     - condition:
         TOP81: "Direct"
       min: 5
@@ -34,10 +46,16 @@
   name: Heat Request Zone 2
   byte: 40
   offset: -128
-  min: 10
-  max: 30
   device_class: "temperature"
   variants:
+    - condition:
+        TOP112: "Internal Thermostat"
+      min: 10
+      max: 30
+    - condition:
+        TOP112: "Thermistor"
+      min: 10
+      max: 30
     - condition:
         TOP76: "Direct"
       min: 20
@@ -50,10 +68,16 @@
   name: Cool Request Zone 2
   byte: 41
   offset: -128
-  min: 18
-  max: 28
   device_class: "temperature"
   variants:
+    - condition:
+        TOP112: "Internal Thermostat"
+      min: 18
+      max: 28
+    - condition:
+        TOP112: "Thermistor"
+      min: 18
+      max: 28
     - condition:
         TOP81: "Direct"
       min: 5
