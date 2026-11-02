@@ -59,7 +59,10 @@ std::vector<Record> parse_records(std::span<const uint8_t> frame, std::span<cons
     if (data.empty())
       break;
     if (datalen == -1) {
-      datalen = data[0];
+      datalen = lvar_len_bytes(data[0]);
+      // A reserved LVAR leaves the length unknown, so nothing after it can be found.
+      if (datalen < 0)
+        break;
       take_data(1);
     }
     // Upstream leaves the last byte out of a record the frame cut short.
@@ -288,10 +291,10 @@ static bool is_signed_binary_illegal_value(std::span<const uint8_t> bytes) {
   return std::all_of(bytes.begin(), bytes.end() - 1, [](uint8_t b) { return b == 0x00; }) && bytes.back() == 0x80;
 }
 
-void Record::set_synthetic_id(uint8_t dif_nibble, int storage_nr, uint8_t vif) {
+void Record::set_synthetic_id(uint8_t dif_nibble, int64_t storage_nr, uint8_t vif) {
   id.clear();
-  int lsb = storage_nr & 1;
-  int remaining = storage_nr >> 1;
+  const int lsb = (int) (storage_nr & 1);
+  int64_t remaining = storage_nr >> 1;
   uint8_t first = (dif_nibble & 0x0f) | (lsb ? 0x40 : 0x00);
   if (remaining > 0)
     first |= 0x80;
@@ -331,10 +334,10 @@ static void carry_combinables(const Record &entry, Record &out) {
   out.push_combinable(SYNTHETIC_COMBINABLE);
 }
 
-static std::optional<ProfileBaseValue> find_base_value(const Record &entry, std::span<const Record> before) {
+static std::optional<ProfileBaseValue> find_base_value(const Record &entry, std::span<const Record> records) {
   // Prefer the profile's own combinables, but any base value beats none.
   for (const bool require_same_combinables : {true, false}) {
-    for (const Record &c : before) {
+    for (const Record &c : records) {
       // A variable length record is a profile itself, never a base value.
       if ((c.dif & 0x0f) == 0x0d)
         continue;
@@ -358,8 +361,8 @@ static std::optional<ProfileBaseValue> find_base_value(const Record &entry, std:
   return {};
 }
 
-static std::optional<double> find_base_actuality(const Record &entry, std::span<const Record> before) {
-  for (const Record &c : before) {
+static std::optional<double> find_base_actuality(const Record &entry, std::span<const Record> records) {
+  for (const Record &c : records) {
     if (c.storage_nr != entry.storage_nr)
       continue;
     if (c.tariff_nr != entry.tariff_nr)
@@ -377,8 +380,8 @@ static std::optional<double> find_base_actuality(const Record &entry, std::span<
   return {};
 }
 
-static std::optional<ProfileBaseDate> find_base_date(const Record &entry, std::span<const Record> before) {
-  for (const Record &c : before) {
+static std::optional<ProfileBaseDate> find_base_date(const Record &entry, std::span<const Record> records) {
+  for (const Record &c : records) {
     if (c.storage_nr != entry.storage_nr)
       continue;
     if (c.tariff_nr != entry.tariff_nr)
@@ -495,7 +498,7 @@ static bool encode_date_bytes(const struct tm &date, std::span<uint8_t> out) {
 }
 
 // Each point is followed by a trailer placing it in time: its date, or its age.
-static void expand_profile(const Record &entry, std::span<const Record> before,
+static void expand_profile(const Record &entry, std::span<const Record> records,
                            const std::function<void(const Record &)> &visit) {
   const bool with_register = entry.has_combinable(COMPACT_PROFILE_WITH_REGISTER);
   const bool inverse = entry.has_combinable(INVERSE_COMPACT_PROFILE);
@@ -516,12 +519,12 @@ static void expand_profile(const Record &entry, std::span<const Record> before,
   if ((bytes.size() - 2) % step != 0)
     return;
 
-  std::optional<ProfileBaseValue> base_value = find_base_value(entry, before);
-  std::optional<ProfileBaseDate> base = find_base_date(entry, before);
+  std::optional<ProfileBaseValue> base_value = find_base_value(entry, records);
+  std::optional<ProfileBaseDate> base = find_base_date(entry, records);
   std::optional<ProfileAge> age;
   if (!base) {
     const std::optional<uint32_t> spacing = spacing_seconds(h.distance, h.spacing_step);
-    const std::optional<double> base_seconds = spacing ? find_base_actuality(entry, before) : std::nullopt;
+    const std::optional<double> base_seconds = spacing ? find_base_actuality(entry, records) : std::nullopt;
     if (base_seconds)
       age = ProfileAge{(uint32_t) std::llround(*base_seconds), *spacing};
   }
@@ -550,7 +553,7 @@ static void expand_profile(const Record &entry, std::span<const Record> before,
     if (incremental && dif_is_binary(h.slot_dif_nibble) && !h.binary_unsigned && is_signed_binary_illegal_value(slot))
       break;
 
-    const int storage_nr = entry.storage_nr + 1 + index;
+    const int64_t storage_nr = entry.storage_nr + 1 + index;
     Record point{};
     point.set_synthetic_id(value_dif_nibble, storage_nr, (uint8_t) (entry.vif & 0xff));
     point.measurement_type = entry.measurement_type;
@@ -566,8 +569,12 @@ static void expand_profile(const Record &entry, std::span<const Record> before,
       const std::optional<int64_t> delta = decode_slot_signed(h.slot_dif_nibble, slot, h.binary_unsigned);
       if (!delta)
         break;
-      const int64_t absolute =
-          h.mode == ProfileMode::Decrements ? base_value->value + *delta : base_value->value - *delta;
+      int64_t absolute;
+      const bool overflow = h.mode == ProfileMode::Decrements
+                                ? __builtin_add_overflow(base_value->value, *delta, &absolute)
+                                : __builtin_sub_overflow(base_value->value, *delta, &absolute);
+      if (overflow)
+        break;
 
       // No dif data field is longer than this, so the value always fits.
       std::array<uint8_t, 8> encoded;
@@ -640,7 +647,7 @@ void for_each_record(const Telegram &t, const std::function<void(const Record &)
     } else {
       visit(frame_record);
     }
-    expand_profile(frame_record, std::span(t.records).first(k + 1), visit);
+    expand_profile(frame_record, t.records, visit);
   }
 
   for (size_t i = 0; i < t.ixml_entries.size(); ++i) {

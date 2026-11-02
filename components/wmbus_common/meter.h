@@ -52,7 +52,7 @@ struct CounterRange {
   int16_t from;
   int16_t to;
 
-  constexpr bool contains(int32_t nr) const { return nr >= from && nr <= to; }
+  constexpr bool contains(int64_t nr) const { return nr >= from && nr <= to; }
 };
 
 using MaybeRange = std::optional<CounterRange>;

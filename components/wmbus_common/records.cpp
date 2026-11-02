@@ -38,7 +38,7 @@ std::optional<RecordHeader> parse_record_header(std::span<const uint8_t> bytes) 
       return {};
     h.subunit_nr |= ((*dife & 0x40) >> 6) << difenr;
     h.tariff_nr |= ((*dife & 0x30) >> 4) << (difenr * 2);
-    h.storage_nr |= (*dife & 0x0f) << (1 + difenr * 4);
+    h.storage_nr |= (int64_t) (*dife & 0x0f) << (1 + difenr * 4);
     more = (*dife & 0x80) != 0;
     difenr++;
   }
@@ -257,7 +257,10 @@ DecodedDate Record::extract_date() const {
   const std::span<const uint8_t> data = bytes();
   DecodedDate out{};
   out.value.tm_isdst = -1;
-  out.valid = true;
+  // A variable length date/time is Type M, not G, F or I of the same length.
+  out.valid = (dif & 0x0f) != 0x0d;
+  if (!out.valid)
+    return out;
   if (data.size() == 2) {
     out.valid &= extract_date_bytes(data[1], data[0], out.value);
   } else if (data.size() == 4) {
@@ -338,6 +341,28 @@ int dif_len_bytes(uint8_t dif) {
   if (dif == 0x2f)
     return 1;
   return LEN[dif & 0x0f];
+}
+
+// EN 13757-3 table 5: only 00-BF is a length of text, above that the LVAR names an encoding.
+int lvar_len_bytes(uint8_t lvar) {
+  switch (lvar) {
+    case 0x00 ... 0xbf:
+      return lvar;
+    case 0xc0 ... 0xc9:
+      return lvar - 0xc0;
+    case 0xd0 ... 0xd9:
+      return lvar - 0xd0;
+    case 0xe0 ... 0xef:
+      return lvar - 0xe0;
+    case 0xf0 ... 0xf4:
+      return 4 * (lvar - 0xec);
+    case 0xf5:
+      return 48;
+    case 0xf6:
+      return 64;
+    default:
+      return -1;
+  }
 }
 
 bool dif_is_binary(uint8_t type) {
