@@ -75,6 +75,10 @@ number:
     set: 7
   - platform: panasonic_aquarea
     set: 8
+  - platform: panasonic_aquarea
+    set: 49
+  - platform: panasonic_aquarea
+    set: 50
 
 button:
   - platform: panasonic_aquarea

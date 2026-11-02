@@ -141,8 +141,8 @@
 | Solar Temperature | `sensor` | `TOP47` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 47</code></pre> |
 | State | `switch` | `SET1` | <pre lang="yaml"><code>switch:&#13;  - platform: panasonic_aquarea&#13;    set: 1</code></pre> |
 | Sterilization | `binary_sensor` | `TOP69` | <pre lang="yaml"><code>binary_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 69</code></pre> |
-| Sterilization Max Time | `sensor` | `TOP71` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 71</code></pre> |
-| Sterilization Temperature | `sensor` | `TOP70` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 70</code></pre> |
+| Sterilization Max Time | `number` | `SET50` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 50</code></pre> |
+| Sterilization Temperature | `number` | `SET49` | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 49</code></pre> |
 | Stop Pump Max Speed | `button` | `SET14:0` | <pre lang="yaml"><code>button:&#13;  - platform: panasonic_aquarea&#13;    set: "14:0"</code></pre> |
 | Temperature Zone 1 | `sensor` | `TOP56` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 56</code></pre> |
 | Temperature Zone 2 | `sensor` | `TOP57` | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 57</code></pre> |
