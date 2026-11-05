@@ -311,3 +311,18 @@
   min: -15
   max: 20
   device_class: "temperature"
+49:
+  name: Sterilization Temperature
+  byte: 100
+  offset: -128
+  min: 55
+  max: 75
+  device_class: "temperature"
+50:
+  name: Sterilization Max Time
+  byte: 101
+  offset: -1
+  min: 5
+  max: 60
+  step: 5
+  device_class: "duration"

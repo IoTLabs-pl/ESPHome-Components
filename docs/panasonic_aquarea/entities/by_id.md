@@ -66,6 +66,8 @@
 | `SET46` | `number` | Heater On Outdoor Temp | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 46</code></pre> |
 | `SET47` | `switch` | Force Heater | <pre lang="yaml"><code>switch:&#13;  - platform: panasonic_aquarea&#13;    set: 47</code></pre> |
 | `SET48` | `button` | Reset Error | <pre lang="yaml"><code>button:&#13;  - platform: panasonic_aquarea&#13;    set: 48</code></pre> |
+| `SET49` | `number` | Sterilization Temperature | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 49</code></pre> |
+| `SET50` | `number` | Sterilization Max Time | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 50</code></pre> |
 | `TOP1` | `sensor` | Pump Flow | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 1</code></pre> |
 | `TOP3` | `binary_sensor` | Quiet Mode Schedule | <pre lang="yaml"><code>binary_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 3</code></pre> |
 | `TOP5` | `sensor` | Main Inlet Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 5</code></pre> |
@@ -114,8 +116,6 @@
 | `TOP66` | `sensor` | Low Pressure | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 66</code></pre> |
 | `TOP67` | `sensor` | Compressor Current | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 67</code></pre> |
 | `TOP69` | `binary_sensor` | Sterilization | <pre lang="yaml"><code>binary_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 69</code></pre> |
-| `TOP70` | `sensor` | Sterilization Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 70</code></pre> |
-| `TOP71` | `sensor` | Sterilization Max Time | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 71</code></pre> |
 | `TOP76` | `text_sensor` | Heating Mode | <pre lang="yaml"><code>text_sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 76</code></pre> |
 | `TOP79` | `sensor` | Heat to Cool Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 79</code></pre> |
 | `TOP80` | `sensor` | Cool to Heat Temperature | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 80</code></pre> |

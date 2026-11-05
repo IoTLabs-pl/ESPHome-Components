@@ -244,17 +244,6 @@
   multiplier: 0.2
   offset: -1
   device_class: "current"
-70:
-  name: "Sterilization Temperature"
-  byte: 100
-  offset: -128
-  device_class: "temperature"
-71:
-  name: "Sterilization Max Time"
-  byte: 101
-  offset: -1
-  unit_of_measurement: "min"
-  device_class: "duration"
 79: 
   name: "Heat to Cool Temperature"
   byte: 95
