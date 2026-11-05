@@ -38,7 +38,7 @@ std::optional<RecordHeader> parse_record_header(std::span<const uint8_t> bytes) 
       return {};
     h.subunit_nr |= ((*dife & 0x40) >> 6) << difenr;
     h.tariff_nr |= ((*dife & 0x30) >> 4) << (difenr * 2);
-    h.storage_nr |= (*dife & 0x0f) << (1 + difenr * 4);
+    h.storage_nr |= (int64_t) (*dife & 0x0f) << (1 + difenr * 4);
     more = (*dife & 0x80) != 0;
     difenr++;
   }
@@ -257,7 +257,10 @@ DecodedDate Record::extract_date() const {
   const std::span<const uint8_t> data = bytes();
   DecodedDate out{};
   out.value.tm_isdst = -1;
-  out.valid = true;
+  // A variable length date/time is Type M, not G, F or I of the same length.
+  out.valid = (dif & 0x0f) != 0x0d;
+  if (!out.valid)
+    return out;
   if (data.size() == 2) {
     out.valid &= extract_date_bytes(data[1], data[0], out.value);
   } else if (data.size() == 4) {
@@ -340,6 +343,28 @@ int dif_len_bytes(uint8_t dif) {
   return LEN[dif & 0x0f];
 }
 
+// EN 13757-3 table 5: only 00-BF is a length of text, above that the LVAR names an encoding.
+int lvar_len_bytes(uint8_t lvar) {
+  switch (lvar) {
+    case 0x00 ... 0xbf:
+      return lvar;
+    case 0xc0 ... 0xc9:
+      return lvar - 0xc0;
+    case 0xd0 ... 0xd9:
+      return lvar - 0xd0;
+    case 0xe0 ... 0xef:
+      return lvar - 0xe0;
+    case 0xf0 ... 0xf4:
+      return 4 * (lvar - 0xec);
+    case 0xf5:
+      return 48;
+    case 0xf6:
+      return 64;
+    default:
+      return -1;
+  }
+}
+
 bool dif_is_binary(uint8_t type) {
   return type == 0x1 || type == 0x2 || type == 0x3 || type == 0x4 || type == 0x6 || type == 0x7;
 }
@@ -373,56 +398,58 @@ static const double TIME_SCALE[4] = {3600.0, 60.0, 1.0, 1.0 / 24.0};
 // Primary VIFs: the block picks the starting decade, the low bits step down from it.
 double vif_scale(uint16_t vif) {
   vif &= 0x7f7f;
+  switch (vif) {
+    // Energy Wh/J, volume m3, mass kg, power W and J/h, volume flow.
+    case 0x00 ... 0x17:
+    case 0x28 ... 0x3f:
+      return pow10(6 - (vif & 0x07));
+    case 0x18 ... 0x1f:
+      return pow10(3 - (vif & 0x07));
+    case 0x20 ... 0x27:
+    case 0x70 ... 0x77:
+      return TIME_SCALE[vif & 0x03];
+    // Volume flow per minute and per hour: sixths of a decade, and J/h.
+    case 0x40 ... 0x47:
+      return 6 * pow10(8 - (vif & 0x07));
+    case 0x48 ... 0x4f:
+      return 3600 * pow10(9 - (vif & 0x07));
+    // Temperatures, pressure, temperature difference: decades of four codes.
+    case 0x50 ... 0x57:
+      return pow10(3 - (vif & 0x07));
+    case 0x58 ... 0x6b:
+      return pow10(3 - (vif & 0x03));
+    // Dates, HCA units and the fabrication number have no scale.
+    case 0x6c ... 0x6e:
+    case 0x7c:
+      return 1.0;
 
-  // Energy Wh/J, volume m3, mass kg, power W and J/h, volume flow.
-  if (vif <= 0x17)
-    return pow10(6 - (vif & 0x07));
-  if (vif <= 0x1f)
-    return pow10(3 - (vif & 0x07));
-  if (vif <= 0x27)
-    return TIME_SCALE[vif & 0x03];
-  if (vif <= 0x3f)
-    return pow10(6 - (vif & 0x07));
-  // Volume flow per minute and per hour: sixths of a decade, and J/h.
-  if (vif <= 0x47)
-    return 6 * pow10(8 - (vif & 0x07));
-  if (vif <= 0x4f)
-    return 3600 * pow10(9 - (vif & 0x07));
-  // Temperatures, pressure, temperature difference: decades of four codes.
-  if (vif <= 0x57)
-    return pow10(3 - (vif & 0x07));
-  if (vif <= 0x6b)
-    return pow10(3 - (vif & 0x03));
-  // Dates, HCA units and the fabrication number have no scale.
-  if (vif <= 0x6e)
-    return 1.0;
-  if (vif <= 0x6f)
-    return -1.0;
-  if (vif <= 0x77)
-    return TIME_SCALE[vif & 0x03];
-  if (vif == 0x7c)
-    return 1.0;
-  if (vif <= 0x7f)
-    return -1.0;
+    // FB: energy in MWh and GJ, one or two decimals.
+    case 0x7b00:
+    case 0x7b01:
+    case 0x7b08:
+    case 0x7b09:
+      return pow10(-((vif & 0x1) + 2));
+    case 0x7b1a:
+      return 10.0;
+    case 0x7b1b:
+      return 1.0;
 
-  // FB: energy in MWh and GJ, one or two decimals.
-  if (vif == 0x7b00 || vif == 0x7b01 || vif == 0x7b08 || vif == 0x7b09)
-    return pow10(-((vif & 0x1) + 2));
-  if (vif == 0x7b1a)
-    return 10.0;
-  if (vif == 0x7b1b)
-    return 1.0;
-
-  // FD: access number, durations, voltage, current, firmware date.
-  if (vif == 0x7d08 || vif == 0x7d3a || vif == 0x7d61 || vif == 0x7d74)
-    return 1.0;
-  if ((vif >= 0x7d2c && vif <= 0x7d2f) || (vif >= 0x7d31 && vif <= 0x7d33))
-    return TIME_SCALE[vif & 0x03];
-  if (vif >= 0x7d40 && vif <= 0x7d4f)
-    return pow10(9 - (vif & 0xf));
-  if (vif >= 0x7d50 && vif <= 0x7d5f)
-    return pow10(12 - (vif & 0xf));
-  return -1;
+    // FD: access number, durations, voltage, current, firmware date.
+    case 0x7d08:
+    case 0x7d3a:
+    case 0x7d61:
+    case 0x7d74:
+      return 1.0;
+    case 0x7d2c ... 0x7d2f:
+    case 0x7d31 ... 0x7d33:
+      return TIME_SCALE[vif & 0x03];
+    case 0x7d40 ... 0x7d4f:
+      return pow10(9 - (vif & 0xf));
+    case 0x7d50 ... 0x7d5f:
+      return pow10(12 - (vif & 0xf));
+    default:
+      return -1;
+  }
 }
 
 static const char *strftime_format(TimeFormat f) {

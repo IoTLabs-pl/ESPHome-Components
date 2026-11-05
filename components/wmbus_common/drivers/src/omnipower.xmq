@@ -29,6 +29,10 @@ driver {
     compact_frame_formats {
         difvif = 040404843C042B04AB3C
     }
+    library {
+        use = rssi_dbm
+        use = actuality_duration_s
+    }
     fields {
         field {
             name     = total_energy_consumption
