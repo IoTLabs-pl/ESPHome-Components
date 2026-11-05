@@ -183,13 +183,14 @@ wmbus_radio:
   cs_pin: GPIO3
   reset_pin: GPIO4
   dio1_pin: GPIO5
+  lna_boost: true
   on_frame:
     - wmbus_radio.send_frame_with_socket:
         id: transmitter
         format: rtlwmbus
 ```
 
-`reset_pin` and `dio1_pin` go to the RESET and DIO1 pins of the radio module. `irq_pin` is the old name of `dio1_pin`; it still works with a deprecation warning and will be removed in 2027.3.0.
+`reset_pin` and `dio1_pin` go to the RESET and DIO1 pins of the radio module. `irq_pin` is the old name of `dio1_pin`; it still works with a deprecation warning and will be removed in 2027.3.0. `lna_boost` (default `false`) boosts the LNA, trading a little more current for better sensitivity.
 
 **SX1262 example:**
 
