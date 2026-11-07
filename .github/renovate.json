@@ -6,28 +6,23 @@
   },
   "customManagers": [
     {
-      "managerFilePatterns": [".github/workflows/build.yaml"],
+      "managerFilePatterns": [".github/workflows/*.yaml"],
       "fileFormat": "yaml",
       "customType": "jsonata",
       "matchStrings": [
-        "{\"currentValue\": env.ESPHOME_VERSION}"
-      ],
-      "packageNameTemplate": "esphome/esphome",
-      "datasourceTemplate": "github-releases",
-      "versioningTemplate": "pep440"
-    },
-    {
-      "managerFilePatterns": [".github/workflows/build.yaml"],
-      "fileFormat": "yaml",
-      "customType": "jsonata",
-      "matchStrings": [
-        "{\"currentValue\": env.PYTHON_VERSION}"
-      ],
-      "depNameTemplate": "python",
-      "datasourceTemplate": "python-version"
+        "{\"depName\": \"esphome/esphome\", \"currentValue\": env.ESPHOME_VERSION, \"datasource\": \"github-releases\", \"versioning\": \"pep440\"}",
+        "{\"depName\": \"python\", \"currentValue\": env.PYTHON_VERSION, \"datasource\": \"python-version\"}",
+        "{\"depName\": \"bblanchon/ArduinoJson\", \"currentValue\": env.ARDUINOJSON_VERSION, \"datasource\": \"github-releases\", \"extractVersion\": \"^v(?<version>.+)$\"}",
+        "{\"depName\": \"Mbed-TLS/mbedtls\", \"currentValue\": env.MBEDTLS_VERSION, \"datasource\": \"github-releases\", \"extractVersion\": \"^mbedtls-(?<version>.+)$\"}"
+      ]
     }
   ],
   "packageRules": [
+    {
+      "description": "The firmware's ESP-IDF stays on the Mbed TLS 3.6 LTS.",
+      "matchPackageNames": ["Mbed-TLS/mbedtls"],
+      "allowedVersions": "<4"
+    },
     {
       "matchPackageNames": ["esphome/esphome"],
       "ignoreUnstable": false,

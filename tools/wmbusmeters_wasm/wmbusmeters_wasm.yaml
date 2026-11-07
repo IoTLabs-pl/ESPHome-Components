@@ -1,0 +1,18 @@
+# Not a firmware: only generates the sources and metadata for CMakeLists.txt.
+substitutions:
+  version: dev
+
+esphome:
+  name: wmbusmeters-wasm
+
+host:
+
+external_components:
+  - source: ../../components
+  - source: components
+
+wmbus_common:
+  drivers: all
+
+wmbusmeters_wasm:
+  version: ${version}

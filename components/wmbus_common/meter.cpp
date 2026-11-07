@@ -475,6 +475,7 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
 
     if (detected == nullptr) {
       last_error = "no compiled driver detects " + tried;
+      error = DecodeError::UnknownDriver;
       return Result::NotDecoded;
     }
     bind_driver(*detected);
@@ -487,6 +488,8 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
                                      : "encrypted, no key configured";
     if (!t.decoding_errors.empty())
       last_error += " (" + t.decoding_errors.str() + ")";
+    // Without a key a TPL-encrypted telegram reads as a failed decryption.
+    error = !key ? DecodeError::NoKey : t.decryption_failed ? DecodeError::DecryptionFailed : DecodeError::NotUnderstood;
     return Result::NotDecoded;
   }
 
@@ -497,6 +500,7 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
 
   decoding_errors = t.decoding_errors;
   last_error.clear();
+  error = DecodeError::None;
   timestamp = at ? at : time(nullptr);
   return Result::Ok;
 }

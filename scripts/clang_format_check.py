@@ -47,13 +47,13 @@ def run_format(
 
 
 def find_files() -> list[Path]:
-    """Find all .cpp and .h files in components directory."""
-    components_dir = Path(__file__).parent.parent / "components"
+    """Find all .cpp and .h files in components and next to the tools' sources (not in their build output)."""
+    root = Path(__file__).parent.parent
 
     return sorted(
         path
-        for pattern in ("**/*.cpp", "**/*.h")
-        for path in components_dir.glob(pattern)
+        for pattern in ("components/**/*.cpp", "components/**/*.h", "tools/*/*.cpp", "tools/*/shim/**/*.h")
+        for path in root.glob(pattern)
         # Only allow component.cpp and component.h in wmbus_common
         if ("wmbus_common" not in path.parts or path.stem == "component")
     )

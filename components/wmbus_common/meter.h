@@ -116,6 +116,9 @@ enum class Result : uint8_t {
   Ok,
 };
 
+// Why the last telegram for this meter did not decode; set with last_error.
+enum class DecodeError : uint8_t { None, UnknownDriver, NoKey, DecryptionFailed, NotUnderstood };
+
 // A `calculate` formula compiled to C++; `dve` is null for a field without a matcher.
 typedef double (*CalculateFn)(const MeterState &state, const Record *dve);
 
@@ -198,6 +201,7 @@ struct MeterState {
   const char *media_type = nullptr;
   Status decoding_errors;
   std::string last_error;
+  DecodeError error = DecodeError::None;
 
   // Outlives the telegram: a compact frame refers to a layout learned earlier.
   CompactFormats formats;
