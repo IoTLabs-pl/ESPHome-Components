@@ -116,7 +116,6 @@ enum class Result : uint8_t {
   Ok,
 };
 
-// Why the last telegram for this meter did not decode; set with last_error.
 enum class DecodeError : uint8_t { None, UnknownDriver, NoKey, DecryptionFailed, NotUnderstood };
 
 // A `calculate` formula compiled to C++; `dve` is null for a field without a matcher.

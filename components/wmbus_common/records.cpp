@@ -475,7 +475,7 @@ std::string format_time(const struct tm &t, TimeFormat f) {
 
 time_t epoch_utc(const struct tm &t) {
   using namespace std::chrono;
-  // Added months and days carry a month outside 0-11 or a day past a month's end over, as mktime does.
+  // Out-of-range months and days carry over, as in mktime.
   const sys_days month_start{(year{t.tm_year + 1900} / January + months{t.tm_mon}) / 1};
   const sys_seconds at = month_start + days{t.tm_mday - 1} + hours{t.tm_hour} + minutes{t.tm_min} + seconds{t.tm_sec};
   return at.time_since_epoch().count();

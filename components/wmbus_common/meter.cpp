@@ -489,7 +489,9 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
     if (!t.decoding_errors.empty())
       last_error += " (" + t.decoding_errors.str() + ")";
     // Without a key a TPL-encrypted telegram reads as a failed decryption.
-    error = !key ? DecodeError::NoKey : t.decryption_failed ? DecodeError::DecryptionFailed : DecodeError::NotUnderstood;
+    error = !key                  ? DecodeError::NoKey
+            : t.decryption_failed ? DecodeError::DecryptionFailed
+                                  : DecodeError::NotUnderstood;
     return Result::NotDecoded;
   }
 
@@ -581,7 +583,7 @@ double counter_value(const Record *dve, DVEntryCounterType counter) {
 
 // A date literal converts as UTC calendar time.
 double datetime_literal(int year, int month, int day, int hour, int minute, int second) {
-  struct tm t{};
+  tm t{};
   t.tm_year = year - 1900;
   t.tm_mon = month - 1;
   t.tm_mday = day;
@@ -598,7 +600,7 @@ double make_date(double year, double month, double day) {
   if (m <= 0 || d <= 0)
     return NOT_A_NUMBER;
 
-  struct tm t{};
+  tm t{};
   t.tm_year = y - 1900;
   t.tm_mon = m - 1;
   t.tm_mday = d;

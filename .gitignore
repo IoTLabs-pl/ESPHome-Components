@@ -1,6 +1,7 @@
 __pycache__
 .vscode
 .esphome
+build/
 secrets.yaml
-tests/**/.gitignore
+*/**/.gitignore
 .pytest_cache
