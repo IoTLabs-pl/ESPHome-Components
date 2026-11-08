@@ -1,5 +1,8 @@
 import json
 from dataclasses import asdict
+from pathlib import Path
+
+import jinja2
 
 import esphome.config_validation as cv
 from esphome.components.wmbus_common import UPSTREAM_REF
@@ -17,16 +20,16 @@ def _present(entry):
     return {key: value for key, value in entry.items() if value}
 
 
+def _render(name, **context):
+    template = jinja2.Template(Path(__file__).with_name(f"{name}.j2").read_text(), keep_trailing_newline=True)
+    # Unchanged files keep their time, so CMake relinks only on a change.
+    write_file_if_changed(CORE.relative_build_path(name), template.render(context))
+
+
 async def to_code(config):
     version = config[CONF_VERSION]
     source = f"https://github.com/IoTLabs-pl/ESPHome-Components/tree/{version}/tools/wmbusmeters_wasm"
-    # Unchanged files keep their time, so CMake relinks only on a change.
-    write_file_if_changed(
-        CORE.relative_build_path("banner.js"),
-        f"// wmbusmeters_wasm {version}, GPL-3.0, source: {source}\n"
-        f"// Contains wmbusmeters {UPSTREAM_REF} (GPL-3.0), ArduinoJson (MIT, (c) Benoit Blanchon)"
-        " and Mbed TLS (GPL-2.0-or-later).\n",
-    )
+    _render("banner.js", version=version, source=source, upstream_ref=UPSTREAM_REF)
     metadata = {
         "source": source,
         "drivers": {
@@ -37,7 +40,4 @@ async def to_code(config):
             for driver in driver_rows()
         },
     }
-    write_file_if_changed(
-        CORE.relative_build_path("metadata.js"),
-        f"Object.assign(Module,{json.dumps(metadata, ensure_ascii=False, separators=(',', ':'))});\n",
-    )
+    _render("metadata.js", metadata=json.dumps(metadata, ensure_ascii=False, separators=(",", ":")))

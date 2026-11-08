@@ -1,35 +1,20 @@
 #include <algorithm>
 #include <array>
-#include <charconv>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include <emscripten/bind.h>
 
 #include "esphome/components/wmbus_common/meter.h"
 #include "esphome/components/wmbus_common/telegram.h"
+#include "esphome/core/helpers.h"
 
 namespace {
 
 using emscripten::val;
 
-template<typename Bytes> std::optional<Bytes> parse_hex(std::string_view hex) {
-  Bytes out{};
-  if constexpr (requires { out.resize(0); })
-    out.resize(hex.size() / 2);
-  if (hex.size() != 2 * out.size())
-    return {};
-  for (size_t i = 0; i < out.size(); i++) {
-    const char *at = hex.data() + 2 * i;
-    if (std::from_chars(at, at + 2, out[i], 16).ptr != at + 2)
-      return {};
-  }
-  return out;
-}
-
-// By wmbus::DecodeError.
+// Indexed by wmbus::DecodeError.
 constexpr const char *ERROR_CODES[] = {"", "unknown_driver", "no_key", "decryption_failed", "not_understood"};
 
 val answer(const char *error, val json = val::null()) {
@@ -48,20 +33,22 @@ val decode(const val &args) {
 
   std::vector<std::vector<uint8_t>> frames;
   for (const std::string &hex : emscripten::vecFromJSArray<std::string>(args["telegrams"])) {
-    auto frame = parse_hex<std::vector<uint8_t>>(hex);
-    if (!frame)
+    std::vector<uint8_t> frame;
+    if (hex.size() % 2 || !esphome::parse_hex(hex, frame, hex.size() / 2))
       return answer("not_a_telegram");
-    frames.push_back(std::move(*frame));
+    frames.push_back(std::move(frame));
   }
   wmbus::Telegram first;
   if (frames.empty() || !first.parse_envelope(frames.front()))
     return answer("not_a_telegram");
 
-  const auto aes = key.empty() ? std::nullopt : parse_hex<std::array<uint8_t, 16>>(key);
-  if (!key.empty() && !aes)
-    return answer("bad_key");
+  std::optional<std::array<uint8_t, 16>> aes;
+  if (!key.empty()) {
+    aes.emplace();
+    if (key.size() != 2 * aes->size() || !esphome::parse_hex(key, aes->data(), aes->size()))
+      return answer("bad_key");
+  }
 
-  // "auto" leaves the spec null, as `type: auto` does.
   const wmbus::DriverSpec *spec = nullptr;
   if (driver != "auto") {
     const auto found =
