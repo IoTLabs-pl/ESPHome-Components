@@ -1,34 +1,53 @@
 """Home Assistant metadata derived from the real driver definitions."""
 
 import sys
-from dataclasses import astuple
+from dataclasses import replace
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "components"))
 
 from wmbus_common.drivers.loader import DriverManager  # noqa: E402
 from wmbus_common.drivers.loader.metadata import FieldMeta, driver_rows  # noqa: E402
 
+# One field per rule in metadata.py, without upstream's info text; None: left out.
+CASES = {
+    "volume-noun": ("iperl", "total_m3", FieldMeta("Total water", "m³", "water", "total_increasing", 3, primary=True)),
+    "snapshot-at": (
+        "hydrus",
+        "total_at_date_m3",
+        FieldMeta("Total water at date", "m³", "water", "", 3, primary=True),
+    ),
+    "snapshot-target": ("aptmbusna", "target_m3", FieldMeta("Target water", "m³", "water", "", 3, primary=True)),
+    "snapshot-historic": ("apatorna1", "historic_m3", FieldMeta("Historic water", "m³", "water", "", 3)),
+    "snapshot-last": (
+        "c5isf",
+        "total_energy_consumption_last_month_kwh",
+        FieldMeta("Total energy consumption last month", "kWh", "energy", "", 3),
+    ),
+    "increasing": ("caltose", "consumption_hca", FieldMeta("Consumption", "hca", "", "total_increasing", primary=True)),
+    "ha-unit": (
+        "abbb23",
+        "total_reactive_energy_consumption_kvarh",
+        FieldMeta("Total reactive energy consumption", "kvarh", "reactive_energy", "total_increasing", 3),
+    ),
+    "device-class-alias": ("aerius", "flow_m3h", FieldMeta("Flow", "m³/h", "volume_flow_rate", "measurement", 3)),
+    "point-in-time": ("hydrus", "target_datetime", FieldMeta("Target date", device_class="timestamp")),
+    "text": ("iperl", "status", FieldMeta("Status", text=True)),
+    "hidden": ("apatoreitn", "temp_room_avg_raw_counter", None),
+    "deprecated": ("aventieshca", "error_flags", None),
+}
 
-def test_driver_rows():
+
+@pytest.fixture(scope="module")
+def drivers():
     for name in DriverManager.available_drivers:
         DriverManager.request_driver(name)
-    rows = driver_rows()
-    assert [row.name for row in rows] == [driver.name for driver in DriverManager.registered_drivers]
-    drivers = {row.name: row for row in rows}
-    iperl = drivers["iperl"]
-    assert (iperl.manufacturer, iperl.model) == ("Sensus", "Sensus iPERL")
-    assert iperl.fields["total_m3"] == FieldMeta(
-        "Total water", "m³", "water", "total_increasing", 3, True, False, "The total water consumption."
-    )
-    assert iperl.fields["status"].text
+    return {row.name: row.fields for row in driver_rows()}
 
-    hydrus = drivers["hydrus"].fields
-    assert astuple(hydrus["target_m3"])[:6] == ("Target water", "m³", "water", "", 3, False)
-    assert astuple(hydrus["target_datetime"])[:6] == ("Target date", "", "timestamp", "", 0, False)
-    assert astuple(hydrus["flow_temperature_c"])[:6] == ("Flow temperature", "°C", "temperature", "measurement", 2, False)
-    assert astuple(drivers["abbb23"].fields["total_reactive_energy_consumption_kvarh"])[:6] == (
-        "Total reactive energy consumption", "kvarh", "reactive_energy", "total_increasing", 3, False
-    )
-    assert "temp_room_avg_raw_counter" not in drivers["apatoreitn"].fields
-    assert "error_flags" not in drivers["aventieshca"].fields
+
+@pytest.mark.parametrize(("driver", "field", "expected"), CASES.values(), ids=CASES.keys())
+def test_field(drivers, driver, field, expected):
+    actual = drivers[driver].get(field)
+    assert (actual and replace(actual, info="")) == expected

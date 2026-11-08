@@ -29,7 +29,7 @@ from .xmq import parse_xmq
 FieldKind = str_enum("FieldKind", ["Numeric", "Text"])
 MEASUREMENT_TYPES = ("Any", "Instantaneous", "Minimum", "Maximum", "AtError")
 MAP_TYPES = ("BitToString", "IndexToString", "DecimalsToString")
-# DEPRECATED is read and ignored; HIDE keeps a field out of the metadata, as out of upstream's JSON.
+# DEPRECATED is ignored; HIDE keeps a field out of the metadata.
 ATTRIBUTES = ("REQUIRED", "DEPRECATED", "STATUS", "INCLUDE_TPL_STATUS", "INJECT_INTO_STATUS", "HIDE")
 # A driver's transform_payload, and the C++ enumerator.
 PAYLOAD_QUIRKS = {
@@ -332,7 +332,7 @@ class FieldDef:
     text_form: str = "Hex"
     # An ixml carrier runs over every record and keeps the last text.
     every_match: bool = False
-    # Codegen ignores these; they describe the field to consumers such as Home Assistant.
+    # Only the metadata reads these.
     change: str | None = None
     deprecated_by: str | None = None
     info: str = ""

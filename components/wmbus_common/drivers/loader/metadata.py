@@ -1,4 +1,4 @@
-"""How Home Assistant should present each driver field: label, unit, device class, state class and decimals."""
+"""How Home Assistant presents each driver field."""
 
 from dataclasses import dataclass
 
@@ -8,7 +8,6 @@ from . import DriverManager
 from .units import UNITS, Unit
 from .xmq_loader import FieldKind
 
-# The resolution meters commonly send each unit in; any other unit is a whole number.
 DEFAULT_ACCURACY_DECIMALS = {
     Unit.M3: 3,
     Unit.M3H: 3,
@@ -29,10 +28,8 @@ DEFAULT_ACCURACY_DECIMALS = {
     Unit.Year: 1,
 }
 
-# Home Assistant's names, as ESPHome declares them.
 HA_DEVICE_CLASSES = {value for key, value in vars(const).items() if key.startswith("DEVICE_CLASS_")}
 HA_UNITS = {value.lower(): value for key, value in vars(const).items() if key.startswith("UNIT_")}
-# Where Home Assistant's name is not upstream's quantity or unit in lower case.
 DEVICE_CLASS_ALIASES = {"Flow": "volume_flow_rate", "Amperage": "current", "RelativeHumidity": "humidity"}
 UNIT_ALIASES = {Unit.RH: "%", Unit.PERCENTAGE: "%"}
 CUMULATIVE = {"Energy", "Reactive_Energy", "Apparent_Energy", "Volume", "HCA"}
@@ -44,7 +41,7 @@ TIME_DEVICE_CLASSES = {
     "Date": "date",
     "DateTime": "timestamp",
 }
-# What a field measures, for a label that does not say it: "total_tariff1" is "Total water tariff1".
+# Added to a label that lacks it: "total_tariff1" becomes "Total water tariff1".
 QUANTITY_NOUNS = {
     "Energy": "energy",
     "Reactive_Energy": "energy",
@@ -57,8 +54,8 @@ QUANTITY_NOUNS = {
     "PointInTime": "date",
 }
 VOLUME_NOUNS = {"WaterMeter": "water", "GasMeter": "gas"}
-# A cumulative value read out at some past moment: statistics of a total would count its jumps as consumption.
-SNAPSHOT_MARKERS = ("_at_", "history", "prev", "target", "set_date", "ago", "delta", "month", "last_")
+# Past readings of a total: total_increasing would count their jumps as consumption.
+SNAPSHOT_MARKERS = ("_at_", "histor", "target", "last_")
 
 
 @dataclass(frozen=True)
@@ -129,7 +126,6 @@ def _field(f, driver):
 
 
 def driver_rows():
-    """DriverMeta per registered driver, in registry order; a field's info is upstream's description."""
     rows = []
     for driver in DriverManager.registered_drivers:
         fields = {}
