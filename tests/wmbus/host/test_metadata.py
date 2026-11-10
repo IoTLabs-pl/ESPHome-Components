@@ -27,6 +27,7 @@ CASES = {
         FieldMeta("Total energy consumption last month", "kWh", "energy", "", 3),
     ),
     "increasing": ("caltose", "consumption_hca", FieldMeta("Consumption", "hca", "", "total_increasing", primary=True)),
+    "net": ("abbb23", "total_net_energy_kwh", FieldMeta("Total net energy", "kWh", "energy", "total", 3)),
     "ha-unit": (
         "abbb23",
         "total_reactive_energy_consumption_kvarh",

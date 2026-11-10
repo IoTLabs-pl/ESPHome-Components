@@ -89,7 +89,10 @@ def _unit(unit):
 def _state_class(vname, quantity, change):
     if quantity in CUMULATIVE:
         live = vname.startswith(("total", "current_consumption")) or change == "Increasing"
-        return "total_increasing" if live and not any(m in vname for m in SNAPSHOT_MARKERS) else ""
+        if not live or any(m in vname for m in SNAPSHOT_MARKERS):
+            return ""
+        # Import minus export falls while exporting.
+        return "total" if "net" in vname.split("_") else "total_increasing"
     return "measurement" if _device_class(quantity) else ""
 
 
