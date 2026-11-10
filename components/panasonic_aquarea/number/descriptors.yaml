@@ -254,6 +254,7 @@
   offset: -1
   min: 0
   max: 250
+  unit_of_measurement: "min"
   device_class: "duration"
 22:
   name: Heater Start Delta
@@ -325,6 +326,7 @@
   min: 5
   max: 60
   step: 5
+  unit_of_measurement: "min"
   device_class: "duration"
 51:
   name: Heat to Cool Temperature
@@ -348,6 +350,7 @@
   min: 30
   max: 7620
   step: 30
+  unit_of_measurement: "min"
   device_class: "duration"
 54:
   name: DHW Heat-up Max Time
@@ -355,4 +358,5 @@
   offset: -1
   min: 1
   max: 254
+  unit_of_measurement: "min"
   device_class: "duration"

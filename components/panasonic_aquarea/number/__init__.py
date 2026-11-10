@@ -51,6 +51,7 @@ class NumberDescriptor(PlatformDescriptor, NumberTraits):
     """
 
     set: int | str
+    unit_of_measurement: str = cv.UNDEFINED
     device_class: str = cv.UNDEFINED
     entity_category: str = cv.UNDEFINED
     variants: tuple[NumberVariant, ...] = ()
@@ -74,12 +75,17 @@ class NumberDescriptor(PlatformDescriptor, NumberTraits):
 
         return super().from_yaml(platform, key, values)
 
+    @property
+    def effective_unit(self) -> str:
+        if self.unit_of_measurement is not cv.UNDEFINED:
+            return self.unit_of_measurement
+        return DEFAULT_UNITS.get(self.device_class, cv.UNDEFINED)
+
     def create_entity_schema(self) -> cv.Schema:
-        unit_of_measurement = DEFAULT_UNITS.get(self.device_class, cv.UNDEFINED)
         var_class = VariantNumberClass if self.variants else NumberClass
         schema = number.number_schema(
             class_=var_class,
-            unit_of_measurement=unit_of_measurement,
+            unit_of_measurement=self.effective_unit,
             device_class=self.device_class,
             entity_category=self.entity_category,
         )

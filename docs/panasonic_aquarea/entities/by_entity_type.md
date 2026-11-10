@@ -78,48 +78,48 @@
 
 ## `number`
 
-| Name | Heishamon ID | Device Class | Min | Max | Entity Category | Example |
-|------|--------------|--------------|-----|-----|-----------------|---------|
-| Heat Request Zone 1 | `SET5` | temperature | 10 | 30 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 5</code></pre> |
-| Cool Request Zone 1 | `SET6` | temperature | 18 | 28 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 6</code></pre> |
-| Heat Request Zone 2 | `SET7` | temperature | 10 | 30 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 7</code></pre> |
-| Cool Request Zone 2 | `SET8` | temperature | 18 | 28 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 8</code></pre> |
-| DHW Target Temperature | `SET11` | temperature | 40 | 75 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 11</code></pre> |
-| Max Pump Duty | `SET15` | - | 64 | 254 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 15</code></pre> |
-| Heat Target High Zone 1 | `SET16:1` | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:1"</code></pre> |
-| Heat Target Low Zone 1 | `SET16:2` | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:2"</code></pre> |
-| Heat Outside Low Zone 1 | `SET16:3` | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:3"</code></pre> |
-| Heat Outside High Zone 1 | `SET16:4` | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:4"</code></pre> |
-| Heat Target High Zone 2 | `SET16:5` | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:5"</code></pre> |
-| Heat Target Low Zone 2 | `SET16:6` | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:6"</code></pre> |
-| Heat Outside Low Zone 2 | `SET16:7` | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:7"</code></pre> |
-| Heat Outside High Zone 2 | `SET16:8` | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:8"</code></pre> |
-| Cool Target High Zone 1 | `SET16:9` | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:9"</code></pre> |
-| Cool Target Low Zone 1 | `SET16:10` | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:10"</code></pre> |
-| Cool Outside Low Zone 1 | `SET16:11` | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:11"</code></pre> |
-| Cool Outside High Zone 1 | `SET16:12` | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:12"</code></pre> |
-| Cool Target High Zone 2 | `SET16:13` | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:13"</code></pre> |
-| Cool Target Low Zone 2 | `SET16:14` | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:14"</code></pre> |
-| Cool Outside Low Zone 2 | `SET16:15` | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:15"</code></pre> |
-| Cool Outside High Zone 2 | `SET16:16` | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:16"</code></pre> |
-| Floor Heat Delta | `SET18` | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 18</code></pre> |
-| Floor Cool Delta | `SET19` | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 19</code></pre> |
-| DHW Heat Delta | `SET20` | temperature | -12 | -2 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 20</code></pre> |
-| Heater Delay Time | `SET21` | duration | 0 | 250 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 21</code></pre> |
-| Heater Start Delta | `SET22` | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 22</code></pre> |
-| Heater Stop Delta | `SET23` | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 23</code></pre> |
-| Buffer Delta | `SET27` | temperature | 0 | 10 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 27</code></pre> |
-| Heating Off Outdoor Temp | `SET29` | temperature | 5 | 35 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 29</code></pre> |
-| Bivalent Start Temp | `SET36` | temperature | -15 | 35 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 36</code></pre> |
-| Bivalent AP Start Temp | `SET37` | temperature | -10 | 0 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 37</code></pre> |
-| Bivalent AP Stop Temp | `SET38` | temperature | -10 | 0 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 38</code></pre> |
-| Heater On Outdoor Temp | `SET46` | temperature | -15 | 20 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 46</code></pre> |
-| Sterilization Temperature | `SET49` | temperature | 55 | 75 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 49</code></pre> |
-| Sterilization Max Time | `SET50` | duration | 5 | 60 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 50</code></pre> |
-| Heat to Cool Temperature | `SET51` | temperature | -127 | 127 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 51</code></pre> |
-| Cool to Heat Temperature | `SET52` | temperature | -127 | 127 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 52</code></pre> |
-| Room Operation Max Time | `SET53` | duration | 30 | 7620 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 53</code></pre> |
-| DHW Heat-up Max Time | `SET54` | duration | 1 | 254 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 54</code></pre> |
+| Name | Heishamon ID | Unit | Device Class | Min | Max | Entity Category | Example |
+|------|--------------|------|--------------|-----|-----|-----------------|---------|
+| Heat Request Zone 1 | `SET5` | °C | temperature | 10 | 30 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 5</code></pre> |
+| Cool Request Zone 1 | `SET6` | °C | temperature | 18 | 28 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 6</code></pre> |
+| Heat Request Zone 2 | `SET7` | °C | temperature | 10 | 30 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 7</code></pre> |
+| Cool Request Zone 2 | `SET8` | °C | temperature | 18 | 28 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 8</code></pre> |
+| DHW Target Temperature | `SET11` | °C | temperature | 40 | 75 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 11</code></pre> |
+| Max Pump Duty | `SET15` | - | - | 64 | 254 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 15</code></pre> |
+| Heat Target High Zone 1 | `SET16:1` | °C | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:1"</code></pre> |
+| Heat Target Low Zone 1 | `SET16:2` | °C | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:2"</code></pre> |
+| Heat Outside Low Zone 1 | `SET16:3` | °C | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:3"</code></pre> |
+| Heat Outside High Zone 1 | `SET16:4` | °C | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:4"</code></pre> |
+| Heat Target High Zone 2 | `SET16:5` | °C | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:5"</code></pre> |
+| Heat Target Low Zone 2 | `SET16:6` | °C | temperature | 20 | 60 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:6"</code></pre> |
+| Heat Outside Low Zone 2 | `SET16:7` | °C | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:7"</code></pre> |
+| Heat Outside High Zone 2 | `SET16:8` | °C | temperature | -20 | 15 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:8"</code></pre> |
+| Cool Target High Zone 1 | `SET16:9` | °C | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:9"</code></pre> |
+| Cool Target Low Zone 1 | `SET16:10` | °C | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:10"</code></pre> |
+| Cool Outside Low Zone 1 | `SET16:11` | °C | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:11"</code></pre> |
+| Cool Outside High Zone 1 | `SET16:12` | °C | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:12"</code></pre> |
+| Cool Target High Zone 2 | `SET16:13` | °C | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:13"</code></pre> |
+| Cool Target Low Zone 2 | `SET16:14` | °C | temperature | 5 | 20 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:14"</code></pre> |
+| Cool Outside Low Zone 2 | `SET16:15` | °C | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:15"</code></pre> |
+| Cool Outside High Zone 2 | `SET16:16` | °C | temperature | 15 | 30 | config | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: "16:16"</code></pre> |
+| Floor Heat Delta | `SET18` | °C | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 18</code></pre> |
+| Floor Cool Delta | `SET19` | °C | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 19</code></pre> |
+| DHW Heat Delta | `SET20` | °C | temperature | -12 | -2 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 20</code></pre> |
+| Heater Delay Time | `SET21` | min | duration | 0 | 250 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 21</code></pre> |
+| Heater Start Delta | `SET22` | °C | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 22</code></pre> |
+| Heater Stop Delta | `SET23` | °C | temperature | 1 | 15 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 23</code></pre> |
+| Buffer Delta | `SET27` | °C | temperature | 0 | 10 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 27</code></pre> |
+| Heating Off Outdoor Temp | `SET29` | °C | temperature | 5 | 35 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 29</code></pre> |
+| Bivalent Start Temp | `SET36` | °C | temperature | -15 | 35 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 36</code></pre> |
+| Bivalent AP Start Temp | `SET37` | °C | temperature | -10 | 0 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 37</code></pre> |
+| Bivalent AP Stop Temp | `SET38` | °C | temperature | -10 | 0 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 38</code></pre> |
+| Heater On Outdoor Temp | `SET46` | °C | temperature | -15 | 20 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 46</code></pre> |
+| Sterilization Temperature | `SET49` | °C | temperature | 55 | 75 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 49</code></pre> |
+| Sterilization Max Time | `SET50` | min | duration | 5 | 60 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 50</code></pre> |
+| Heat to Cool Temperature | `SET51` | °C | temperature | -127 | 127 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 51</code></pre> |
+| Cool to Heat Temperature | `SET52` | °C | temperature | -127 | 127 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 52</code></pre> |
+| Room Operation Max Time | `SET53` | min | duration | 30 | 7620 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 53</code></pre> |
+| DHW Heat-up Max Time | `SET54` | min | duration | 1 | 254 | - | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: 54</code></pre> |
 
 ## `select`
 
