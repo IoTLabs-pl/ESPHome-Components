@@ -6,3 +6,4 @@ wmbus_radio:
   cs_pin: GPIO3
   reset_pin: GPIO4
   dio1_pin: GPIO5
+  lna_boost: true

@@ -14,6 +14,7 @@ enum class SX1276::Register : uint8_t {
   BITRATE_MSB = 0x02,
   FDEV_MSB = 0x04,
   FRF_MSB = 0x06,
+  LNA = 0x0C,
   RX_CONFIG = 0x0D,
   RSSI_CONFIG = 0x0E,
   RSSI_VALUE = 0x11,
@@ -79,6 +80,10 @@ void SX1276::setup() {
   constexpr uint8_t agc_afc = (1 << 4) | (1 << 3) | 0b110;
   this->write_register(Register::RX_CONFIG, {agc_afc});
 
+  ESP_LOGVV(TAG, "%s HF LNA boost", this->lna_boost_ ? "enable" : "disable");
+  const uint8_t lna = 0x20 | (this->lna_boost_ ? 0b11 : 0);
+  this->write_register(Register::LNA, {lna});
+
   ESP_LOGVV(TAG, "disable clock output");
   this->write_register(Register::OSC, {0b111});
 
@@ -99,6 +104,11 @@ void SX1276::setup() {
   this->write_register(Register::RSSI_CONFIG, {0b111});
 
   ESP_LOGI(TAG, "SX1276 setup done");
+}
+
+void SX1276::dump_config() {
+  Transceiver::dump_config();
+  ESP_LOGCONFIG(TAG, "LNA boost: %s", YESNO(this->lna_boost_));
 }
 
 void SX1276::start_receiver(TaskHandle_t receiver_task) {
