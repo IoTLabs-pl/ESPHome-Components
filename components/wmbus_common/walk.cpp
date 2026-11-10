@@ -456,11 +456,8 @@ static bool step_profile_date(struct tm &date, ProfileDistance distance, int spa
   if (step_seconds <= 0)
     return false;
 
-  const time_t ts = mktime(&date);
-  if (ts == (time_t) -1)
-    return false;
-  const time_t shifted = (time_t) ((int64_t) ts + direction * step_seconds);
-  return localtime_r(&shifted, &date) != nullptr;
+  const time_t shifted = (time_t) ((int64_t) epoch_utc(date) + direction * step_seconds);
+  return gmtime_r(&shifted, &date) != nullptr;
 }
 
 static bool encode_date_bytes(const struct tm &date, std::span<uint8_t> out) {

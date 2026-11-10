@@ -47,16 +47,16 @@ def run_format(
 
 
 def find_files() -> list[Path]:
-    """Find all .cpp and .h files in components directory."""
-    components_dir = Path(__file__).parent.parent / "components"
-
-    return sorted(
-        path
-        for pattern in ("**/*.cpp", "**/*.h")
-        for path in components_dir.glob(pattern)
-        # Only allow component.cpp and component.h in wmbus_common
-        if ("wmbus_common" not in path.parts or path.stem == "component")
-    )
+    """Find all .cpp and .h files that git does not ignore."""
+    root = Path(__file__).parent.parent
+    files = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "*.cpp", "*.h"],
+        cwd=root,
+        capture_output=True,
+        encoding="utf-8",
+        check=True,
+    ).stdout.splitlines()
+    return [root / f for f in files]
 
 
 def main() -> int:

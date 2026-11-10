@@ -69,7 +69,7 @@ void MeterState::extract_numeric(const FieldSpec &f, const Record &dve) {
   if (f.date_record) {
     DecodedDate date = dve.extract_date();
     // An unset date (0xffff and its like) is null, not a year 2127.
-    value = date.valid ? (double) mktime(&date.value) : NOT_A_NUMBER;
+    value = date.valid ? (double) epoch_utc(date.value) : NOT_A_NUMBER;
   }
   value *= f.scale;
   if (!f.any_factors.empty())
@@ -474,19 +474,17 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
     }
 
     if (detected == nullptr) {
-      last_error = "no compiled driver detects " + tried;
+      last_error = {DecodeError::UnknownDriver, tried};
       return Result::NotDecoded;
     }
     bind_driver(*detected);
   }
 
-  if (!t.decode(key, formats, spec->payload_quirk) ||
-      (spec->payload_quirk == PayloadQuirk::DiehlPrios && !decode_diehl_prios(t))) {
-    last_error = t.decryption_failed ? "decryption failed"
-                 : key               ? "payload not understood"
-                                     : "encrypted, no key configured";
-    if (!t.decoding_errors.empty())
-      last_error += " (" + t.decoding_errors.str() + ")";
+  DecodeError code = t.decode(key, formats, spec->payload_quirk);
+  if (code == DecodeError::None && spec->payload_quirk == PayloadQuirk::DiehlPrios && !decode_diehl_prios(t))
+    code = key ? DecodeError::DecryptionFailed : DecodeError::NoKey;
+  if (code != DecodeError::None) {
+    last_error = {code, t.decoding_errors.str()};
     return Result::NotDecoded;
   }
 
@@ -496,7 +494,7 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
   process_field_extractors(t);
 
   decoding_errors = t.decoding_errors;
-  last_error.clear();
+  last_error = {};
   timestamp = at ? at : time(nullptr);
   return Result::Ok;
 }
@@ -577,15 +575,14 @@ double counter_value(const Record *dve, DVEntryCounterType counter) {
 
 // A date literal converts as UTC calendar time.
 double datetime_literal(int year, int month, int day, int hour, int minute, int second) {
-  struct tm t{};
+  tm t{};
   t.tm_year = year - 1900;
   t.tm_mon = month - 1;
   t.tm_mday = day;
   t.tm_hour = hour;
   t.tm_min = minute;
   t.tm_sec = second;
-  t.tm_isdst = 0;
-  return (double) mktime(&t);
+  return (double) epoch_utc(t);
 }
 
 double make_date(double year, double month, double day) {
@@ -595,12 +592,11 @@ double make_date(double year, double month, double day) {
   if (m <= 0 || d <= 0)
     return NOT_A_NUMBER;
 
-  struct tm t{};
+  tm t{};
   t.tm_year = y - 1900;
   t.tm_mon = m - 1;
   t.tm_mday = d;
-  t.tm_isdst = 0;
-  return (double) mktime(&t);
+  return (double) epoch_utc(t);
 }
 
 }  // namespace wmbus

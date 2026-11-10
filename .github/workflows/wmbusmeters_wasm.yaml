@@ -1,0 +1,39 @@
+name: wmbusmeters_wasm
+on:
+  pull_request:
+    paths:
+      - .github/workflows/wmbusmeters_wasm.yaml
+      - components/wmbus_common/**
+      - tests/wmbus/host/**
+      - tools/wmbusmeters_wasm/**
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  ESPHOME_VERSION: "2026.10.2"
+  ARDUINOJSON_VERSION: "7.4.3"
+  MBEDTLS_VERSION: "3.6.7"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Build the build environment
+        run: docker build --build-arg ESPHOME_VERSION -t wmbusmeters_wasm tools/wmbusmeters_wasm
+      - name: Build wmbusmeters_wasm
+        run: docker run --rm -e ARDUINOJSON_VERSION -e MBEDTLS_VERSION -u "$(id -u):$(id -g)" -v "$PWD:$PWD" -w "$PWD/tools/wmbusmeters_wasm" wmbusmeters_wasm
+      - name: Attach it to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v3
+        with:
+          files: tools/wmbusmeters_wasm/build/wmbusmeters_wasm.js

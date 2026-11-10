@@ -90,6 +90,8 @@ double vif_scale(uint16_t vif);
 enum class TimeFormat { Date, DateTime, DateTimeSec, TimestampUTC };
 
 std::string format_time(const struct tm &t, TimeFormat f);
+// timegm(), which ESP-IDF's newlib lacks: meter dates must not shift with the device's time zone.
+time_t epoch_utc(const struct tm &t);
 std::string format_time(double epoch_seconds, TimeFormat f);
 void add_months(struct tm &date, int months);
 double add_months(double t, int months);

@@ -6,7 +6,7 @@ import esphome.config_validation as cv
 
 from .cpp import TEMPLATES
 from .xmq import parse_xmq
-from .xmq_loader import SCHEMA, FieldKind, concrete_fields, driver_symbol, generate_from_definition
+from .xmq_loader import SCHEMA, Expanded, FieldKind, concrete_fields, driver_symbol, generate_from_definition
 
 XMQ_DRIVERS_PATH = Path(__file__).parents[1] / "src"
 
@@ -65,8 +65,12 @@ class Driver(FieldSelection):
         return SCHEMA(parse_xmq(self.source_path.read_text()))["driver"]
 
     @cached_property
+    def concrete_fields(self) -> list[Expanded]:
+        return concrete_fields(self._definition)
+
+    @cached_property
     def fields(self) -> set[FieldDefinition]:
-        return {FieldDefinition(f.definition.kind, f.json_name) for f in concrete_fields(self._definition)}
+        return {FieldDefinition(f.definition.kind, f.json_name) for f in self.concrete_fields}
 
     def request_field(self, field_name: str, kind: FieldKind | None = None) -> str:
         self.requested.add(super().request_field(field_name, kind))
@@ -79,6 +83,22 @@ class Driver(FieldSelection):
     @property
     def symbol(self) -> str:
         return driver_symbol(self.name)
+
+    @property
+    def meter_type(self) -> str | None:
+        return self._definition.get("meter_type")
+
+    @property
+    def manufacturer(self) -> str | None:
+        return self._definition.get("manufacturer")
+
+    @property
+    def model(self) -> str | None:
+        return self._definition.get("model")
+
+    @property
+    def default_fields(self) -> list[str]:
+        return self._definition["default_fields"]
 
     def serialize(self) -> str:
         return generate_from_definition(self._definition, self.source_path.name, self.requested or None)

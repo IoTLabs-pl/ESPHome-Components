@@ -29,7 +29,7 @@ from .xmq import parse_xmq
 FieldKind = str_enum("FieldKind", ["Numeric", "Text"])
 MEASUREMENT_TYPES = ("Any", "Instantaneous", "Minimum", "Maximum", "AtError")
 MAP_TYPES = ("BitToString", "IndexToString", "DecimalsToString")
-# DEPRECATED and HIDE are read and ignored; HIDE only shapes upstream's JSON.
+# DEPRECATED is ignored; HIDE keeps a field out of the metadata.
 ATTRIBUTES = ("REQUIRED", "DEPRECATED", "STATUS", "INCLUDE_TPL_STATUS", "INJECT_INTO_STATUS", "HIDE")
 # A driver's transform_payload, and the C++ enumerator.
 PAYLOAD_QUIRKS = {
@@ -145,11 +145,12 @@ FIELD_SCHEMA = Schema(
         Optional("ixml"): str,
         Optional("match_entire_payload"): boolean,
         Optional("match_entire_frame"): boolean,
-        # Upstream ignores these beside a field; `change` only feeds Home Assistant discovery.
+        # Upstream ignores these beside a field.
         Remove("default_message"): str,
         Remove("null_string"): str,
-        Remove("change"): str,
-        Remove("deprecated_by"): str,
+        # Only the metadata reads these.
+        Optional("change"): In(("Increasing", "Sample")),
+        Optional("deprecated_by"): str,
     }
 )
 # Upstream fixes the rule's name and type; XMQ supplies the mask and the maps.
@@ -218,19 +219,19 @@ SCHEMA = All(
         {
             Required("driver"): {
                 Required("name"): str,
-                Remove("meter_type"): str,
+                Optional("meter_type"): str,
                 Remove("meter_type_text"): str,
                 Remove("deprecated_by"): str,
                 Optional("info"): str,
-                Remove("manufacturer"): str,
-                Remove("model"): str,
+                Optional("manufacturer"): str,
+                Optional("model"): str,
                 Optional("aliases", default=""): CSV_LIST,
                 Optional("link_mode"): str,
                 Optional("force_media_type"): str,
                 Optional("transform_payload"): In(PAYLOAD_QUIRKS),
                 Optional("mfct_tpl_status_bits"): MFCT_TPL_STATUS_SCHEMA,
                 Optional("compact_frame_formats"): Schema({Required("difvif"): ensure_list(str)}),
-                Required("default_fields"): str,
+                Required("default_fields"): CSV_LIST,
                 Required("detect"): {Required("mvt"): ensure_list(CSV_LIST, parse_mvt)},
                 Optional("fields"): {Required("field"): ensure_list(FIELD_SCHEMA)},
                 Remove("flags"): object,
@@ -331,12 +332,17 @@ class FieldDef:
     text_form: str = "Hex"
     # An ixml carrier runs over every record and keeps the last text.
     every_match: bool = False
+    # Only the metadata reads these.
+    change: str | None = None
+    deprecated_by: str | None = None
+    info: str = ""
 
 
 def field_def(d: dict) -> FieldDef:
     f = FieldDef(
         d["name"], FieldKind.Numeric, d["quantity"], d.get("display_unit") or DEFAULT_UNIT[d["quantity"]],
-        d["attributes"], build_matcher(d.get("match")),
+        d["attributes"], build_matcher(d.get("match")), change=d.get("change"), deprecated_by=d.get("deprecated_by"),
+        info=d.get("info", ""),
     )
     if f.quantity in (Quantity.Text, Quantity.Flags):
         f.kind, f.display_unit = FieldKind.Text, Unit.TXT

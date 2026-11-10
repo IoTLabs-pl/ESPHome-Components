@@ -415,35 +415,31 @@ bool Telegram::parse_compact_apl(CompactFormats &formats) {
   return true;
 }
 
-bool Telegram::decode(Key &key, CompactFormats &formats, std::optional<PayloadQuirk> quirk) {
+DecodeError Telegram::decode(Key &key, CompactFormats &formats, std::optional<PayloadQuirk> quirk) {
   quirk_ = quirk;
   if (!tpl) {
     if (!key)
-      return false;
+      return DecodeError::NoKey;
     // AES-CTR always "succeeds"; a wrong key yields junk and a bad CRC.
     aes_ctr_decrypt(pos_, *key);
-    if (!payload_crc_ok(frame, pos_)) {
-      decryption_failed = true;
-      return false;
-    }
+    if (!payload_crc_ok(frame, pos_))
+      return DecodeError::DecryptionFailed;
     pos_ += 2;
     if (!parse_below_ell())
-      return false;
+      return DecodeError::NotUnderstood;
   }
   if (!carries_records(tpl->ci))
-    return true;
+    return DecodeError::None;
 
   const bool no_header = tpl->ci == 0x78 || tpl->ci == 0x79;
-  if (!no_header && !potentially_decrypt(key)) {
-    decryption_failed = true;
-    return false;
-  }
+  if (!no_header && !potentially_decrypt(key))
+    return key ? DecodeError::DecryptionFailed : DecodeError::NoKey;
 
   if (tpl->ci == 0x73 || tpl->ci == 0x79 || tpl->ci == 0x7B)
-    return parse_compact_apl(formats);
+    return parse_compact_apl(formats) ? DecodeError::None : DecodeError::NotUnderstood;
   header_size = (uint16_t) pos_;
   read_records(std::nullopt, formats);
-  return true;
+  return DecodeError::None;
 }
 
 std::array<uint8_t, 16> Telegram::tpl_iv() const {

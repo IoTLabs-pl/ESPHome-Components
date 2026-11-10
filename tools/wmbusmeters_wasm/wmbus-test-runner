@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+// The host runner's protocol over the module, for tests/wmbus/host/test_telegrams.py.
+import { createInterface } from "node:readline";
+
+const decoder = await (await import(new URL("build/wmbusmeters_wasm.js", import.meta.url))).default();
+for await (const line of createInterface({ input: process.stdin })) {
+  const [driver, , key, telegrams] = line.split("\t");
+  const { error, json } = decoder.decode({ driver, key: key === "NOKEY" ? "" : key, telegrams: telegrams.split(",") });
+  if (error) console.log(`@@WMBUS-ERR@@ ${error}`);
+  else if (!decoder.drivers[json.driver]) console.log(`@@WMBUS-ERR@@ no metadata for ${json.driver}`);
+  else console.log(`@@WMBUS@@ ${json.driver}\t${JSON.stringify(json)}`);
+}
