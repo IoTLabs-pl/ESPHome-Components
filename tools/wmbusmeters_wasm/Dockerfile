@@ -1,4 +1,4 @@
-FROM emscripten/emsdk:6.0.13
+FROM emscripten/emsdk:7.0.0
 
 ARG ESPHOME_VERSION
 RUN python3 -m venv --without-pip /opt/esphome \
