@@ -116,10 +116,17 @@ enum class Result : uint8_t {
   Ok,
 };
 
-enum class DecodeError : uint8_t { None, UnknownDriver, NoKey, DecryptionFailed, NotUnderstood };
-// Indexed by DecodeError: what the browser module and the test runners report.
-inline constexpr const char *DECODE_ERROR_CODES[] = {"", "unknown_driver", "no_key", "decryption_failed",
-                                                     "not_understood"};
+// Why the last telegram was not decoded; None once one is.
+struct LastError {
+  DecodeError code = DecodeError::None;
+  std::string detail;  // what the code leaves out: the identities tried, the decoding errors
+
+  // What the browser module and the test runners report.
+  const char *name() const {
+    static constexpr const char *NAMES[] = {"", "unknown_driver", "no_key", "decryption_failed", "not_understood"};
+    return NAMES[static_cast<size_t>(code)];
+  }
+};
 
 // A `calculate` formula compiled to C++; `dve` is null for a field without a matcher.
 typedef double (*CalculateFn)(const MeterState &state, const Record *dve);
@@ -202,8 +209,7 @@ struct MeterState {
   std::optional<time_t> timestamp;
   const char *media_type = nullptr;
   Status decoding_errors;
-  std::string last_error;
-  DecodeError error = DecodeError::None;
+  LastError last_error;
 
   // Outlives the telegram: a compact frame refers to a layout learned earlier.
   CompactFormats formats;

@@ -83,6 +83,8 @@ enum class PayloadQuirk : uint8_t {
   TryQundisDecode,
 };
 
+enum class DecodeError : uint8_t { None, UnknownDriver, NoKey, DecryptionFailed, NotUnderstood };
+
 struct Address {
   uint16_t mfct;
   uint32_t id;
@@ -155,7 +157,6 @@ struct Telegram {
   uint16_t header_size = 0;
   uint16_t suffix_size = 0;
 
-  bool decryption_failed = false;
   Status decoding_errors;
 
   std::vector<Record> records;
@@ -170,7 +171,7 @@ struct Telegram {
   // The layers up to and including the addresses.
   bool parse_envelope(std::span<const uint8_t> data);
   // `key` may be replaced by a manufacturer default key.
-  bool decode(Key &key, CompactFormats &formats, std::optional<PayloadQuirk> quirk);
+  DecodeError decode(Key &key, CompactFormats &formats, std::optional<PayloadQuirk> quirk);
 
   bool add_ixml_records(int base_offset, std::span<const uint8_t> bytes, const IxmlGrammar &grammar);
 

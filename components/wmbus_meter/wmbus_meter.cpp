@@ -38,8 +38,8 @@ void Meter::handle_frame(wmbus_radio::Frame *frame) {
     case wmbus::Result::NotDecoded:
       // Ours but unreadable: sensors are not refreshed with stale values.
       frame->mark_as_handled();
-      ESP_LOGW(TAG, "Telegram from %08x could not be decoded: %s", (unsigned) this->state_.id,
-               this->state_.last_error.c_str());
+      ESP_LOGW(TAG, "Telegram from %08x could not be decoded: %s %s", (unsigned) this->state_.id,
+               this->state_.last_error.name(), this->state_.last_error.detail.c_str());
       return;
 
     case wmbus::Result::Ok:

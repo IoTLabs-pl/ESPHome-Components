@@ -474,23 +474,17 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
     }
 
     if (detected == nullptr) {
-      last_error = "no compiled driver detects " + tried;
-      error = DecodeError::UnknownDriver;
+      last_error = {DecodeError::UnknownDriver, tried};
       return Result::NotDecoded;
     }
     bind_driver(*detected);
   }
 
-  if (!t.decode(key, formats, spec->payload_quirk) ||
-      (spec->payload_quirk == PayloadQuirk::DiehlPrios && !decode_diehl_prios(t))) {
-    last_error = !t.decryption_failed ? "payload not understood"
-                 : key                ? "decryption failed"
-                                      : "encrypted, no key configured";
-    if (!t.decoding_errors.empty())
-      last_error += " (" + t.decoding_errors.str() + ")";
-    error = !t.decryption_failed ? DecodeError::NotUnderstood
-            : key                ? DecodeError::DecryptionFailed
-                                 : DecodeError::NoKey;
+  DecodeError code = t.decode(key, formats, spec->payload_quirk);
+  if (code == DecodeError::None && spec->payload_quirk == PayloadQuirk::DiehlPrios && !decode_diehl_prios(t))
+    code = key ? DecodeError::DecryptionFailed : DecodeError::NoKey;
+  if (code != DecodeError::None) {
+    last_error = {code, t.decoding_errors.str()};
     return Result::NotDecoded;
   }
 
@@ -500,8 +494,7 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
   process_field_extractors(t);
 
   decoding_errors = t.decoding_errors;
-  last_error.clear();
-  error = DecodeError::None;
+  last_error = {};
   timestamp = at ? at : time(nullptr);
   return Result::Ok;
 }

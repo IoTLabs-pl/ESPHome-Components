@@ -92,8 +92,8 @@ void run_case(const std::string &line) {
     return;
   }
 
-  if (meter.error != wmbus::DecodeError::None) {
-    printf("%s%s %s\n", ERROR_PREFIX, wmbus::DECODE_ERROR_CODES[(size_t) meter.error], meter.last_error.c_str());
+  if (meter.last_error.code != wmbus::DecodeError::None) {
+    printf("%s%s %s\n", ERROR_PREFIX, meter.last_error.name(), meter.last_error.detail.c_str());
     return;
   }
 

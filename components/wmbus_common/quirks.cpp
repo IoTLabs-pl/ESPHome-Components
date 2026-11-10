@@ -173,10 +173,8 @@ bool diehl_prios_decode(Telegram &t, const Key &key) {
     if (!decoded.empty())
       break;
   }
-  if (decoded.empty()) {
-    t.decryption_failed = true;
+  if (decoded.empty())
     return false;
-  }
 
   // ixml expects four bytes past the header, then the decoded payload.
   const size_t hs = t.header_size;
