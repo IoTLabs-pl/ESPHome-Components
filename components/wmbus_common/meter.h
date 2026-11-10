@@ -117,6 +117,9 @@ enum class Result : uint8_t {
 };
 
 enum class DecodeError : uint8_t { None, UnknownDriver, NoKey, DecryptionFailed, NotUnderstood };
+// Indexed by DecodeError: what the browser module and the test runners report.
+inline constexpr const char *DECODE_ERROR_CODES[] = {"", "unknown_driver", "no_key", "decryption_failed",
+                                                     "not_understood"};
 
 // A `calculate` formula compiled to C++; `dve` is null for a field without a matcher.
 typedef double (*CalculateFn)(const MeterState &state, const Record *dve);

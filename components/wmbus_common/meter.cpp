@@ -483,15 +483,14 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
 
   if (!t.decode(key, formats, spec->payload_quirk) ||
       (spec->payload_quirk == PayloadQuirk::DiehlPrios && !decode_diehl_prios(t))) {
-    last_error = t.decryption_failed ? "decryption failed"
-                 : key               ? "payload not understood"
-                                     : "encrypted, no key configured";
+    last_error = !t.decryption_failed ? "payload not understood"
+                 : key                ? "decryption failed"
+                                      : "encrypted, no key configured";
     if (!t.decoding_errors.empty())
       last_error += " (" + t.decoding_errors.str() + ")";
-    // Without a key a TPL-encrypted telegram reads as a failed decryption.
-    error = !key                  ? DecodeError::NoKey
-            : t.decryption_failed ? DecodeError::DecryptionFailed
-                                  : DecodeError::NotUnderstood;
+    error = !t.decryption_failed ? DecodeError::NotUnderstood
+            : key                ? DecodeError::DecryptionFailed
+                                 : DecodeError::NoKey;
     return Result::NotDecoded;
   }
 

@@ -6,7 +6,7 @@ const decoder = await (await import(new URL("build/wmbusmeters_wasm.js", import.
 for await (const line of createInterface({ input: process.stdin })) {
   const [driver, , key, telegrams] = line.split("\t");
   const { error, json } = decoder.decode({ driver, key: key === "NOKEY" ? "" : key, telegrams: telegrams.split(",") });
-  if (!json?.driver) console.log(`@@WMBUS-ERR@@ ${error}`);
+  if (error) console.log(`@@WMBUS-ERR@@ ${error}`);
   else if (!decoder.drivers[json.driver]) console.log(`@@WMBUS-ERR@@ no metadata for ${json.driver}`);
   else console.log(`@@WMBUS@@ ${json.driver}\t${JSON.stringify(json)}`);
 }

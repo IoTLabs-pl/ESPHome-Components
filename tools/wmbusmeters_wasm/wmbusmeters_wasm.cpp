@@ -14,9 +14,6 @@ namespace {
 
 using emscripten::val;
 
-// Indexed by wmbus::DecodeError.
-constexpr const char *ERROR_CODES[] = {"", "unknown_driver", "no_key", "decryption_failed", "not_understood"};
-
 val answer(const char *error, val json = val::null()) {
   val out = val::object();
   out.set("error", error);
@@ -61,7 +58,8 @@ val decode(const val &args) {
   wmbus::MeterState meter(spec, first.sender().id, aes);
   for (const std::vector<uint8_t> &frame : frames)
     meter.handle_telegram(frame);
-  return answer(ERROR_CODES[static_cast<size_t>(meter.error)], val::global("JSON").call<val>("parse", meter.to_json()));
+  return answer(wmbus::DECODE_ERROR_CODES[static_cast<size_t>(meter.error)],
+                val::global("JSON").call<val>("parse", meter.to_json()));
 }
 
 }  // namespace

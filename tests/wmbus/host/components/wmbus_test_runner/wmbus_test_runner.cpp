@@ -56,7 +56,7 @@ void run_case(const std::string &line) {
   if (args[2] != "NOKEY") {
     key.emplace();
     if (args[2].size() != 2 * key->size() || !esphome::parse_hex(args[2], key->data(), key->size())) {
-      printf("%sbad key %s\n", ERROR_PREFIX, args[2].c_str());
+      printf("%sbad_key %s\n", ERROR_PREFIX, args[2].c_str());
       return;
     }
   }
@@ -66,7 +66,7 @@ void run_case(const std::string &line) {
   if (driver != "auto") {
     spec = find_driver(driver);
     if (spec == nullptr) {
-      printf("%sunknown driver %s\n", ERROR_PREFIX, driver.c_str());
+      printf("%sunknown_driver %s\n", ERROR_PREFIX, driver.c_str());
       return;
     }
   }
@@ -79,7 +79,7 @@ void run_case(const std::string &line) {
 
     std::vector<uint8_t> frame;
     if (!esphome::parse_hex(hex, frame, hex.size() / 2)) {
-      printf("%sbad hex in telegram\n", ERROR_PREFIX);
+      printf("%snot_a_telegram %s\n", ERROR_PREFIX, hex.c_str());
       return;
     }
 
@@ -92,9 +92,8 @@ void run_case(const std::string &line) {
     return;
   }
 
-  // Only `auto` gets here without a driver: no detect{} in the registry matched.
-  if (meter.spec == nullptr) {
-    printf("%s%s\n", ERROR_PREFIX, meter.last_error.c_str());
+  if (meter.error != wmbus::DecodeError::None) {
+    printf("%s%s %s\n", ERROR_PREFIX, wmbus::DECODE_ERROR_CODES[(size_t) meter.error], meter.last_error.c_str());
     return;
   }
 

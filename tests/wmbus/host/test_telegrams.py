@@ -9,7 +9,7 @@ import os
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import cache
 from pathlib import Path
 
@@ -225,16 +225,9 @@ def parameters(known_diffs: dict[str, str]):
     return params
 
 
-def run_batch(as_auto: bool) -> dict[str, str]:
-    """as_auto sends every case to a meter without a driver, as `type: auto` leaves one."""
-    cases = [c for c in CASES if c.driver in NAMES]
-    stdin = "".join(
-        "\t".join(
-            ["auto" if as_auto else NAMES[c.driver], c.meter_id, c.key, ",".join(c.telegrams)]
-        )
-        + "\n"
-        for c in cases
-    )
+def run(lines: list[list[str]]) -> list[str]:
+    """The runner's answer to each driver, meter id, key and telegrams line."""
+    stdin = "".join("\t".join(line) + "\n" for line in lines)
     result = subprocess.run(
         ["wmbus-test-runner"],
         input=stdin,
@@ -249,11 +242,22 @@ def run_batch(as_auto: bool) -> dict[str, str]:
         for line in result.stdout.splitlines()
         if line.startswith(RESULT_PREFIX) or line.startswith(ERROR_PREFIX)
     ]
-    if len(answers) != len(cases):
+    if len(answers) != len(lines):
         pytest.fail(
-            f"runner answered {len(answers)} of {len(cases)} cases "
+            f"runner answered {len(answers)} of {len(lines)} cases "
             f"(exit {result.returncode})\n{result.stderr.strip()[:2000]}"
         )
+    return answers
+
+
+def line(case: Case, driver: str) -> list[str]:
+    return [driver, case.meter_id, case.key, ",".join(case.telegrams)]
+
+
+def run_batch(as_auto: bool) -> dict[str, str]:
+    """as_auto sends every case to a meter without a driver, as `type: auto` leaves one."""
+    cases = [c for c in CASES if c.driver in NAMES]
+    answers = run([line(c, "auto" if as_auto else NAMES[c.driver]) for c in cases])
     return {case.id: answer for case, answer in zip(cases, answers)}
 
 
@@ -342,3 +346,30 @@ def test_detection(case: Case, detected: dict[str, str]) -> None:
     assert NAMES.get(driver, driver) == NAMES.get(case.driver, case.driver), (
         f"detected as {driver!r}"
     )
+
+
+BY_ID = {case.id: case for case in CASES}
+ENCRYPTED = BY_ID["amiplus-30584551"]  # AES-CBC in the TPL
+COMPACT = BY_ID["kamheat-46464646#2"]  # a full frame, then a compact one
+
+# Each error code from a driver test that otherwise decodes.
+ERROR_CASES = {
+    "no_key": replace(ENCRYPTED, key="NOKEY"),
+    "decryption_failed": replace(ENCRYPTED, key=bytes(b ^ 0xFF for b in bytes.fromhex(ENCRYPTED.key)).hex()),
+    # Only the full frame gives the compact one's format.
+    "not_understood": replace(COMPACT, telegrams=COMPACT.telegrams[1:]),
+    "unknown_driver": replace(ENCRYPTED, driver="none"),
+    "bad_key": replace(ENCRYPTED, key=ENCRYPTED.key[1:]),
+    "not_a_telegram": replace(ENCRYPTED, telegrams=["XX"]),
+}
+
+
+@pytest.fixture(scope="session")
+def errors() -> dict[str, str]:
+    answers = run([line(case, NAMES.get(case.driver, case.driver)) for case in ERROR_CASES.values()])
+    return dict(zip(ERROR_CASES, answers))
+
+
+@pytest.mark.parametrize("code", ERROR_CASES)
+def test_error(code: str, errors: dict[str, str]) -> None:
+    assert errors[code].removeprefix(ERROR_PREFIX).split(" ")[0] == code, errors[code]

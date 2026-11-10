@@ -418,8 +418,10 @@ bool Telegram::parse_compact_apl(CompactFormats &formats) {
 bool Telegram::decode(Key &key, CompactFormats &formats, std::optional<PayloadQuirk> quirk) {
   quirk_ = quirk;
   if (!tpl) {
-    if (!key)
+    if (!key) {
+      decryption_failed = true;
       return false;
+    }
     // AES-CTR always "succeeds"; a wrong key yields junk and a bad CRC.
     aes_ctr_decrypt(pos_, *key);
     if (!payload_crc_ok(frame, pos_)) {

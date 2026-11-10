@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/wmbusmeters_wasm.yaml
       - components/wmbus_common/**
+      - tests/wmbus/host/**
       - tools/wmbusmeters_wasm/**
   release:
     types: [published]
