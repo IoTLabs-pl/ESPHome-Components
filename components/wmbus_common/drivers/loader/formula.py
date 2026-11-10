@@ -3,7 +3,7 @@
   * no precedence: left to right, a binary operator takes one operand on its right,
   * + and - convert the left side to the right side's unit,
   * counter operators (%, >>, ==, &, ...) and round/floor/ceil ignore the target unit,
-  * a date literal (mktime in the device's zone) and adding months stay run-time calls.
+  * a date literal and adding months stay run-time calls, in UTC like the decoded dates.
 
 Unsupported, as no driver uses them: **, time literals, temperature scale conversion,
 adding years to a date. Upstream has parsed every formula already, so the syntax and

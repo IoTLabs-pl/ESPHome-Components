@@ -16,6 +16,7 @@ from .base_sensor import (
 
 RegularSensor = wmbus_meter_ns.class_("Sensor", BaseSensor, sensor.Sensor)
 
+
 def unit_defaults(config):
     _, unit = split_unit(config[CONF_FIELD])
     if unit:
