@@ -244,16 +244,6 @@
   multiplier: 0.2
   offset: -1
   device_class: "current"
-79: 
-  name: "Heat to Cool Temperature"
-  byte: 95
-  offset: -128
-  device_class: "temperature"
-80: 
-  name: "Cool to Heat Temperature"
-  byte: 96
-  offset: -128
-  device_class: "temperature"
 90: 
   name: "Room Heater Operations Hours"
   byte: 185
@@ -357,6 +347,41 @@
   unit_of_measurement: "steps"
   state_class: "measurement"
   icon: "mdi:valve"
+152:
+  name: "Dry Concrete Target Temperature"
+  byte: 46
+  offset: -128
+  device_class: "temperature"
+153:
+  name: "Pool Delta"
+  byte: 58
+  offset: -128
+  device_class: "temperature"
+154:
+  name: "SG Ready 1 Heat Capacity"
+  byte: 71
+  offset: -1
+  unit_of_measurement: "%"
+155:
+  name: "SG Ready 1 DHW Capacity"
+  byte: 72
+  offset: -1
+  unit_of_measurement: "%"
+156:
+  name: "SG Ready 2 Heat Capacity"
+  byte: 73
+  offset: -1
+  unit_of_measurement: "%"
+157:
+  name: "SG Ready 2 DHW Capacity"
+  byte: 74
+  offset: -1
+  unit_of_measurement: "%"
+169:
+  name: "Heat Request Temperature With Buffer"
+  byte: 152
+  offset: -128
+  device_class: "temperature"
 x0: 
   name: "Heat Power Consumption Extra"
   byte: 14

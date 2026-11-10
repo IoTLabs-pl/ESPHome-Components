@@ -43,10 +43,14 @@ switch:
     set: 1
   - platform: panasonic_aquarea
     set: 47
+  - platform: panasonic_aquarea
+    set: 55
 
 binary_sensor:
   - platform: panasonic_aquarea
     top: 26
+  - platform: panasonic_aquarea
+    top: 166
 
 text_sensor:
   - platform: panasonic_aquarea
@@ -57,6 +61,10 @@ text_sensor:
     top: 92
   - platform: panasonic_aquarea
     top: 107
+  - platform: panasonic_aquarea
+    top: 146
+  - platform: panasonic_aquarea
+    top: 147
 
 select:
   - platform: panasonic_aquarea
@@ -79,6 +87,8 @@ number:
     set: 49
   - platform: panasonic_aquarea
     set: 50
+  - platform: panasonic_aquarea
+    set: 53
 
 button:
   - platform: panasonic_aquarea

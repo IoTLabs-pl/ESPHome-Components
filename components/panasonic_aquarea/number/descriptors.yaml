@@ -326,3 +326,33 @@
   max: 60
   step: 5
   device_class: "duration"
+51:
+  name: Heat to Cool Temperature
+  byte: 95
+  offset: -128
+  min: -127
+  max: 127
+  device_class: "temperature"
+52:
+  name: Cool to Heat Temperature
+  byte: 96
+  offset: -128
+  min: -127
+  max: 127
+  device_class: "temperature"
+53:
+  name: Room Operation Max Time
+  byte: 97
+  offset: -1
+  multiplier: 30
+  min: 30
+  max: 7620
+  step: 30
+  device_class: "duration"
+54:
+  name: DHW Heat-up Max Time
+  byte: 98
+  offset: -1
+  min: 1
+  max: 254
+  device_class: "duration"
