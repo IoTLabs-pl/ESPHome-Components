@@ -212,6 +212,22 @@
       "IDU:WH-ADC0316M9E8AN2, ODU:WH-WXG12ME8"
     !!python/tuple [0xE2, 0xD5, 0x0D, 0x13, 0x95, 0x43, 0xD6, 0x0E, 0x71, 0x95]:
       "IDU:WH-SXC09K3E8, ODU:WH-UXZ09KE8"
+    !!python/tuple [0x12, 0xD7, 0x0D, 0x85, 0x11, 0x37, 0x94, 0x0E, 0x84, 0x10]:
+      "WH-WXG12ME8"
+    !!python/tuple [0xE2, 0xD5, 0x0B, 0x34, 0x99, 0x83, 0x92, 0x0D, 0x29, 0x98]:
+      "IDU:WH-SDC0509L3E5, ODU:WH-WDG09LE5"
+    !!python/tuple [0xE2, 0xD5, 0x0B, 0x12, 0x95, 0x02, 0xD6, 0x0F, 0x70, 0x95]:
+      "IDU:WH-SXC12K6E5, ODU:WH-UXZ12KE5"
+    !!python/tuple [0x12, 0xD7, 0x0C, 0x98, 0x14, 0x33, 0x94, 0x0C, 0x83, 0x10]:
+      "IDU:WH-SDC0316M9E8, ODU:WH-WXG09ME8"
+    !!python/tuple [0xE2, 0xD5, 0x0D, 0x99, 0x94, 0x02, 0xD6, 0x10, 0x67, 0x95]:
+      "IDU:WH-ADC0309K3E5, ODU:WH-UDZ07KE5"
+    !!python/tuple [0xE2, 0xD5, 0x0F, 0x36, 0x99, 0x02, 0xD6, 0x10, 0x68, 0x95]:
+      "IDU:WH-ADC0309K3E5AN, ODU:WH-UDZ09KE5"
+    !!python/tuple [0x42, 0xD4, 0x0B, 0x83, 0x71, 0x42, 0xD2, 0x0B, 0x72, 0x66]:
+      "IDU:WH-ADC0309J3E5C, ODU:WH-UD09JE5-1"
+    !!python/tuple [0xE2, 0xD5, 0x0D, 0x13, 0x95, 0x43, 0xD6, 0x0D, 0x71, 0x95]:
+      "IDU:WH-SXC09K3E8, ODU:WH-UXZ09KE8"
 
 101:
   name: "Solar Mode"
@@ -272,3 +288,51 @@
   labels:
     - "Room"
     - "DHW Tank"
+
+145:
+  name: "DHW Capacity Mode"
+  byte: 9
+  bit: 3
+  bit_width: 2
+  labels:
+    - "Standard"
+    - "Variable"
+
+146:
+  name: "Zone Configuration"
+  byte: 21
+  bit: 1
+  bit_width: 8
+  labels:
+    0x15: "One Zone (Room)"
+    0x19: "One Zone (Pool)"
+    0x16: "Two Zones (Z2 Room)"
+    0x26: "Two Zones (Z2 Pool)"
+
+147:
+  name: "Internal Heater Capacity"
+  byte: 25
+  bit: 5
+  bit_width: 2
+  labels:
+    - "3 kW"
+    - "6 kW"
+    - "9 kW"
+
+148:
+  name: "DHW Heater Type"
+  byte: 25
+  bit: 7
+  bit_width: 2
+  labels:
+    - "Internal"
+    - "External"
+
+162:
+  name: "Heat-Cool Switch"
+  byte: 110
+  bit: 5
+  bit_width: 2
+  labels:
+    - "Heat"
+    - "Cool"

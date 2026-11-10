@@ -254,6 +254,7 @@
   offset: -1
   min: 0
   max: 250
+  unit_of_measurement: "min"
   device_class: "duration"
 22:
   name: Heater Start Delta
@@ -311,3 +312,51 @@
   min: -15
   max: 20
   device_class: "temperature"
+49:
+  name: Sterilization Temperature
+  byte: 100
+  offset: -128
+  min: 55
+  max: 75
+  device_class: "temperature"
+50:
+  name: Sterilization Max Time
+  byte: 101
+  offset: -1
+  min: 5
+  max: 60
+  step: 5
+  unit_of_measurement: "min"
+  device_class: "duration"
+51:
+  name: Heat to Cool Temperature
+  byte: 95
+  offset: -128
+  min: -127
+  max: 127
+  device_class: "temperature"
+52:
+  name: Cool to Heat Temperature
+  byte: 96
+  offset: -128
+  min: -127
+  max: 127
+  device_class: "temperature"
+53:
+  name: Room Operation Max Time
+  byte: 97
+  offset: -1
+  multiplier: 30
+  min: 30
+  max: 7620
+  step: 30
+  unit_of_measurement: "min"
+  device_class: "duration"
+54:
+  name: DHW Heat-up Max Time
+  byte: 98
+  offset: -1
+  min: 1
+  max: 254
+  unit_of_measurement: "min"
+  device_class: "duration"

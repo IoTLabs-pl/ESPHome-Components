@@ -50,3 +50,7 @@
   name: Force Heater
   byte: 5
   bit: 5
+55:
+  name: Quiet Mode Schedule
+  byte: 7
+  bit: 1

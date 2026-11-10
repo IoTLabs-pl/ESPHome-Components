@@ -10,10 +10,10 @@
 
 ## `number`
 
-| Name | Heishamon ID | Device Class | Min | Max | Entity Category | Example |
-|------|--------------|--------------|-----|-----|-----------------|---------|
+| Name | Heishamon ID | Unit | Device Class | Min | Max | Entity Category | Example |
+|------|--------------|------|--------------|-----|-----|-----------------|---------|
 {%- for entity in number_entities %}
-| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.device_class }} | {{ entity.min }} | {{ entity.max }} | {{ entity.entity_category }} | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: {{ entity.id_value | tojson }}</code></pre> |
+| {{ entity.name }} | `{{ entity.full_id }}` | {{ entity.effective_unit }} | {{ entity.device_class }} | {{ entity.min }} | {{ entity.max }} | {{ entity.entity_category }} | <pre lang="yaml"><code>number:&#13;  - platform: panasonic_aquarea&#13;    set: {{ entity.id_value | tojson }}</code></pre> |
 {%- endfor %}
 
 ## `select`
