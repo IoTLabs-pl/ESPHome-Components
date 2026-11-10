@@ -30,7 +30,7 @@ struct RecordHeader {
   uint8_t dif;
   uint16_t vif;  // the full vif: 0x13, or 0xFD17
   MeasurementType measurement_type;
-  int32_t storage_nr;
+  int64_t storage_nr;  // up to 41 bits: the dif and ten difes
   int32_t tariff_nr;
   int32_t subunit_nr;
   std::vector<uint16_t> combinables;
@@ -47,7 +47,7 @@ struct Record {
   uint8_t dif;
   uint16_t vif;  // the full vif: 0x13, or 0xFD17
   MeasurementType measurement_type;
-  int32_t storage_nr;
+  int64_t storage_nr;
   int32_t tariff_nr;
   int32_t subunit_nr;
   std::vector<uint8_t> id;  // the dif/dife/vif/vife bytes the key is made of
@@ -71,11 +71,13 @@ struct Record {
 
   void set_header(std::span<const uint8_t> key, const RecordHeader &header);
   // dif with the storage nr, dife..., vif, and the Synthetic combinable.
-  void set_synthetic_id(uint8_t dif_nibble, int storage_nr, uint8_t vif);
+  void set_synthetic_id(uint8_t dif_nibble, int64_t storage_nr, uint8_t vif);
 };
 
 MeasurementType dif_measurement_type(uint8_t dif);
 int dif_len_bytes(uint8_t dif);
+// -1 for a reserved LVAR.
+int lvar_len_bytes(uint8_t lvar);
 bool dif_is_binary(uint8_t type);
 bool dif_is_bcd(uint8_t type);
 // An all-FF field is "no value", in a record and in a profile's slot alike.
