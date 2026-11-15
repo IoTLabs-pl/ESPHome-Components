@@ -156,9 +156,11 @@ int8_t SX1276::get_rssi() {
 const char *SX1276::get_name() { return TAG; }
 
 uint8_t SX1276::read_register(Register address) {
-  std::array<uint8_t, 2> transaction{static_cast<uint8_t>(address), 0x00};
-  this->spi_transaction(transaction);
-  return transaction[1];
+  this->enable();
+  this->write_byte(static_cast<uint8_t>(address));
+  const uint8_t value = this->read_byte();
+  this->disable();
+  return value;
 }
 
 void SX1276::write_register(Register address, std::initializer_list<uint8_t> data) {
