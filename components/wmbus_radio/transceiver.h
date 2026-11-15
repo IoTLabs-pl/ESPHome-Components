@@ -46,12 +46,6 @@ class Transceiver : public Component,
 
   void reset();
   static void IRAM_ATTR notify_interrupt(InterruptContext *context);
-
-  void spi_transaction(std::span<uint8_t> data) {
-    this->enable();
-    this->transfer_array(data.data(), data.size());
-    this->disable();
-  }
 };
 
 }  // namespace wmbus_radio
