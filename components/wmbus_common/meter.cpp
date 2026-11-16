@@ -463,6 +463,7 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
   if (!t.parse_envelope(frame) || !(t.dll.address.id == id || names_us(t.ell) || names_us(t.tpl)))
     return Result::NotForThisMeter;
 
+  media_type = t.media_type();
   if (spec == nullptr) {
     const DriverSpec *detected = nullptr;
     string tried;
@@ -480,6 +481,8 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
     bind_driver(*detected);
   }
 
+  if (spec->force_media_type != nullptr)
+    media_type = spec->force_media_type;
   DecodeError code = t.decode(key, formats, spec->payload_quirk);
   if (code == DecodeError::None && spec->payload_quirk == PayloadQuirk::DiehlPrios && !decode_diehl_prios(t))
     code = key ? DecodeError::DecryptionFailed : DecodeError::NoKey;
@@ -489,7 +492,6 @@ Result MeterState::handle_telegram(std::span<const uint8_t> frame, int rssi, tim
   }
 
   rssi_dbm = rssi;
-  media_type = spec->force_media_type != nullptr ? spec->force_media_type : t.media_type();
   run_decoders(t);
   process_field_extractors(t);
 
