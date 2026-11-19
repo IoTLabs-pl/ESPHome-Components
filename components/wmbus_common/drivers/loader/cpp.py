@@ -33,7 +33,7 @@ TEMPLATES = jinja2.Environment(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Declaration:
     kind: Literal["array", "value", "formula"]
     type: str

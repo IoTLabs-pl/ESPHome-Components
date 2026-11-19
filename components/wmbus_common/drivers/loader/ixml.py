@@ -27,7 +27,7 @@ class Term:
     repeat: str = ""
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Rule:
     alternatives: list[list[Term]]
     alias: str | None = None  # "DV_0413>dvk": the node is named dvk
