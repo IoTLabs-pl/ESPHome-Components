@@ -105,6 +105,10 @@ class FloatExtractor : public ExtractorInterface<float> {
     for (size_t i = 0; i < bit_width_ / 8; ++i) {
       raw |= static_cast<uint32_t>(data[byte_ + i]) << (8 * i);
     }
+    if (raw == 0) {
+      ESP_LOGD(TAG, "no data for float (byte %zu)", byte_);
+      return {};
+    }
     return (raw + offset_) * multiplier_;
   }
 
@@ -198,7 +202,7 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
       char hex[format_hex_pretty_size(KeyLen)];
       ESP_LOGW(TAG, "key not found for string extractor (byte %zu, %zu bytes): %s", byte_, KeyLen,
                format_hex_pretty_to(hex, key));
-      return {"undefined"};
+      return {};
     }
 
     return it->second;

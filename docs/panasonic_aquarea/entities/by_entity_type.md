@@ -41,9 +41,9 @@
 | Temperature Zone 2 | `TOP57` | °C | temperature | - | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 57</code></pre> |
 | Fan1 Motor Speed | `TOP62` | RPM | - | mdi:fan | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 62</code></pre> |
 | Fan2 Motor Speed | `TOP63` | RPM | - | mdi:fan | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 63</code></pre> |
-| High Pressure | `TOP64` | kgf/cm² | pressure | - | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 64</code></pre> |
+| High Pressure | `TOP64` | bar | pressure | - | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 64</code></pre> |
 | Pump Speed | `TOP65` | RPM | - | mdi:pump | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 65</code></pre> |
-| Low Pressure | `TOP66` | kgf/cm² | pressure | - | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 66</code></pre> |
+| Low Pressure | `TOP66` | bar | pressure | - | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 66</code></pre> |
 | Compressor Current | `TOP67` | A | current | - | measurement | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 67</code></pre> |
 | Room Heater Operations Hours | `TOP90` | h | duration | - | total_increasing | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 90</code></pre> |
 | DHW Heater Operations Hours | `TOP91` | h | duration | - | total_increasing | <pre lang="yaml"><code>sensor:&#13;  - platform: panasonic_aquarea&#13;    top: 91</code></pre> |
