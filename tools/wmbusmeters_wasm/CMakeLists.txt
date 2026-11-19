@@ -19,7 +19,8 @@ set(GENERATED ${CMAKE_BINARY_DIR}/esphome/build/wmbusmeters-wasm)
 file(GLOB_RECURSE SOURCES ${GENERATED}/src/esphome/components/wmbus_common/*.cpp ${GENERATED}/src/wmbusmeters_generated/*.cpp)
 # component.cpp is the ESPHome glue the decoder does without.
 list(FILTER SOURCES EXCLUDE REGEX "/component\\.cpp$")
-set(CORE_HELPERS ${GENERATED}/src/esphome/core/helpers.cpp ${GENERATED}/src/esphome/core/alloc_helpers.cpp)
+set(CORE_HELPERS ${GENERATED}/src/esphome/core/helpers.cpp ${GENERATED}/src/esphome/core/alloc_helpers.cpp
+  ${GENERATED}/src/esphome/components/json/json_util.cpp)
 add_compile_definitions(USE_HOST)
 # USE_HOST on every source would switch crypto.cpp to OpenSSL.
 set_source_files_properties(${GENERATED}/src/esphome/components/wmbus_common/crypto.cpp PROPERTIES COMPILE_OPTIONS -UUSE_HOST)

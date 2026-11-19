@@ -1,7 +1,7 @@
 import esphome.config_validation as cv
 
 from . import driver
-from .driver import GENERATED_DIR, AutoDriver, Driver  # noqa: F401
+from .driver import DOMAIN, GENERATED_DIR, AutoDriver, Driver  # noqa: F401
 from .units import UNITS, Unit, split_unit  # noqa: F401
 from .xmq_loader import FieldKind  # noqa: F401
 

@@ -72,7 +72,8 @@ static DiehlFrameInterpretation diehl_interpretation(const Telegram &t) {
   if (t.frame.size() < 15)
     return DiehlFrameInterpretation::NA;
   const std::span<const uint8_t> f = t.frame;
-  return diehl_interpretation(f[1], esphome::encode_uint16(f[3], f[2]), f[10], esphome::encode_uint16(f[14], f[13]));
+  return diehl_interpretation(f[1], esphome::encode_value_le<uint16_t>(&f[2]), f[10],
+                              esphome::encode_value_le<uint16_t>(&f[13]));
 }
 
 void diehl_preprocess(Telegram &t) {

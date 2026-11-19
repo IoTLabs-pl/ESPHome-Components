@@ -516,12 +516,12 @@ Value MeterState::value(const string &name) const {
 }
 
 string MeterState::to_json() const {
-  JsonDocument doc;
-  JsonObject root = doc.to<JsonObject>();
+  esphome::json::JsonBuilder builder;
+  JsonObject root = builder.root();
   root["_"] = "telegram";
-  root["media"] = media_type;
+  root["media"] = esphome::json::linked(media_type);
   if (spec != nullptr)
-    root["driver"] = spec->name;
+    root["driver"] = esphome::json::linked(spec->name);
   char id_buf[9];
   snprintf(id_buf, sizeof(id_buf), "%08x", (unsigned) id);
   root["id"] = id_buf;
@@ -532,11 +532,11 @@ string MeterState::to_json() const {
       if (holds_alternative<monostate>(v))
         continue;
       if (const double *number = get_if<double>(&v); number && f.json_date && !std::isnan(*number))
-        root[f.name] = format_time(*number, *f.json_date);
+        root[esphome::json::linked(f.name)] = format_time(*number, *f.json_date);
       else if (number)
-        root[f.name] = *number;
+        root[esphome::json::linked(f.name)] = *number;
       else
-        root[f.name] = get<string>(v);
+        root[esphome::json::linked(f.name)] = get<string>(v);
     }
   }
 
@@ -544,9 +544,7 @@ string MeterState::to_json() const {
     root["timestamp"] = format_time((double) *timestamp, TimeFormat::TimestampUTC);
   root["rssi_dbm"] = rssi_dbm;
 
-  string out;
-  serializeJson(doc, out);
-  return out;
+  return builder.serialize();
 }
 
 const DriverSpec *detect_driver(uint16_t mfct, uint8_t version, uint8_t type) {
