@@ -1,5 +1,6 @@
 #include "transceiver_cc1101.h"
 #include <algorithm>
+#include <utility>
 #include "esphome/core/log.h"
 
 namespace esphome {
@@ -38,8 +39,9 @@ void CC1101::read_fifo(uint8_t *buf, size_t count) {
 
 void CC1101::setup() {
   this->spi_setup();
+  // dio1_pin_ represents CC1101 GDO2 (sync assertion IRQ).
   this->dio1_pin_->setup();
-  if (this->gdo2_pin_ != nullptr) this->gdo2_pin_->setup();
+  this->gdo0_pin_->setup();
   this->strobe(SRES);
   delay(10);
   const auto partnum = this->read_reg(0x30, true);
@@ -50,7 +52,7 @@ void CC1101::setup() {
   }
   // Register set adapted from SzczepanLeon CC1101, preserving C/T 100kbps 2-FSK RX.
   static const std::pair<uint8_t,uint8_t> regs[] = {
-    {0x00, 0x46}, // IOCFG2: inverted sync-word detected
+    {0x00, 0x06}, // IOCFG2: SYNC asserted, active high; rising IRQ on GDO2
     {0x01, 0x2E}, // IOCFG1: high impedance
     {0x02, 0x40}, // IOCFG0: inverted RX FIFO threshold
     {0x03, 0x07}, // FIFOTHR: RX >= 32 bytes
@@ -85,14 +87,15 @@ void CC1101::setup() {
 void CC1101::dump_config() {
   Transceiver::dump_config();
   ESP_LOGCONFIG(TAG, "Frequency: %u Hz", this->frequency_hz_);
-  LOG_PIN("GDO2 Pin: ", this->gdo2_pin_);
+  LOG_PIN("GDO2 Sync Pin: ", this->dio1_pin_);
+  LOG_PIN("GDO0 FIFO Threshold Pin: ", this->gdo0_pin_);
 }
 
 void CC1101::start_receiver(TaskHandle_t receiver_task) {
   this->data_ready_interrupt_ = {receiver_task, 1};
-  // GDO0 is configured inverted: low when 32 bytes are in RX FIFO.
+  // GDO2 active high when sync is detected; works even for <32-byte frames.
   this->dio1_pin_->attach_interrupt(&Transceiver::notify_interrupt,
-                                    &this->data_ready_interrupt_, gpio::INTERRUPT_FALLING_EDGE);
+                                    &this->data_ready_interrupt_, gpio::INTERRUPT_RISING_EDGE);
 }
 
 void CC1101::reset_receiver() {
@@ -100,43 +103,53 @@ void CC1101::reset_receiver() {
   delay(1);
   this->strobe(SFRX);
   ulTaskNotifyTake(pdTRUE, 0);
+  this->awaiting_start_ = true;
+  this->rssi_captured_ = false;
   this->strobe(SRX);
 }
 
 bool CC1101::read(std::span<uint8_t> buf, TickType_t first_byte_timeout) {
-  // The radio task requests a small header first, then exactly the payload.
-  // The GDO threshold is larger than the header. Wait for IRQ, then drain FIFO.
   if (buf.empty()) return true;
-  if (this->dio1_pin_->digital_read()) {
+
+  // A C/T frame may be shorter than the CC1101 FIFO threshold.
+  // Start on GDO2 SYNC instead of waiting for the GDO0 threshold interrupt.
+  if (this->awaiting_start_) {
     if (!ulTaskNotifyTake(pdTRUE, first_byte_timeout)) return false;
+    this->awaiting_start_ = false;
   }
-  const TickType_t start = xTaskGetTickCount();
-  TickType_t last = start;
-  bool captured_rssi = false;
+
+  TickType_t last_progress = xTaskGetTickCount();
   while (!buf.empty()) {
-    uint8_t raw = this->read_reg(RXBYTES, true);
+    const uint8_t raw = this->read_reg(RXBYTES, true);
     if (raw & 0x80) {
-      ESP_LOGW(TAG, "RX FIFO overflow");
-      return false;
+      ESP_LOGW(TAG, "CC1101 RX FIFO overflow");
+      return false;  // radio task will reset and flush
     }
-    size_t available = raw & 0x7F;
-    if (available) {
-      if (!captured_rssi) {
+
+    const size_t available = raw & 0x7F;
+    if (available > 0) {
+      if (!this->rssi_captured_) {
         this->last_raw_rssi_ = this->read_reg(RSSI, true);
-        captured_rssi = true;
+        this->rssi_captured_ = true;
       }
-      // Avoid emptying CC1101 FIFO mid-packet; keep at least 1 byte when possible.
-      size_t want = buf.size();
-      size_t count = std::min(want, available);
-      if (available > 1 && want > 1 && count == available) --count;
-      if (count) {
+      size_t count = std::min(buf.size(), available);
+      // CC1101 RX FIFO erratum: keep at least one byte buffered while
+      // expecting more bytes to avoid an empty FIFO during an active frame.
+      if (buf.size() > count && count == available) {
+        if (count > 1) --count;
+        else count = 0;
+      }
+      if (count > 0) {
         this->read_fifo(buf.data(), count);
         buf = buf.subspan(count);
-        last = xTaskGetTickCount();
+        last_progress = xTaskGetTickCount();
+        continue;
       }
     }
-    if (!buf.empty() && xTaskGetTickCount() - last > pdMS_TO_TICKS(500)) {
-      ESP_LOGW(TAG, "FIFO timeout");
+
+    if ((xTaskGetTickCount() - last_progress) > pdMS_TO_TICKS(500)) {
+      ESP_LOGW(TAG, "CC1101 RX timeout waiting for remaining %u byte(s)",
+               static_cast<unsigned>(buf.size()));
       return false;
     }
     vTaskDelay(1);
