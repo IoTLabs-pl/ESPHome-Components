@@ -19,7 +19,9 @@ class Meter : public Component {
 
   void dump_config() override;
 
-  void on_telegram(std::function<void()> &&callback);
+  template<typename F> void on_telegram(F &&callback) {
+    this->on_telegram_callback_manager_.add(std::forward<F>(callback));
+  }
 
   std::string get_id() const;
 
@@ -32,7 +34,7 @@ class Meter : public Component {
 
   wmbus_radio::Radio *radio;
 
-  CallbackManager<void()> on_telegram_callback_manager;
+  CallbackManager<void()> on_telegram_callback_manager_;
 
   virtual void handle_frame(wmbus_radio::Frame *frame);
 };

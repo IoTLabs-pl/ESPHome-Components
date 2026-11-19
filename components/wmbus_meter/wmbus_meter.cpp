@@ -26,10 +26,6 @@ void Meter::dump_config() {
   ESP_LOGCONFIG(TAG, "  Key: %s", this->state_.key ? "***" : "not-encrypted");
 }
 
-void Meter::on_telegram(std::function<void()> &&callback) {
-  this->on_telegram_callback_manager.add(std::move(callback));
-}
-
 void Meter::handle_frame(wmbus_radio::Frame *frame) {
   switch (this->state_.handle_telegram(frame->data(), frame->rssi())) {
     case wmbus::Result::NotForThisMeter:
@@ -44,7 +40,7 @@ void Meter::handle_frame(wmbus_radio::Frame *frame) {
 
     case wmbus::Result::Ok:
       frame->mark_as_handled();
-      this->defer([this]() { this->on_telegram_callback_manager(); });
+      this->defer([this]() { this->on_telegram_callback_manager_(); });
       return;
   }
 }

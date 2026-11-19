@@ -12,7 +12,6 @@ from esphome.const import (
     CONF_ID,
     CONF_KEY,
     CONF_PAYLOAD,
-    CONF_TRIGGER_ID,
     CONF_TYPE,
 )
 from esphome.core import HexInt
@@ -33,10 +32,6 @@ MULTI_CONF = True
 wmbus_meter_ns = cg.esphome_ns.namespace("wmbus_meter")
 Meter = wmbus_meter_ns.class_("Meter", cg.Component)
 MeterPtr = Meter.operator("ptr")
-TelegramTrigger = wmbus_meter_ns.class_(
-    "TelegramTrigger",
-    automation.Trigger.template(MeterPtr),
-)
 
 
 def hex_key_validator(key):
@@ -62,21 +57,22 @@ def meter_id_validator(meter_id):
     return HexInt(value)
 
 
-CONFIG_SCHEMA = cv.Schema(
-    {
-        cv.GenerateID(): cv.declare_id(Meter),
-        cv.GenerateID(CONF_RADIO_ID): cv.use_id(RadioComponent),
-        cv.Required(CONF_METER_ID): meter_id_validator,
-        cv.Required(CONF_TYPE): validate_meter_type,
-        cv.Optional(CONF_KEY): cv.Any(
-            cv.All(cv.string_strict, lambda s: s.encode().hex(), hex_key_validator),
-            hex_key_validator,
-        ),
-        cv.Optional(CONF_ON_TELEGRAM): automation.validate_automation(
-            {cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(TelegramTrigger)},
-        ),
-    },
-).extend(cv.COMPONENT_SCHEMA)
+CONFIG_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(Meter),
+            cv.GenerateID(CONF_RADIO_ID): cv.use_id(RadioComponent),
+            cv.Required(CONF_METER_ID): meter_id_validator,
+            cv.Required(CONF_TYPE): validate_meter_type,
+            cv.Optional(CONF_KEY): cv.Any(
+                cv.All(cv.string_strict, lambda s: s.encode().hex(), hex_key_validator),
+                hex_key_validator,
+            ),
+            cv.Optional(CONF_ON_TELEGRAM): automation.validate_automation({}),
+        },
+    ).extend(cv.COMPONENT_SCHEMA),
+    cv.require_esphome_version(2026, 11, 0),
+)
 
 
 async def to_code(config):
@@ -103,11 +99,8 @@ async def to_code(config):
     await cg.register_component(meter, config)
 
     for conf in config.get(CONF_ON_TELEGRAM, []):
-        trig = cg.new_Pvariable(conf[CONF_TRIGGER_ID], meter)
-        await automation.build_automation(
-            trig,
-            [(MeterPtr, "meter")],
-            conf,
+        await automation.build_parent_callback_automation(
+            meter, "on_telegram", (MeterPtr, "meter"), conf
         )
 
 
