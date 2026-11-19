@@ -26,17 +26,15 @@ class Meter : public Component {
   std::string get_id() const;
 
   std::string as_json();
-  optional<std::string> get_string_field(std::string field_name);
-  optional<float> get_numeric_field(std::string field_name);
+  optional<std::string> get_string_field(const std::string &field_name);
+  optional<float> get_numeric_field(const std::string &field_name);
 
  protected:
   wmbus::MeterState state_;
 
-  wmbus_radio::Radio *radio;
-
   CallbackManager<void()> on_telegram_callback_manager_;
 
-  virtual void handle_frame(wmbus_radio::Frame *frame);
+  void handle_frame(wmbus_radio::Frame *frame);
 };
 }  // namespace wmbus_meter
 }  // namespace esphome

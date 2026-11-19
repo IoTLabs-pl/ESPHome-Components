@@ -18,8 +18,9 @@ from esphome.core import HexInt
 
 CONF_METER_ID = "meter_id"
 CONF_RADIO_ID = "radio_id"
-CONF_FIELDS = "fields"
 CONF_ON_TELEGRAM = "on_telegram"
+
+DOMAIN = "wmbus_meter"
 
 CODEOWNERS = ["@kubasaw"]
 
@@ -29,18 +30,9 @@ AUTO_LOAD = ["sensor", "text_sensor"]
 MULTI_CONF = True
 
 
-wmbus_meter_ns = cg.esphome_ns.namespace("wmbus_meter")
+wmbus_meter_ns = cg.esphome_ns.namespace(DOMAIN)
 Meter = wmbus_meter_ns.class_("Meter", cg.Component)
 MeterPtr = Meter.operator("ptr")
-
-
-def hex_key_validator(key):
-    try:
-        key = cv.bind_key(key)
-    except cv.Invalid as e:
-        raise cv.Invalid(e.msg.replace("Bind key", "Key"))
-
-    return bytes.fromhex(key)
 
 
 def meter_id_validator(meter_id):
@@ -64,10 +56,7 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(CONF_RADIO_ID): cv.use_id(RadioComponent),
             cv.Required(CONF_METER_ID): meter_id_validator,
             cv.Required(CONF_TYPE): validate_meter_type,
-            cv.Optional(CONF_KEY): cv.Any(
-                cv.All(cv.string_strict, lambda s: s.encode().hex(), hex_key_validator),
-                hex_key_validator,
-            ),
+            cv.Optional(CONF_KEY): cv.bind_key(name="Key"),
             cv.Optional(CONF_ON_TELEGRAM): automation.validate_automation({}),
         },
     ).extend(cv.COMPONENT_SCHEMA),
@@ -87,15 +76,12 @@ async def to_code(config):
         spec = cg.RawExpression(f"wmbus::registered_drivers[{index}] /* {driver.name} */")
 
     key = config.get(CONF_KEY)
-    bytes_or_nothing = cg.ArrayInitializer(*map(HexInt, key)) if key else None
+    key_bytes = cg.ArrayInitializer(*map(HexInt, bytes.fromhex(key))) if key else None
     cg.add(
-        meter.set_driver(
-            spec, config[CONF_METER_ID], cg.ArrayInitializer(bytes_or_nothing)
-        )
+        meter.set_driver(spec, config[CONF_METER_ID], cg.ArrayInitializer(key_bytes))
     )
 
-    radio = await cg.get_variable(config[CONF_RADIO_ID])
-    cg.add(meter.set_radio(radio))
+    await cg.add_variable(meter.set_radio, config[CONF_RADIO_ID])
     await cg.register_component(meter, config)
 
     for conf in config.get(CONF_ON_TELEGRAM, []):

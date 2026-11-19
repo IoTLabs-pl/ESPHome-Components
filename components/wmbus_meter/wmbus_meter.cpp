@@ -6,7 +6,7 @@
 
 namespace esphome {
 namespace wmbus_meter {
-static const char *TAG = "wmbus_meter";
+ESPHOME_LOG_TAG(TAG, "wmbus_meter");
 
 void Meter::set_driver(const wmbus::DriverSpec *spec, uint32_t id, std::optional<std::array<uint8_t, 16>> key) {
   this->state_ = wmbus::MeterState(spec, id, std::move(key));
@@ -15,7 +15,6 @@ void Meter::set_driver(const wmbus::DriverSpec *spec, uint32_t id, std::optional
 std::string Meter::get_id() const { return str_sprintf("%08x", (unsigned) this->state_.id); }
 
 void Meter::set_radio(wmbus_radio::Radio *radio) {
-  this->radio = radio;
   radio->on_frame([this](wmbus_radio::Frame *frame) { return this->handle_frame(frame); });
 }
 
@@ -51,7 +50,7 @@ std::string Meter::as_json() {
   return this->state_.to_json();
 }
 
-optional<std::string> Meter::get_string_field(std::string field_name) {
+optional<std::string> Meter::get_string_field(const std::string &field_name) {
   if (!this->state_.timestamp)
     return {};
   if (field_name == "media")
@@ -70,7 +69,7 @@ optional<std::string> Meter::get_string_field(std::string field_name) {
   return std::get<std::string>(value);
 }
 
-optional<float> Meter::get_numeric_field(std::string field_name) {
+optional<float> Meter::get_numeric_field(const std::string &field_name) {
   if (!this->state_.timestamp)
     return {};
 

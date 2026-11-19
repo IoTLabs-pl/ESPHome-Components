@@ -7,7 +7,7 @@ namespace esphome {
 namespace wmbus_meter {
 class Sensor : public sensor::Sensor, public BaseSensor {
  public:
-  void handle_update();
+  void handle_update() override;
 };
 }  // namespace wmbus_meter
 }  // namespace esphome
