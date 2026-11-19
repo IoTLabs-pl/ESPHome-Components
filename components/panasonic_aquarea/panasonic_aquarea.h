@@ -30,8 +30,8 @@ template<typename Derived, typename T> class ReadOnlyEntity : public ReadableEnt
     auto value = extractor_->decode(data);
 
     if (!value.has_value() || publish_dedup_.next(*value) == false) {
-      auto name = static_cast<Derived *>(this)->get_name();
-      ESP_LOGV("ReadableEntity", "Value unchanged for %s, not publishing", name.c_str());
+      ESP_LOGV("ReadableEntity", "Value unchanged for %s, not publishing",
+               LOG_STR_ARG(static_cast<Derived *>(this)->get_log_name()));
 
       return;
     }
@@ -71,21 +71,18 @@ template<typename Derived> class VariantMixin {
     void (*apply)(Derived *);
   };
 
-  void set_variants(uint32_t pref_key, std::span<const Variant> variants) {
-    this->pref_key_ = pref_key;
-    this->variants_ = variants;
-  }
+  void set_variants(std::span<const Variant> variants) { this->variants_ = variants; }
 
   void setup_variants() {
-    this->variant_pref_ = global_preferences->make_preference<uint8_t>(this->pref_key_);
+    this->variant_pref_ = static_cast<Derived *>(this)->template make_entity_preference<uint8_t>();
 
     uint8_t saved_index = 0;
     if (this->variant_pref_.load(&saved_index) && saved_index < this->variants_.size()) {
       this->variant_index_ = saved_index;
     }
 
-    auto name = static_cast<Derived *>(this)->get_name();
-    ESP_LOGI("panasonic_aquarea", "%s loaded variant %u from preferences", name.c_str(), this->variant_index_);
+    ESP_LOGI("panasonic_aquarea", "%s loaded variant %u from preferences",
+             LOG_STR_ARG(static_cast<Derived *>(this)->get_log_name()), this->variant_index_);
 
     this->variants_[this->variant_index_].apply(static_cast<Derived *>(this));
   }
@@ -102,14 +99,12 @@ template<typename Derived> class VariantMixin {
     if (this->variant_index_ != matched_variant) {
       this->variant_index_ = matched_variant;
       this->variant_pref_.save(&this->variant_index_);
-      auto name = static_cast<Derived *>(this)->get_name();
       ESP_LOGI("panasonic_aquarea", "%s detected variant %u, saved to preferences (applied after restart)",
-               name.c_str(), matched_variant);
+               LOG_STR_ARG(static_cast<Derived *>(this)->get_log_name()), matched_variant);
     }
   }
 
  protected:
-  uint32_t pref_key_{0};
   uint8_t variant_index_{0};
   std::span<const Variant> variants_{};
   ESPPreferenceObject variant_pref_;
@@ -127,7 +122,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
 
     bool state{false};
     void publish_state(bool value);
-    const std::string get_name() const;
+    const LogString *get_log_name() const;
   };
 
  protected:
