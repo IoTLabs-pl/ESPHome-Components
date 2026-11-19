@@ -20,6 +20,12 @@ TextSensorClass = panasonic_aquarea_ns.class_(
     cg.Component,
     ReadableEntity,
 )
+LabelTextSensorClass = panasonic_aquarea_ns.class_(
+    "LabelTextSensor",
+    text_sensor.TextSensor,
+    cg.Component,
+    ReadableEntity,
+)
 
 
 @dataclass(frozen=True)
@@ -34,24 +40,23 @@ class TextSensorDescriptor(PlatformDescriptor):
     )
 
     @property
-    def options(self):
-        """Return list of possible options from extractor labels."""
-        if hasattr(self.extractor, 'labels'):
-            labels = self.extractor.labels
-            if isinstance(labels, list):
-                return labels
-            elif isinstance(labels, dict):
-                return list(labels.values())
-        return None
+    def labelled(self) -> bool:
+        return not isinstance(self.extractor, LambdaExtractorConfig)
 
     def create_entity_schema(self) -> cv.Schema:
         return text_sensor.text_sensor_schema(
-            TextSensorClass,
+            LabelTextSensorClass if self.labelled else TextSensorClass,
             icon=self.icon,
         )
 
     async def create_entity(self, config: dict):
-        return await text_sensor.new_text_sensor(config)
+        var = await text_sensor.new_text_sensor(config)
+        if self.labelled:
+            labels = cg.shared_progmem_array(
+                "panasonic_aquarea_labels", cg.const_char_ptr, self.extractor.options
+            )
+            cg.add(var.set_labels(labels))
+        return var
 
 
 # Create platform instance

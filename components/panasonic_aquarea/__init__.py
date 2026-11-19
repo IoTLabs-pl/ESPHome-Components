@@ -1,7 +1,10 @@
+from dataclasses import dataclass, field
+
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import uart
-from esphome.const import CONF_UART_ID
+from esphome.const import CONF_ID, CONF_UART_ID
+from esphome.core import CORE, ID, CoroPriority, coroutine_with_priority
 
 DOMAIN = "panasonic_aquarea"
 
@@ -50,10 +53,34 @@ def _final_validate(config):
 FINAL_VALIDATE_SCHEMA = _final_validate
 
 
+@dataclass
+class ReadableEntities:
+    standard: list = field(default_factory=list)
+    extra: list = field(default_factory=list)
+
+
+def readable_entities(hub_id: ID) -> ReadableEntities:
+    return CORE.data.setdefault(DOMAIN, {}).setdefault(hub_id.id, ReadableEntities())
+
+
+@coroutine_with_priority(CoroPriority.FINAL)
+async def _set_entities(var, hub_id: ID):
+    entities = readable_entities(hub_id)
+    if all_entities := entities.standard + entities.extra:
+        table = cg.shared_progmem_array(
+            f"{DOMAIN}_entities",
+            ReadableEntity.operator("ptr"),
+            cg.ArrayInitializer(*all_entities, multiline=True),
+            constexpr=False,
+        )
+        cg.add(var.set_entities(table, len(entities.standard)))
+
+
 async def to_code(config):
     var = await uart.new_uart_component(config)
     await cg.add_variable(
         var.set_external_controller_uart,
         config.get(CONF_EXTERNAL_CONTROLLER_UART_ID),
     )
+    CORE.add_job(_set_entities, var, config[CONF_ID])
     return var
