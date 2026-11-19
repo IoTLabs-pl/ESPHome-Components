@@ -4,7 +4,6 @@ from esphome import automation
 from esphome import codegen as cg
 from esphome import config_validation as cv
 from esphome.const import CONF_DATA, CONF_FORMAT, CONF_ID, CONF_TRIGGER_ID
-from esphome.cpp_generator import LambdaExpression
 
 radio_ns = cg.esphome_ns.namespace("wmbus_radio")
 RadioComponent = radio_ns.class_("Radio", cg.Component)
@@ -63,23 +62,11 @@ async def register_radio(config):
 
 
 with suppress(ImportError):
-    from esphome.components.socket_transmitter import (
-        SOCKET_SEND_ACTION_SCHEMA,
-        SocketTransmitterSendAction,
-    )
-
-    OUTPUT_FORMATS = {
-        "hex": cg.std_string,
-        "raw": cg.std_span.template(cg.uint8.operator("const")),
-        "rtlwmbus": cg.std_string,
-    }
+    from esphome.components.socket_transmitter import SOCKET_SEND_ACTION_SCHEMA
 
     FRAME_SOCKET_SEND_SCHEMA = SOCKET_SEND_ACTION_SCHEMA.extend(
         {
-            cv.Required(CONF_FORMAT): cv.one_of(
-                *OUTPUT_FORMATS.keys(),
-                lower=True,
-            ),
+            cv.Required(CONF_FORMAT): cv.one_of("hex", "raw", "rtlwmbus", lower=True),
             cv.Optional(CONF_DATA): cv.invalid(
                 "If you want to specify data to be sent, use generic 'socket_transmitter.send' action"
             ),
@@ -88,21 +75,15 @@ with suppress(ImportError):
 
     @automation.register_action(
         "wmbus_radio.send_frame_with_socket",
-        SocketTransmitterSendAction,
+        automation.ApplyAction,
         FRAME_SOCKET_SEND_SCHEMA,
         synchronous=True,
     )
     async def send_frame_with_socket_to_code(config, action_id, template_arg, args):
-        output_type = OUTPUT_FORMATS[config[CONF_FORMAT]]
-
-        paren = await cg.get_variable(config[CONF_ID])
-        var = cg.new_Pvariable(
-            action_id, cg.TemplateArguments(output_type, *template_arg), paren
+        parent = await cg.get_variable(config[CONF_ID])
+        return automation.apply_statements_action(
+            action_id,
+            template_arg,
+            args,
+            [f"{parent}->send(frame->as_{config[CONF_FORMAT]}());"],
         )
-        template_ = LambdaExpression(
-            f"return frame->as_{config[CONF_FORMAT]}();", args, ""
-        )
-
-        cg.add(var.set_data(template_))
-
-        return var

@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "esphome/core/automation.h"
 #include "esphome/core/log.h"
 #include "esphome/core/component.h"
 #include "esphome/components/socket/socket.h"
@@ -27,16 +26,6 @@ class SocketTransmitter : public Component {
   int port;
   int protocol;
   std::unique_ptr<socket::Socket> socket_;
-};
-
-template<typename T, typename... Ts>
-class SocketTransmitterSendAction : public Action<Ts...>, public Parented<SocketTransmitter> {
- public:
-  SocketTransmitterSendAction(SocketTransmitter *parent = nullptr) : Parented<SocketTransmitter>(parent) {}
-
-  TEMPLATABLE_VALUE(T, data)
-
-  void play(const Ts &...x) override { this->parent_->send(this->data_.value(x...)); }
 };
 }  // namespace socket_transmitter
 }  // namespace esphome
