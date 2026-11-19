@@ -1,17 +1,27 @@
 from esphome import config_validation as cv
 from esphome import codegen as cg
 from esphome import automation
+from esphome.components import network, socket
 from esphome.const import CONF_ID, CONF_IP_ADDRESS, CONF_PORT, CONF_PROTOCOL, CONF_DATA
 
+DOMAIN = "socket_transmitter"
+
 AUTO_LOAD = ["socket"]
+
+DEPENDENCIES = ["network"]
 
 MULTI_CONF = True
 
 CODEOWNERS = ["@kubasaw"]
 
 
-socket_ns = cg.esphome_ns.namespace("socket_transmitter")
+socket_ns = cg.esphome_ns.namespace(DOMAIN)
 SocketTransmitter = socket_ns.class_("SocketTransmitter", cg.Component)
+
+
+def _consume_socket(config):
+    socket_type = socket.SocketType[config[CONF_PROTOCOL]]
+    return socket.consume_sockets(1, DOMAIN, socket_type)(config)
 
 
 CONFIG_SCHEMA = cv.All(
@@ -30,15 +40,18 @@ CONFIG_SCHEMA = cv.All(
         }
     ),
     cv.require_esphome_version(2026, 11, 0),
+    _consume_socket,
+    network.require_ipv4(DOMAIN),
 )
 
 
 async def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID])
-    cg.add(var.set_host(config[CONF_IP_ADDRESS]))
-    cg.add(var.set_port(config[CONF_PORT]))
-    cg.add(var.set_protocol(config[CONF_PROTOCOL]))
-
+    var = cg.new_Pvariable(
+        config[CONF_ID],
+        config[CONF_IP_ADDRESS],
+        config[CONF_PORT],
+        config[CONF_PROTOCOL],
+    )
     await cg.register_component(var, config)
 
 
