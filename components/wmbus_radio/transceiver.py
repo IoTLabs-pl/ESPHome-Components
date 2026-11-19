@@ -38,11 +38,8 @@ async def register_transceiver(config):
 
     var = await cg.register_component(cg.new_Pvariable(config[CONF_RADIO_ID]), config)
 
-    reset_pin = await cg.gpio_pin_expression(config[CONF_RESET_PIN])
-    cg.add(var.set_reset_pin(reset_pin))
-
-    dio1_pin = await cg.gpio_pin_expression(config[CONF_DIO1_PIN])
-    cg.add(var.set_dio1_pin(dio1_pin))
+    await cg.add_pin(var.set_reset_pin, config[CONF_RESET_PIN])
+    await cg.add_pin(var.set_dio1_pin, config[CONF_DIO1_PIN])
 
     await spi.register_spi_device(var, config)
 

@@ -10,7 +10,7 @@
 namespace esphome {
 namespace wmbus_radio {
 
-static const char *TAG = "SX1262";
+ESPHOME_LOG_TAG(TAG, "SX1262");
 static constexpr uint32_t F_XTAL = 32000000;
 
 enum class SX1262::Register : uint16_t {
@@ -56,7 +56,7 @@ void SX1262::setup() {
 
   if (!this->configure_chip()) {
     this->busy_pin_->detach_interrupt();
-    this->mark_failed();
+    this->mark_failed(LOG_STR("Chip configuration failed"));
   }
 }
 

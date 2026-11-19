@@ -11,7 +11,7 @@
 
 namespace esphome {
 namespace wmbus_radio {
-static const char *TAG = "wmbus";
+ESPHOME_LOG_TAG(TAG, "wmbus");
 
 const char *toString(LinkMode link_mode) {
   switch (link_mode) {

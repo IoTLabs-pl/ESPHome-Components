@@ -8,7 +8,7 @@
 
 namespace esphome {
 namespace wmbus_radio {
-static const char *TAG = "3of6";
+ESPHOME_LOG_TAG(TAG, "3of6");
 static constexpr std::array<uint8_t, 16> CODES = {
     0b010110, 0b001101, 0b001110, 0b001011, 0b011100, 0b011001, 0b011010, 0b010011,
     0b101100, 0b100101, 0b100110, 0b100011, 0b110100, 0b110001, 0b110010, 0b101001,
