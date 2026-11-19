@@ -152,7 +152,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   bool start_response_timeout(bool internal);
   void stop_response_timeout();
 
-  Protocol::Parser response_parser_;
+  Protocol::ResponseReader response_reader_;
 
   uint32_t request_counter_{0};
 
@@ -166,7 +166,7 @@ class Device : public PollingComponent, public uart::UARTDevice {
   void process_external_controller_data();
 
   // Response handling
-  void handle_response();
+  void handle_response(std::span<const uint8_t> frame);
 
  public:
   void set_external_controller_uart(uart::UARTComponent *controller);

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <numeric>
 #include <vector>
+#include "esphome/core/frame_reader.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
@@ -38,23 +39,8 @@ template<typename T> static uint8_t calculate_checksum(const T &data) {
 }
 
 using RequestFrame = std::array<uint8_t, REQUEST_FRAME_SIZE>;
-using ResponseFrame = StaticVector<uint8_t, RESPONSE_FRAME_SIZE>;
-
-class Parser {
- public:
-  // Append a received byte; returns true when frame() holds a complete, valid response
-  bool feed(uint8_t byte);
-
-  const ResponseFrame &frame() const { return this->frame_; }
-  CategoryByte category() const {
-    return static_cast<CategoryByte>(this->frame_[static_cast<size_t>(ByteIndex::CATEGORY)]);
-  }
-
- private:
-  static bool is_expected_byte(size_t index, uint8_t byte);
-
-  ResponseFrame frame_;
-};
+using ResponseReader = FrameReader<RESPONSE_FRAME_SIZE, static_cast<uint8_t>(PreambleByte::POLLING),
+                                   static_cast<uint8_t>(RESPONSE_FRAME_SIZE - 3), static_cast<uint8_t>(ThirdByte::X01)>;
 
 class Serializer {
  public:

@@ -102,23 +102,16 @@ void Device::yield_to_external_controller() {
 void Device::set_external_controller_uart(uart::UARTComponent *controller) { this->external_controller_ = controller; }
 
 void Device::process_heatpump_data() {
-  std::array<uint8_t, UART_CHUNK_SIZE> buf;
-
-  while (size_t available = this->available()) {
-    auto chunk = std::span(buf).first(std::min(available, buf.size()));
-
-    // Read data from heatpump
-    this->read_array(chunk.data(), chunk.size());
-
+  this->read_available_chunks<UART_CHUNK_SIZE>([this](const uint8_t *data, size_t len) {
     // Forward to external controller if connected (proxy mode)
     if (this->external_controller_ && this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION)
-      this->external_controller_->write_array(chunk.data(), chunk.size());
+      this->external_controller_->write_array(data, len);
 
-    for (uint8_t byte : chunk) {
-      if (this->response_parser_.feed(byte))
-        this->handle_response();
+    for (const uint8_t *byte = data; byte != data + len; byte++) {
+      if (const uint8_t *frame = this->response_reader_.feed(*byte))
+        this->handle_response(std::span<const uint8_t>(frame, Protocol::RESPONSE_FRAME_SIZE));
     }
-  }
+  });
 }
 
 void Device::process_external_controller_data() {
@@ -215,11 +208,16 @@ void Device::add_entity(ReadableEntity *entity, bool extra) {
 // Response Handling
 // ============================================================================
 
-void Device::handle_response() {
-  const auto &frame = this->response_parser_.frame();
-  const auto &entities = this->response_parser_.category() == Protocol::CategoryByte::EXTRA
-                             ? this->extra_response_entities_
-                             : this->standard_response_entities_;
+void Device::handle_response(std::span<const uint8_t> frame) {
+  const auto category = static_cast<Protocol::CategoryByte>(frame[static_cast<size_t>(Protocol::ByteIndex::CATEGORY)]);
+  const bool extra = category == Protocol::CategoryByte::EXTRA;
+  if (Protocol::calculate_checksum(frame) != 0 || (!extra && category != Protocol::CategoryByte::STANDARD)) {
+    ESP_LOGD(TAG, "Dropping invalid frame");
+    this->response_reader_.resync();
+    return;
+  }
+
+  const auto &entities = extra ? this->extra_response_entities_ : this->standard_response_entities_;
 
   for (auto *entity : entities)
     entity->handle_update(frame);
