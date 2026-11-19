@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 #include "esphome/core/component.h"
 #include "esphome/core/gpio.h"
 #include "esphome/core/lock_free_queue.h"
@@ -22,9 +20,9 @@ class Radio : public Component {
   void receive_frame();
 
   void set_transceiver(Transceiver *transceiver) { this->transceiver_ = transceiver; }
-  void on_frame(std::function<void(Frame *)> &&callback) { this->on_frame_callback_manager_.add(std::move(callback)); }
-  void on_packet(std::function<void(Packet *)> &&callback) {
-    this->on_packet_callback_manager_.add(std::move(callback));
+  template<typename F> void on_frame(F &&callback) { this->on_frame_callback_manager_.add(std::forward<F>(callback)); }
+  template<typename F> void on_packet(F &&callback) {
+    this->on_packet_callback_manager_.add(std::forward<F>(callback));
   }
 
  protected:

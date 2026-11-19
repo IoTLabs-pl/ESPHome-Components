@@ -3,20 +3,20 @@ from contextlib import suppress
 from esphome import automation
 from esphome import codegen as cg
 from esphome import config_validation as cv
-from esphome.const import CONF_DATA, CONF_FORMAT, CONF_ID, CONF_TRIGGER_ID
+from esphome.components.const import CONF_ON_PACKET
+from esphome.const import CONF_DATA, CONF_FORMAT, CONF_ID
 
-radio_ns = cg.esphome_ns.namespace("wmbus_radio")
+DOMAIN = "wmbus_radio"
+
+radio_ns = cg.esphome_ns.namespace(DOMAIN)
 RadioComponent = radio_ns.class_("Radio", cg.Component)
 
 CONF_MARK_AS_HANDLED = "mark_as_handled"
 CONF_ON_FRAME = "on_frame"
-CONF_ON_PACKET = "on_packet"
-CONF_PACKET_TRIGGER_ID = "packet_trigger_id"
 
 FramePtr = radio_ns.class_("Frame").operator("ptr")
-FrameTrigger = radio_ns.class_("FrameTrigger", automation.Trigger.template(FramePtr))
 PacketPtr = radio_ns.class_("Packet").operator("ptr")
-PacketTrigger = radio_ns.class_("PacketTrigger", automation.Trigger.template(PacketPtr))
+MarkHandledForwarder = radio_ns.struct("MarkHandledForwarder")
 
 
 SCHEMA = cv.Schema(
@@ -24,15 +24,10 @@ SCHEMA = cv.Schema(
         cv.GenerateID(): cv.declare_id(RadioComponent),
         cv.Optional(CONF_ON_FRAME): automation.validate_automation(
             {
-                cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(FrameTrigger),
                 cv.Optional(CONF_MARK_AS_HANDLED, default=False): cv.boolean,
             }
         ),
-        cv.Optional(CONF_ON_PACKET): automation.validate_automation(
-            {
-                cv.GenerateID(CONF_PACKET_TRIGGER_ID): cv.declare_id(PacketTrigger),
-            }
-        ),
+        cv.Optional(CONF_ON_PACKET): automation.validate_automation({}),
     }
 )
 
@@ -43,19 +38,17 @@ async def register_radio(config):
     var = await cg.register_component(cg.new_Pvariable(config[CONF_ID]), config)
 
     for conf in config.get(CONF_ON_FRAME, []):
-        trig = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var, conf[CONF_MARK_AS_HANDLED])
-        await automation.build_automation(
-            trig,
+        await automation.build_callback_automation(
+            var,
+            "on_frame",
             [(FramePtr, "frame")],
             conf,
+            forwarder=MarkHandledForwarder if conf[CONF_MARK_AS_HANDLED] else None,
         )
 
     for conf in config.get(CONF_ON_PACKET, []):
-        trig = cg.new_Pvariable(conf[CONF_PACKET_TRIGGER_ID], var)
-        await automation.build_automation(
-            trig,
-            [(PacketPtr, "packet")],
-            conf,
+        await automation.build_callback_automation(
+            var, "on_packet", [(PacketPtr, "packet")], conf
         )
 
     return var
