@@ -19,10 +19,12 @@ class CC1101 final : public Transceiver {
 
   void set_frequency(uint32_t hz) { this->frequency_hz_ = hz; }
   void set_gdo0_pin(InternalGPIOPin *pin) { this->gdo0_pin_ = pin; }
+  void set_gdo2_pin(InternalGPIOPin *pin) { this->gdo2_pin_ = pin; }
 
  private:
   uint32_t frequency_hz_{868950000};
   InternalGPIOPin *gdo0_pin_{nullptr};
+  InternalGPIOPin *gdo2_pin_{nullptr};
   InterruptContext data_ready_interrupt_{};
   uint8_t last_raw_rssi_{0};
   bool awaiting_start_{true};

@@ -39,8 +39,7 @@ void CC1101::read_fifo(uint8_t *buf, size_t count) {
 
 void CC1101::setup() {
   this->spi_setup();
-  // dio1_pin_ represents CC1101 GDO2 (sync assertion IRQ).
-  this->dio1_pin_->setup();
+  this->gdo2_pin_->setup();
   this->gdo0_pin_->setup();
   this->strobe(SRES);
   delay(10);
@@ -78,14 +77,14 @@ void CC1101::setup() {
 void CC1101::dump_config() {
   Transceiver::dump_config();
   ESP_LOGCONFIG(TAG, "Frequency: %u Hz", this->frequency_hz_);
-  LOG_PIN("GDO2 Sync Pin: ", this->dio1_pin_);
+  LOG_PIN("GDO2 Sync Pin: ", this->gdo2_pin_);
   LOG_PIN("GDO0 FIFO Threshold Pin: ", this->gdo0_pin_);
 }
 
 void CC1101::start_receiver(TaskHandle_t receiver_task) {
   this->data_ready_interrupt_ = {receiver_task, 1};
   // GDO2 active high when sync is detected; works even for <32-byte frames.
-  this->dio1_pin_->attach_interrupt(&Transceiver::notify_interrupt, &this->data_ready_interrupt_,
+  this->gdo2_pin_->attach_interrupt(&Transceiver::notify_interrupt, &this->data_ready_interrupt_,
                                     gpio::INTERRUPT_RISING_EDGE);
 }
 

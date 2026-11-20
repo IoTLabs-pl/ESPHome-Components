@@ -32,19 +32,12 @@ class Transceiver : public Component,
   virtual int8_t get_rssi() = 0;
   virtual const char *get_name() = 0;
 
-  void set_reset_pin(InternalGPIOPin *reset_pin);
-  void set_dio1_pin(InternalGPIOPin *dio1_pin);
-
  protected:
   struct InterruptContext {
     TaskHandle_t task;
     uint32_t value;
   };
 
-  InternalGPIOPin *reset_pin_;
-  InternalGPIOPin *dio1_pin_;
-
-  void reset();
   static void IRAM_ATTR notify_interrupt(InterruptContext *context);
 };
 

@@ -27,6 +27,8 @@ class SX1262 final : public Transceiver {
   int8_t get_rssi() override;
   const char *get_name() override;
 
+  void set_reset_pin(InternalGPIOPin *reset_pin) { this->reset_pin_ = reset_pin; }
+  void set_dio1_pin(InternalGPIOPin *dio1_pin) { this->dio1_pin_ = dio1_pin; }
   void set_busy_pin(InternalGPIOPin *busy_pin) { this->busy_pin_ = busy_pin; }
   void set_tcxo_voltage(TcxoVoltage tcxo_voltage) { this->tcxo_voltage_ = tcxo_voltage; }
   void set_rf_switch(bool rf_switch) { this->rf_switch_ = rf_switch; }
@@ -41,6 +43,8 @@ class SX1262 final : public Transceiver {
     BUSY_READY = 1 << 1,
   };
 
+  InternalGPIOPin *reset_pin_;
+  InternalGPIOPin *dio1_pin_;
   InternalGPIOPin *busy_pin_;
   TcxoVoltage tcxo_voltage_;
   bool rf_switch_;
