@@ -75,7 +75,7 @@ struct Packet {
 struct Frame {
  public:
   Frame(std::vector<uint8_t> data, LinkMode lm, BlockType bt, int8_t rssi)
-      : data_(std::move(data)), link_mode_(lm), block_type_(bt), rssi_(rssi){};
+      : data_(std::move(data)), link_mode_(lm), block_type_(bt), rssi_(rssi) {};
 
   std::vector<uint8_t> &data();
   LinkMode link_mode();
