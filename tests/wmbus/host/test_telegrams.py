@@ -32,17 +32,23 @@ ENVELOPE_KEYS = {"_", "driver", "id", "name", "timestamp", "rssi_dbm"}
 # Each traced to upstream's own code; the xfail is strict, so a fix must delete its line.
 KNOWN_DECODE_DIFFS = {
     "actislink-ANYID": "addressed as ANYID and encrypted with DES",
+    "elf2-21400916": "test telegram is shorter than its L-field",
     "hcae2-54423117#4": "delta_14_half_months_ago_hca untraced",
+    "hcae2-81710547": "test telegram is shorter than its L-field",
     "kamwater-52525252#2": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
     "kamwater-52525252#3": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
+    "qwaterv2-35511848": "test telegram still carries the frame format A block CRCs",
 }
 
 # Overlapping mvt lines: `type: auto` picks whichever driver the registry holds first.
 KNOWN_DETECTION_DIFFS = {
     "actislink-ANYID": "addressed as ANYID and encrypted with DES",
+    "elf2-21400916": "test telegram is shorter than its L-field",
+    "hcae2-81710547": "test telegram is shorter than its L-field",
     "kamwater-52525252#2": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
     "kamwater-52525252#3": "synthetic test telegram has wrong length and KAM manufacturer instead of KAW",
     "mkradio4a-01770002": "same mvt line as weh_07",
+    "qwaterv2-35511848": "test telegram still carries the frame format A block CRCs",
 }
 
 # Upstream separates frame layers for readability; stripping here keeps the decoder's hex parsing strict.
@@ -58,6 +64,7 @@ class Case:
     telegrams: list[str]
     expected: dict
     comment: str
+    auto_detect: bool = True
 
 
 def split_telegrams(value: str) -> list[str]:
@@ -195,6 +202,7 @@ def collect_cases() -> list[Case]:
                     telegrams=[as_heard(t) for t in split_telegrams(test["telegram"])],
                     expected=expected,
                     comment=" ".join(as_list(test.get("comment"))),
+                    auto_detect=test.get("auto_detect") != "false",
                 )
             )
     return cases
@@ -342,6 +350,8 @@ def test_decode(case: Case, decoded: dict[str, str]) -> None:
 
 @pytest.mark.parametrize("case", parameters(KNOWN_DETECTION_DIFFS))
 def test_detection(case: Case, detected: dict[str, str]) -> None:
+    if not case.auto_detect:
+        pytest.skip("auto_detect = false")
     driver, _ = answer_of(detected[case.id])
     assert NAMES.get(driver, driver) == NAMES.get(case.driver, case.driver), (
         f"detected as {driver!r}"

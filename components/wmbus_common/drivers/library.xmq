@@ -467,7 +467,18 @@ library {
     }
     template(id = volume_flow_m3h)
     {
+        // Deprecated use flow_m3h instead.
         name     = volume_flow
+        quantity = Flow
+        info     = 'Media volume flow.'
+        match {
+            measurement_type = Instantaneous
+            vif_range        = VolumeFlow
+        }
+    }
+    template(id = flow_m3h)
+    {
+        name     = flow
         quantity = Flow
         info     = 'Media volume flow.'
         match {
@@ -501,6 +512,18 @@ library {
         }
     }
     template(id = consumption_hca)
+    {
+        // Use allocation_hca instead. This field name will be phased out.
+        name     = consumption
+        quantity = HCA
+        info     = 'The current heat cost allocation for this meter.'
+        change   = Increasing
+        match {
+            measurement_type = Instantaneous
+            vif_range        = HeatCostAllocation
+        }
+    }
+    template(id = allocation_hca)
     {
         name     = consumption
         quantity = HCA
