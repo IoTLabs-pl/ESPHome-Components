@@ -8,9 +8,9 @@
 
 namespace esphome {
 namespace panasonic_aquarea {
-static const char *TAG = "panasonic_aquarea";
-static const char *RESPONSE_TIMEOUT_TAG = "response_timeout";
-static const char *RESUME_POLLING_TAG = "resume_polling";
+ESPHOME_LOG_TAG(TAG, "panasonic_aquarea");
+static constexpr uint32_t RESPONSE_TIMEOUT_ID = 0;
+static constexpr uint32_t RESUME_POLLING_ID = 1;
 
 static constexpr uint32_t RESPONSE_TIMEOUT_MS = 2000;
 static constexpr uint32_t EXTERNAL_CONTROLLER_SILENCE_MS = 60000;  // CZ-TAW1 boots in ~35-40 s
@@ -35,7 +35,7 @@ Device::SupportsExtraQueryEntity::SupportsExtraQueryEntity() {
 
 void Device::SupportsExtraQueryEntity::publish_state(bool value) { state = value; }
 
-const std::string Device::SupportsExtraQueryEntity::get_name() const { return "Extra Query Support"; }
+const LogString *Device::SupportsExtraQueryEntity::get_log_name() const { return LOG_STR("Extra Query Support"); }
 
 // ============================================================================
 // Command Queue Management
@@ -61,15 +61,17 @@ void Device::handle_command_queue() {
 
 bool Device::start_response_timeout(bool internal) {
   if (this->comm_state_ != CommunicationState::IDLE) {
-    ESP_LOGV(TAG, "Bus busy, not starting %s transaction", internal ? "internal" : "external");
+    ESP_LOGV(TAG, "Bus busy, not starting %s transaction",
+             internal ? LOG_STR_LITERAL("internal") : LOG_STR_LITERAL("external"));
     return false;
   }
 
   this->comm_state_ = internal ? CommunicationState::INTERNAL_TRANSACTION : CommunicationState::EXTERNAL_TRANSACTION;
 
-  ESP_LOGD(TAG, "Starting %s transaction with heatpump", internal ? "internal" : "external");
-  this->set_timeout(RESPONSE_TIMEOUT_TAG, RESPONSE_TIMEOUT_MS, [this]() {
-    ESP_LOGW(TAG, "Response timeout occurred, resetting communication state");
+  ESP_LOGD(TAG, "Starting %s transaction with heatpump",
+           internal ? LOG_STR_LITERAL("internal") : LOG_STR_LITERAL("external"));
+  this->set_timeout(RESPONSE_TIMEOUT_ID, RESPONSE_TIMEOUT_MS, [this]() {
+    this->status_set_warning(LOG_STR("Response timeout"));
     this->comm_state_ = CommunicationState::IDLE;
   });
 
@@ -79,7 +81,7 @@ bool Device::start_response_timeout(bool internal) {
 void Device::stop_response_timeout() {
   ESP_LOGD(TAG, "Finishing transaction with heatpump");
 
-  this->cancel_timeout(RESPONSE_TIMEOUT_TAG);
+  this->cancel_timeout(RESPONSE_TIMEOUT_ID);
   this->comm_state_ = CommunicationState::IDLE;
 }
 
@@ -89,7 +91,7 @@ void Device::stop_response_timeout() {
 
 void Device::yield_to_external_controller() {
   this->stop_poller();
-  this->set_timeout(RESUME_POLLING_TAG, EXTERNAL_CONTROLLER_SILENCE_MS, [this]() {
+  this->set_timeout(RESUME_POLLING_ID, EXTERNAL_CONTROLLER_SILENCE_MS, [this]() {
     ESP_LOGI(TAG, "External controller silent, resuming polling");
     this->start_poller();
   });
@@ -102,23 +104,16 @@ void Device::yield_to_external_controller() {
 void Device::set_external_controller_uart(uart::UARTComponent *controller) { this->external_controller_ = controller; }
 
 void Device::process_heatpump_data() {
-  std::array<uint8_t, UART_CHUNK_SIZE> buf;
-
-  while (size_t available = this->available()) {
-    auto chunk = std::span(buf).first(std::min(available, buf.size()));
-
-    // Read data from heatpump
-    this->read_array(chunk.data(), chunk.size());
-
+  this->read_available_chunks<UART_CHUNK_SIZE>([this](const uint8_t *data, size_t len) {
     // Forward to external controller if connected (proxy mode)
     if (this->external_controller_ && this->comm_state_ == CommunicationState::EXTERNAL_TRANSACTION)
-      this->external_controller_->write_array(chunk.data(), chunk.size());
+      this->external_controller_->write_array(data, len);
 
-    for (uint8_t byte : chunk) {
-      if (this->response_parser_.feed(byte))
-        this->handle_response();
+    for (const uint8_t *byte = data; byte != data + len; byte++) {
+      if (const uint8_t *frame = this->response_reader_.feed(*byte))
+        this->handle_response(std::span<const uint8_t>(frame, Protocol::RESPONSE_FRAME_SIZE));
     }
-  }
+  });
 }
 
 void Device::process_external_controller_data() {
@@ -215,15 +210,21 @@ void Device::add_entity(ReadableEntity *entity, bool extra) {
 // Response Handling
 // ============================================================================
 
-void Device::handle_response() {
-  const auto &frame = this->response_parser_.frame();
-  const auto &entities = this->response_parser_.category() == Protocol::CategoryByte::EXTRA
-                             ? this->extra_response_entities_
-                             : this->standard_response_entities_;
+void Device::handle_response(std::span<const uint8_t> frame) {
+  const auto category = static_cast<Protocol::CategoryByte>(frame[static_cast<size_t>(Protocol::ByteIndex::CATEGORY)]);
+  const bool extra = category == Protocol::CategoryByte::EXTRA;
+  if (Protocol::calculate_checksum(frame) != 0 || (!extra && category != Protocol::CategoryByte::STANDARD)) {
+    ESP_LOGD(TAG, "Dropping invalid frame");
+    this->response_reader_.resync();
+    return;
+  }
+
+  const auto &entities = extra ? this->extra_response_entities_ : this->standard_response_entities_;
 
   for (auto *entity : entities)
     entity->handle_update(frame);
 
+  this->status_clear_warning();
   this->stop_response_timeout();
 }
 

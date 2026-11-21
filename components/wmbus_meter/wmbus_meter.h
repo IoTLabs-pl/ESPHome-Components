@@ -19,22 +19,22 @@ class Meter : public Component {
 
   void dump_config() override;
 
-  void on_telegram(std::function<void()> &&callback);
+  template<typename F> void on_telegram(F &&callback) {
+    this->on_telegram_callback_manager_.add(std::forward<F>(callback));
+  }
 
   std::string get_id() const;
 
   std::string as_json();
-  optional<std::string> get_string_field(std::string field_name);
-  optional<float> get_numeric_field(std::string field_name);
+  optional<std::string> get_string_field(const std::string &field_name);
+  optional<float> get_numeric_field(const std::string &field_name);
 
  protected:
   wmbus::MeterState state_;
 
-  wmbus_radio::Radio *radio;
+  CallbackManager<void()> on_telegram_callback_manager_;
 
-  CallbackManager<void()> on_telegram_callback_manager;
-
-  virtual void handle_frame(wmbus_radio::Frame *frame);
+  void handle_frame(wmbus_radio::Frame *frame);
 };
 }  // namespace wmbus_meter
 }  // namespace esphome

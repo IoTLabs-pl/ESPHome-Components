@@ -1,6 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 import esphome.final_validate as fv
+from esphome.const import CONF_TYPE
 
 from . import Meter, wmbus_meter_ns
 
@@ -18,10 +19,7 @@ BASE_SCHEMA = cv.Schema(
 
 
 def get_driver(config):
-    parent = config[CONF_PARENT_ID]
-    fc = fv.full_config.get()
-    parent_type_path = fc.get_path_for_id(parent)[:-1]
-    return fc.get_config_for_path(parent_type_path)["type"]
+    return fv.get_declaring_config(config[CONF_PARENT_ID])[CONF_TYPE]
 
 
 def make_field_validator(kind):
@@ -33,7 +31,6 @@ def make_field_validator(kind):
 
 
 async def register_meter(obj, config):
-    meter = await cg.get_variable(config[CONF_PARENT_ID])
-    await cg.register_parented(obj, meter)
+    await cg.register_parented(obj, config[CONF_PARENT_ID])
     cg.add(obj.set_field_name(config[CONF_FIELD]))
     await cg.register_component(obj, config)

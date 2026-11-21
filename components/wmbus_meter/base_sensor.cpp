@@ -3,9 +3,9 @@
 
 namespace esphome {
 namespace wmbus_meter {
-static const char *TAG = "wmbus_meter.base_sensor";
+ESPHOME_LOG_TAG(TAG, "wmbus_meter.base_sensor");
 
-void BaseSensor::set_field_name(std::string field_name) { this->field_name = std::move(field_name); }
+void BaseSensor::set_field_name(std::string field_name) { this->field_name_ = std::move(field_name); }
 
 void BaseSensor::set_parent(Meter *parent) {
   Parented::set_parent(parent);
@@ -14,7 +14,7 @@ void BaseSensor::set_parent(Meter *parent) {
 
 void BaseSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "wM-Bus Sensor:");
-  ESP_LOGCONFIG(TAG, "  Field: %s", this->field_name.c_str());
+  ESP_LOGCONFIG(TAG, "  Field: %s", this->field_name_.c_str());
   ESP_LOGCONFIG(TAG, "  Parent meter ID: %s", this->parent_->get_id().c_str());
 }
 }  // namespace wmbus_meter

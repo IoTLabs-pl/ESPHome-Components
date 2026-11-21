@@ -6,7 +6,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.cpp_generator import LambdaExpression
 
-panasonic_aquarea_ns = cg.esphome_ns.namespace("panasonic_aquarea")
+from . import panasonic_aquarea_ns
 
 BitField = panasonic_aquarea_ns.class_("BitField")
 BinaryExtractor = panasonic_aquarea_ns.class_("BinaryExtractor")

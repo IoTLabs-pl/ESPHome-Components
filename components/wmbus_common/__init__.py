@@ -6,7 +6,7 @@ from esphome.const import CONF_ID, CONF_NAME
 from esphome.core import CORE
 from esphome.yaml_util import ESPHomeDumper
 
-from .drivers.loader import GENERATED_DIR, AutoDriver, Driver, DriverManager, validate_driver_name
+from .drivers.loader import DOMAIN, GENERATED_DIR, AutoDriver, Driver, DriverManager, validate_driver_name
 
 CODEOWNERS = ["@kubasaw"]
 # to_json renders through ArduinoJson.
@@ -18,7 +18,7 @@ CONF_ALL = "all"
 CONF_DRIVERS = "drivers"
 CONF_FIELDS = "fields"
 
-wmbus_common_ns = cg.esphome_ns.namespace("wmbus_common")
+wmbus_common_ns = cg.esphome_ns.namespace(DOMAIN)
 WMBusCommon = wmbus_common_ns.class_("WMBusCommon", cg.Component)
 
 for driver_class in (Driver, AutoDriver):

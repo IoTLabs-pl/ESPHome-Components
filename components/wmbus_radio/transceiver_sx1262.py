@@ -48,8 +48,7 @@ def config_schema(radio_type, radio_schema):
 async def to_code(config):
     var = await register_transceiver(config)
 
-    busy_pin = await cg.gpio_pin_expression(config[CONF_BUSY_PIN])
-    cg.add(var.set_busy_pin(busy_pin))
+    await cg.add_pin(var.set_busy_pin, config[CONF_BUSY_PIN])
     cg.add(var.set_tcxo_voltage(config[CONF_TCXO_VOLTAGE]))
     cg.add(var.set_rf_switch(config[CONF_RF_SWITCH]))
     cg.add(var.set_use_dcdc(config[CONF_USE_DCDC]))

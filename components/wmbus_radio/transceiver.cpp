@@ -5,7 +5,7 @@
 namespace esphome {
 namespace wmbus_radio {
 
-static const char *TAG = "wmbus.transceiver";
+ESPHOME_LOG_TAG(TAG, "wmbus.transceiver");
 
 void Transceiver::set_reset_pin(InternalGPIOPin *reset_pin) { this->reset_pin_ = reset_pin; }
 

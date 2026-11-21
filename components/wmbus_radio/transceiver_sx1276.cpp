@@ -5,7 +5,7 @@
 namespace esphome {
 namespace wmbus_radio {
 
-static const char *TAG = "SX1276";
+ESPHOME_LOG_TAG(TAG, "SX1276");
 static constexpr uint32_t F_OSC = 32000000;
 
 enum class SX1276::Register : uint8_t {
@@ -45,7 +45,7 @@ void SX1276::setup() {
   ESP_LOGVV(TAG, "revision: %02X", revision);
   if (revision < 0x11 || revision > 0x13) {
     ESP_LOGE(TAG, "Invalid silicon revision: %02X", revision);
-    this->mark_failed();
+    this->mark_failed(LOG_STR("Invalid silicon revision"));
     return;
   }
 

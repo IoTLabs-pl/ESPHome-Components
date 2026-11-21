@@ -166,7 +166,7 @@ For both `sensor` and `text_sensor`, all config from generic [Sensor](https://es
 
 ## `wmbus_radio`
 This component provides a radio interface for 868 MHz LoRa transceivers, allowing it to receive wM-Bus packets. It supports Semtech SX1276 (RFM95/RFM96) and SX1262 modules.
-It needs ESPHome 2026.8.0 or newer and an `spi` component configured.
+It needs an `spi` component configured.
 
 **SX1276 example:**
 

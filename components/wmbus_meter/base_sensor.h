@@ -14,7 +14,7 @@ class BaseSensor : public Parented<Meter>, public Component {
   void dump_config() override;
 
  protected:
-  std::string field_name;
+  std::string field_name_;
 };
 }  // namespace wmbus_meter
 }  // namespace esphome

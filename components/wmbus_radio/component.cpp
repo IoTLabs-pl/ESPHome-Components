@@ -7,20 +7,16 @@
 
 namespace esphome {
 namespace wmbus_radio {
-static const char *TAG = "wmbus";
+ESPHOME_LOG_TAG(TAG, "wmbus");
 
 void Radio::setup() {
-  if (this->transceiver_->is_failed()) {
-    ESP_LOGE(TAG, "Transceiver failed, not starting the receiver");
-    this->mark_failed();
+  if (!this->setup_check(!this->transceiver_->is_failed(), LOG_STR("Transceiver failed")))
     return;
-  }
 
-  if (!this->receiver_task_.create((TaskFunction_t) this->receiver_task, "radio_recv", 3 * 1024, this, 2, false)) {
-    ESP_LOGE(TAG, "Failed to create receiver task");
-    this->mark_failed();
+  if (!this->setup_check(
+          this->receiver_task_.create((TaskFunction_t) this->receiver_task, "radio_recv", 3 * 1024, this, 2, false),
+          LOG_STR("Failed to create receiver task")))
     return;
-  }
 
   ESP_LOGI(TAG, "Receiver task created");
 }

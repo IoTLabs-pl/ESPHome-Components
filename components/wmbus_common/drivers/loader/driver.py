@@ -3,6 +3,7 @@ from functools import cached_property
 from pathlib import Path
 
 import esphome.config_validation as cv
+from esphome.core import CORE
 
 from .cpp import TEMPLATES
 from .xmq import parse_xmq
@@ -11,6 +12,8 @@ from .xmq_loader import SCHEMA, Expanded, FieldKind, concrete_fields, driver_sym
 XMQ_DRIVERS_PATH = Path(__file__).parents[1] / "src"
 
 GENERATED_DIR = "wmbusmeters_generated"
+
+DOMAIN = "wmbus_common"
 
 # Answered by wmbus_meter from the telegram, not by the driver.
 WELL_KNOWN_FIELDS = {
@@ -49,12 +52,21 @@ class FieldSelection:
         return field_name
 
 
+@dataclass
+class DriverRequests:
+    # An empty field set means every field.
+    fields: dict["Driver", set[str]] = field(default_factory=dict)
+    auto: bool = False
+
+
+def driver_requests() -> DriverRequests:
+    return CORE.data.setdefault(DOMAIN, DriverRequests())
+
+
 @dataclass(frozen=True, order=True)
 class Driver(FieldSelection):
     name: str
     source_path: Path = field(compare=False, repr=False)
-    # Empty means every field.
-    requested: set[str] = field(default_factory=set, compare=False, repr=False)
 
     @classmethod
     def from_source(cls, path: Path) -> "Driver":
@@ -73,7 +85,7 @@ class Driver(FieldSelection):
         return {FieldDefinition(f.definition.kind, f.json_name) for f in self.concrete_fields}
 
     def request_field(self, field_name: str, kind: FieldKind | None = None) -> str:
-        self.requested.add(super().request_field(field_name, kind))
+        driver_requests().fields.setdefault(self, set()).add(super().request_field(field_name, kind))
         return field_name
 
     @property
@@ -100,8 +112,8 @@ class Driver(FieldSelection):
     def default_fields(self) -> list[str]:
         return self._definition["default_fields"]
 
-    def serialize(self) -> str:
-        return generate_from_definition(self._definition, self.source_path.name, self.requested or None)
+    def serialize(self, requested: set[str]) -> str:
+        return generate_from_definition(self._definition, self.source_path.name, requested or None)
 
 
 @dataclass(frozen=True)
@@ -120,9 +132,7 @@ class DriverManager:
     def __init__(self):
         self._all_drivers: dict[str, Driver] = {}
         self._aliases: dict[str, str] = {}
-        self._requested_drivers: set[Driver] = set()
         self._auto_driver = AutoDriver(manager=self)
-        self.auto_requested = False
         for p in sorted(XMQ_DRIVERS_PATH.glob("*.xmq")):
             driver = Driver.from_source(p)
             self._all_drivers[driver.name] = driver
@@ -135,32 +145,33 @@ class DriverManager:
 
     def request_driver(self, driver_name: str) -> Driver:
         driver = self._all_drivers[self._aliases.get(driver_name, driver_name)]
-        self._requested_drivers.add(driver)
+        driver_requests().fields.setdefault(driver, set())
         return driver
 
     def request_auto_driver(self) -> AutoDriver:
-        self.auto_requested = True
+        driver_requests().auto = True
         return self._auto_driver
 
     @property
+    def auto_requested(self) -> bool:
+        return driver_requests().auto
+
+    @property
     def registered_drivers(self) -> list[Driver]:
-        return sorted(self._requested_drivers)
+        return sorted(driver_requests().fields)
 
     def registry_index(self, driver: Driver) -> int:
         return self.registered_drivers.index(driver)
 
     def sync_to_directory(self, target_dir: str | Path) -> None:
         """Outside src/esphome/, because writer.copy_src_tree() deletes anything there it did not put."""
-        if self.auto_requested:
-            # An auto meter may bind to any compiled driver, so none can be trimmed.
-            for driver in self._requested_drivers:
-                driver.requested.clear()
-
+        requests = driver_requests()
         files = {
             "registry.h": TEMPLATES.get_template("registry.h.j2").render(
                 symbols=[d.symbol for d in self.registered_drivers]
             ),
-            **{f"{d.name}.cpp": d.serialize() for d in self._requested_drivers},
+            # An auto meter may bind to any compiled driver, so none can be trimmed.
+            **{f"{d.name}.cpp": d.serialize(set() if requests.auto else f) for d, f in requests.fields.items()},
         }
 
         target_dir = Path(target_dir)

@@ -6,7 +6,6 @@ import esphome.config_validation as cv
 from esphome import codegen as cg
 from esphome.components import number
 from esphome.cpp_generator import LambdaExpression, statement
-from esphome.helpers import fnv1a_32bit_hash
 
 from .. import ReadableEntity, WritableEntity, panasonic_aquarea_ns
 from ..descriptor_defaults import DEFAULT_UNITS
@@ -132,7 +131,7 @@ class NumberDescriptor(PlatformDescriptor, NumberTraits):
             arr = cg.static_const_array(
                 config[CONF_VARIANTS_ID], cg.ArrayInitializer(*variant_inits)
             )
-            cg.add(var.set_variants(fnv1a_32bit_hash(self.name), arr))
+            cg.add(var.set_variants(arr))
 
         return var
 

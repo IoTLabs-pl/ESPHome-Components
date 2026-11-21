@@ -1,26 +1,15 @@
 #pragma once
 
 #include "esphome/core/automation.h"
-#include "component.h"
 #include "packet.h"
 
 namespace esphome {
 namespace wmbus_radio {
-class FrameTrigger : public Trigger<Frame *> {
- public:
-  explicit FrameTrigger(wmbus_radio::Radio *radio, bool mark_handled) {
-    radio->on_frame([this, mark_handled](Frame *frame) {
-      this->trigger(frame);
-      if (mark_handled)
-        frame->mark_as_handled();
-    });
-  }
-};
-
-class PacketTrigger : public Trigger<Packet *> {
- public:
-  explicit PacketTrigger(wmbus_radio::Radio *radio) {
-    radio->on_packet([this](Packet *packet) { this->trigger(packet); });
+struct MarkHandledForwarder {
+  Automation<Frame *> *automation;
+  void operator()(Frame *frame) const {
+    this->automation->trigger(frame);
+    frame->mark_as_handled();
   }
 };
 
