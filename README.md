@@ -165,7 +165,7 @@ When you use `sensor` and `text_sensor` platforms, required fields will be autom
 For both `sensor` and `text_sensor`, all config from generic [Sensor](https://esphome.io/components/sensor/index.html) and [Text Sensor](https://esphome.io/components/text_sensor/index.html) components is available, so you can use filters, icons, etc.
 
 ## `wmbus_radio`
-This component provides a radio interface for 868 MHz LoRa transceivers, allowing it to receive wM-Bus packets. It supports Semtech SX1276 (RFM95/RFM96) and SX1262 modules.
+This component provides a radio interface for 868 MHz transceivers, allowing it to receive wM-Bus packets. It supports Semtech SX1276 (RFM95/RFM96), SX1262 and TI CC1101 modules.
 It needs an `spi` component configured.
 
 **SX1276 example:**
@@ -213,6 +213,23 @@ wmbus_radio:
 ```
 
 SX1262 also needs `busy_pin` wired to its BUSY pin. `tcxo_voltage` is optional and accepts the supported SX1262 voltages: `1.6V`, `1.7V`, `1.8V`, `2.2V`, `2.4V`, `2.7V`, `3.0V`, or `3.3V`. It defaults to `0V`, for modules where DIO3 does not control a TCXO. `rf_switch` defaults to `false`; enable it only when DIO2 drives the RF switch. `use_dcdc` defaults to `true`. `rx_boost` (default `false`) switches the receiver to boosted gain, trading a little more current for better sensitivity.
+
+**CC1101 example:**
+
+```yaml
+spi:
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
+  miso_pin: GPIO2
+
+wmbus_radio:
+  id: radio_component
+  radio_type: CC1101
+  cs_pin: GPIO3
+  gdo0_pin: GPIO4
+```
+
+CC1101 needs one of its GDO pins wired: set either `gdo0_pin` or `gdo2_pin`.
 
 The `on_frame` trigger can be used to send received wM-Bus packets to a remote server using `socket_transmitter` component. It can also be used to process packets in any other way, such as sending them to MQTT broker or HTTP server.
 
