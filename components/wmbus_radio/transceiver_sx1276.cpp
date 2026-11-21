@@ -141,11 +141,9 @@ bool SX1276::read(std::span<uint8_t> buffer, TickType_t first_byte_timeout) {
 
 void SX1276::reset_receiver() {
   this->write_register(Register::OP_MODE, {0b001});
-  delay(5);
   this->write_register(Register::IRQ_FLAGS2, {1 << 4});
   ulTaskNotifyTake(pdTRUE, 0);
   this->write_register(Register::OP_MODE, {0b101});
-  delay(5);
 }
 
 int8_t SX1276::get_rssi() {
