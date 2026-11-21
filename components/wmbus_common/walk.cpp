@@ -8,24 +8,39 @@
 namespace wmbus {
 
 std::vector<Record> parse_records(std::span<const uint8_t> frame, std::span<const uint8_t> data,
-                                  std::optional<std::span<const uint8_t>> format) {
+                                  CompactFrame *compact) {
   // A full frame carries the dif/vif bytes in its data, so taking from one takes from the other.
-  const bool shared = !format.has_value();
-  std::span<const uint8_t> layout = shared ? data : *format;
+  const bool shared = compact == nullptr;
+  std::span<const uint8_t> layout = shared ? data : compact->format;
+  const auto rebuild = [&](std::span<const uint8_t> bytes) {
+    if (compact)
+      compact->full_frame.insert(compact->full_frame.end(), bytes.begin(), bytes.end());
+  };
   const auto take_layout = [&](size_t n) {
+    rebuild(layout.first(n));
     layout = layout.subspan(n);
     if (shared)
       data = layout;
   };
   const auto take_data = [&](size_t n) {
+    rebuild(data.first(n));
     data = data.subspan(n);
     if (shared)
       layout = data;
   };
   const auto offset = [&]() { return (uint16_t) (data.data() - frame.data()); };
+  const auto skip_idle_fillers_before_clear_records = [&]() {
+    const size_t at = offset();
+    const size_t end = compact->encrypted_end;
+    if (at < end && end - at <= data.size() &&
+        std::ranges::all_of(data.first(end - at), [](uint8_t b) { return b == 0x2f; }))
+      data = data.subspan(end - at);
+  };
 
   std::vector<Record> records;
   while (!layout.empty()) {
+    if (compact)
+      skip_idle_fillers_before_clear_records();
     const uint8_t dif = layout[0];
     int datalen = dif_len_bytes(dif);
 

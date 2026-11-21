@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <ranges>
@@ -530,11 +531,13 @@ void add_months(struct tm &date, int months) {
       is_last_day_in_month ? get_days_in_month(year, month) : std::min(date.tm_mday, get_days_in_month(year, month));
 }
 
-double add_months(double t, int months) {
+double add_months(double t, double months) {
+  if (std::isnan(t) || std::isnan(months))
+    return std::nan("");
   time_t ut = (time_t) t;
   struct tm time;
   gmtime_r(&ut, &time);
-  add_months(time, months);
+  add_months(time, (int) months);
   return (double) epoch_utc(time);
 }
 

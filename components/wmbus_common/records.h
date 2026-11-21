@@ -94,6 +94,6 @@ std::string format_time(const struct tm &t, TimeFormat f);
 time_t epoch_utc(const struct tm &t);
 std::string format_time(double epoch_seconds, TimeFormat f);
 void add_months(struct tm &date, int months);
-double add_months(double t, int months);
+double add_months(double t, double months);
 
 }  // namespace wmbus

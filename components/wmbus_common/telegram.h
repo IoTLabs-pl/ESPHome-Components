@@ -32,6 +32,10 @@ constexpr uint16_t manufacturer_code(char a, char b, char c) {
   return (uint16_t) (((a - 64) << 10) | ((b - 64) << 5) | (c - 64));
 }
 
+std::string manufacturer_flag(uint16_t mfct);
+// wmbusmeters naming, e.g. "water".
+const char *media_type_of(uint8_t type, uint16_t mfct);
+
 struct Telegram;
 
 using Key = std::optional<std::array<uint8_t, 16>>;
@@ -177,7 +181,6 @@ struct Telegram {
 
   // The deepest layer's address.
   const Address &sender() const;
-  // wmbusmeters naming, e.g. "water".
   const char *media_type() const;
 
   // Mode 5; drivers' transform_payload uses it too.
@@ -186,6 +189,7 @@ struct Telegram {
 
  private:
   size_t pos_ = 0;
+  size_t encrypted_end_ = 0;
   std::optional<PayloadQuirk> quirk_;
 
   // What the TPL encryption binds to: the long header's address, else the DLL's.
@@ -200,7 +204,7 @@ struct Telegram {
   // An entry with the same key is overwritten, as upstream does.
   IxmlEntry &ixml_entry_for(std::span<const uint8_t> key);
   // Also learns a full frame's layout for later compact frames.
-  void read_records(std::optional<std::span<const uint8_t>> format, CompactFormats &formats);
+  void read_records(CompactFormats &formats);
 
   std::array<uint8_t, 13> ccm_nonce() const;
   std::array<uint8_t, 16> ccm_tag(std::span<const uint8_t, 16> key, std::span<const uint8_t, 13> nonce,

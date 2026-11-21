@@ -11,9 +11,15 @@
 
 namespace wmbus {
 
-// A compact frame takes the dif/vif bytes from `format`, a full frame from `data`.
-std::vector<Record> parse_records(std::span<const uint8_t> frame, std::span<const uint8_t> data,
-                                  std::optional<std::span<const uint8_t>> format);
+struct CompactFrame {
+  std::span<const uint8_t> format;
+  size_t encrypted_end;
+  std::vector<uint8_t> full_frame;
+};
+
+// A compact frame takes the dif/vif bytes from its format and rebuilds the full frame its CRC
+// covers; a full frame (no `compact`) takes them from `data`.
+std::vector<Record> parse_records(std::span<const uint8_t> frame, std::span<const uint8_t> data, CompactFrame *compact);
 
 // In upstream's order: each frame record (or the ixml entry replacing it) and its
 // profile's points, then the remaining ixml entries, including ones added during

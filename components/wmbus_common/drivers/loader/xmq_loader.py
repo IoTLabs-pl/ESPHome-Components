@@ -55,6 +55,7 @@ ANY_RANGE_MEMBERS = {
     VifRange.AnyPowerVIF: [VifRange.PowerW, VifRange.PowerJh],
 }
 DATE_RANGES = {VifRange.Date, VifRange.DateTime}
+HEADER_CODED_RANGES = {VifRange.Manufacturer, VifRange.Medium}
 # The ranges upstream reads as text rather than as hex.
 READABLE_RANGES = {
     VifRange.EnhancedIdentification, VifRange.FabricationNo, VifRange.HardwareVersion, VifRange.FirmwareVersion,
@@ -367,6 +368,8 @@ def text_form(vif_range: VifRange, readable_string: str | None) -> str:
         return vif_range
     if readable_string == "Reversed":
         return "Reversed"
+    if readable_string is None and vif_range in HEADER_CODED_RANGES:
+        return vif_range
     if readable_string == "Normal" or vif_range in READABLE_RANGES:
         return "Readable"
     return "Hex"

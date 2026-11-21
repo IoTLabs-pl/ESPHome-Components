@@ -27,7 +27,7 @@ struct RangeFactor {
   double factor;
 };
 
-enum class TextForm : uint8_t { Hex, Readable, Reversed, Date, DateTime };
+enum class TextForm : uint8_t { Hex, Readable, Reversed, Date, DateTime, Manufacturer, Medium };
 
 // JSON prints it as null.
 inline constexpr double NOT_A_NUMBER = std::numeric_limits<double>::quiet_NaN();
@@ -262,12 +262,14 @@ inline uint64_t as_integer(double v) { return (uint64_t) __builtin_llround(v); }
 
 inline double modulo(double l, double r) { return r == 0.0 ? __builtin_nan("") : __builtin_fmod(l, r); }
 
+inline bool is_shift_defined(double l, double r) { return !__builtin_isnan(l) && r >= 0.0 && r <= 63.0; }
+
 inline double shift_left(double l, double r) {
-  return (r < 0.0 || r > 63.0) ? __builtin_nan("") : (double) (as_integer(l) << as_integer(r));
+  return is_shift_defined(l, r) ? (double) (as_integer(l) << as_integer(r)) : __builtin_nan("");
 }
 
 inline double shift_right(double l, double r) {
-  return (r < 0.0 || r > 63.0) ? __builtin_nan("") : (double) (as_integer(l) >> as_integer(r));
+  return is_shift_defined(l, r) ? (double) (as_integer(l) >> as_integer(r)) : __builtin_nan("");
 }
 
 inline double bit_and(double l, double r) { return (double) (as_integer(l) & as_integer(r)); }
