@@ -16,7 +16,7 @@ concurrency:
 env:
   ESPHOME_VERSION: "2026.11.0"
   ARDUINOJSON_VERSION: "7.4.3"
-  MBEDTLS_VERSION: "3.6.7"
+  MBEDTLS_VERSION: "3.6.8"
 
 permissions:
   contents: write
