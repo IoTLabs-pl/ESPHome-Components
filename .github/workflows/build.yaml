@@ -15,6 +15,7 @@ jobs:
         config:
           - wmbus/sx1276
           - wmbus/sx1262
+          - wmbus/cc1101
           - panasonic_aquarea/test
         variant:
           - esp32

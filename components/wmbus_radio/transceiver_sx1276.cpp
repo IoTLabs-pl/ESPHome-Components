@@ -38,7 +38,10 @@ void SX1276::setup() {
 
   ESP_LOGV(TAG, "Setting up SX1276");
   ESP_LOGVV(TAG, "reset");
-  this->reset();
+  this->reset_pin_->digital_write(0);
+  delay(5);
+  this->reset_pin_->digital_write(1);
+  delay(5);
 
   ESP_LOGVV(TAG, "checking silicon revision");
   uint8_t revision = this->read_register(Register::VERSION);
@@ -108,6 +111,8 @@ void SX1276::setup() {
 
 void SX1276::dump_config() {
   Transceiver::dump_config();
+  LOG_PIN("Reset Pin: ", this->reset_pin_);
+  LOG_PIN("DIO1 Pin: ", this->dio1_pin_);
   ESP_LOGCONFIG(TAG, "LNA boost: %s", YESNO(this->lna_boost_));
 }
 

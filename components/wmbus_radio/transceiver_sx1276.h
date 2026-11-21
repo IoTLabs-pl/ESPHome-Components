@@ -15,10 +15,14 @@ class SX1276 final : public Transceiver {
   int8_t get_rssi() override;
   const char *get_name() override;
 
+  void set_reset_pin(InternalGPIOPin *reset_pin) { this->reset_pin_ = reset_pin; }
+  void set_dio1_pin(InternalGPIOPin *dio1_pin) { this->dio1_pin_ = dio1_pin; }
   void set_lna_boost(bool lna_boost) { this->lna_boost_ = lna_boost; }
 
  private:
   enum class Register : uint8_t;
+  InternalGPIOPin *reset_pin_;
+  InternalGPIOPin *dio1_pin_;
   bool lna_boost_;
   InterruptContext data_ready_interrupt_;
 
