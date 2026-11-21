@@ -62,11 +62,14 @@ void CC1101::setup() {
   constexpr uint32_t freq = (uint64_t{frequency} << 16) / f_xosc;
   this->write_register(Register::FREQ2, {byte(freq, 2), byte(freq, 1), byte(freq, 0)});
 
-  ESP_LOGVV(TAG, "set 325 kHz bandwidth, 103 kBaud 2-FSK and 16-bit sync word above carrier sense");
-  this->write_register(Register::MDMCFG4, {0x5C, 0x04, 0x06});
+  ESP_LOGVV(TAG, "set 232 kHz bandwidth, 100 kBaud 2-FSK and 16-bit sync word above carrier sense");
+  constexpr uint32_t bitrate = 100000;
+  constexpr uint8_t drate_e = 11;
+  constexpr uint8_t drate_m = (uint64_t{bitrate} << (28 - drate_e)) / f_xosc - 256;
+  this->write_register(Register::MDMCFG4, {0x70 | drate_e, drate_m, 0x06});
 
-  ESP_LOGVV(TAG, "set 38 kHz frequency deviation");
-  this->write_register(Register::DEVIATN, {0x44});
+  ESP_LOGVV(TAG, "set 50.8 kHz frequency deviation");
+  this->write_register(Register::DEVIATN, {0x50});
 
   ESP_LOGVV(TAG, "calibrate when entering RX, set frequency offset compensation, bit synchronization and AGC");
   this->write_register(Register::MCSM0, {0x18, 0x2E, 0xBF, 0x43, 0x09, 0xB5});
