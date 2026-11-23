@@ -170,8 +170,7 @@ def math_op_emit(op: Op, l: Expression, left: SIUnit, r: Expression, right: SIUn
         return math_op_emit(op, r, right, l, left)
     if right.exp == SECOND.exp:
         return op.emit(l, convert(r, right, SECOND)), TIMESTAMP
-    months = literal("static_cast").template(literal("int"))(-r if op is Op.SUB else r)
-    return wmbus_ns.add_months(l, months), TIMESTAMP
+    return wmbus_ns.add_months(l, -r if op is Op.SUB else r), TIMESTAMP
 
 
 STATE = MockObj("state")

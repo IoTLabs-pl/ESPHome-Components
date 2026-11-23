@@ -8,12 +8,14 @@ driver {
     manufacturer   = Diehl
     detect {
         mvt = DME,70,07
+        mvt = DME,75,07
         mvt = DME,76,07
         mvt = HYD,24,07
         mvt = HYD,8b,07
         mvt = HYD,8b,06
         mvt = DME,70,06
         mvt = DME,70,16
+        mvt = DME,61,07
     }
     library {
         use = operating_time_h
@@ -66,6 +68,8 @@ driver {
             name     = total_at_date
             quantity = Volume
             info     = 'The total water consumption recorded at date.'
+            // Hydrus 2.0 sends BCD AAAAAAAA when there is no billing date value yet.
+            null_value = 188888.887
             match {
                 measurement_type = Instantaneous
                 vif_range        = Volume
@@ -220,6 +224,27 @@ driver {
             telegram = 6344A5110656718676078C00AE900F002C2593B30F00610CCB29615532257A99004107102F2F_0C13921920000B3B0000000A5A96010A6622020C933C0000000084046D3B375F388C041341102000AB043B0000009B043B72170004FD17000000002F2F2F
             json     = '{"_":"telegram","media":"water","driver":"hydrus","name":"Hydrus20","id":"86715606","backward_m3":0,"external_temperature_c":22.2,"flow_m3h":0,"flow_temperature_c":19.6,"max_flow_m3h":1.772,"min_flow_m3h":0,"status":"OK","target_datetime":"2026-08-31 23:59","target_m3":201.041,"timestamp":"1111-11-11T11:11:11Z","total_m3":201.992}'
             fields   = 'Hydrus20;86715606;201.992;null;OK;1111-11-11 11:11.11'
+        }
+        test {
+            args     = 'Water hydrus 81784558 NOKEY'
+            comment  = 'Hydrus 2.0 DME,61,07'
+            telegram = 5344a5115845788161078c80d2900f002c25ab3501008b8059231e99fcef7aab003107102f2f0c131794000084046d3b371f3a8c041309940000426cffff4c13aaaaaaaa04fd170000000002fd7448112f2f2f2f
+            json     = '{"_":"telegram","media":"water","driver":"hydrus","name":"Water","id":"81784558","at_date":null,"remaining_battery_life_y":12.112501,"target_m3":9.409,"target_datetime":"2024-10-31 23:59","total_m3":9.417,"total_at_date_m3":null,"status":"OK","timestamp":"1111-11-11T11:11:11Z"}'
+            fields   = 'Water;81784558;9.417;null;OK;1111-11-11 11:11.11'
+        }
+        test {
+            args     = 'Water2 hydrus 87181227 NOKEY'
+            comment  = 'Hydrus 2.0 DME,61,07'
+            telegram = 5344A5112712188761078C800E900F002C256802010073FC5191591F6CE47A68C03107102F2F0C139216010004FD17000000080A5A0502426CFFFF4C13AAAAAAAA4C933CAAAAAAAA2F2F2F2F2F2F2F2F2F2F2F2F
+            json     = '{"_":"telegram","media":"water","driver":"hydrus","name":"Water2","id":"87181227","at_date":null,"flow_temperature_c":20.5,"total_m3":11.692,"total_at_date_m3":null,"status":"TPL_STS_192","timestamp":"1111-11-11T11:11:11Z"}'
+            fields   = 'Water2;87181227;11.692;null;TPL_STS_192;1111-11-11 11:11.11'
+        }
+        test {
+            args     = 'Industrial hydrus 72162576 NOKEY'
+            comment  = 'Hydrus industrial DME,75,07'
+            telegram = 2e44a5117625167275077ae7402005e908429273aec91c92bc22c9c256fadf126382aba2cc97eacd2606cf6fa7f248
+            json     = '{"_":"telegram","media":"water","driver":"hydrus","name":"Industrial","id":"72162576","at_date":"2022-12-31","total_m3":144729.29,"total_at_date_m3":38469.65,"status":"TPL_STS_64","timestamp":"1111-11-11T11:11:11Z"}'
+            fields   = 'Industrial;72162576;144729.29;38469.65;TPL_STS_64;1111-11-11 11:11.11'
         }
     }
 }

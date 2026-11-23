@@ -86,6 +86,17 @@ void MeterState::extract_tpl_status(const FieldSpec &f, const Telegram &t) {
   values[f.slot] = status.str();
 }
 
+static std::string header_coded_text(const Record &dve, TextForm form) {
+  const bool is_manufacturer = form == TextForm::Manufacturer;
+  const uint8_t integer_dif = is_manufacturer ? 0x02 : 0x01;
+  if ((dve.dif & 0x0f) != integer_dif)
+    return dve.readable_string(false);
+  const std::optional<uint64_t> code = dve.extract_long();
+  if (!code)
+    return "";
+  return is_manufacturer ? manufacturer_flag((uint16_t) *code) : media_type_of((uint8_t) *code, 0);
+}
+
 void MeterState::extract_string(const FieldSpec &f, const Telegram &t, const Record &dve) {
   if (f.lookup == nullptr && f.include_tpl_status) {
     extract_tpl_status(f, t);
@@ -123,6 +134,10 @@ void MeterState::extract_string(const FieldSpec &f, const Telegram &t, const Rec
       break;
     case TextForm::Hex:
       values[f.slot] = dve.hex_string();
+      break;
+    case TextForm::Manufacturer:
+    case TextForm::Medium:
+      values[f.slot] = header_coded_text(dve, f.text_form);
       break;
   }
 }
@@ -452,8 +467,7 @@ static std::vector<DetectSpec> identities_of(const Telegram &t) {
 
 string DetectSpec::as_mvt() const {
   char buf[16];
-  snprintf(buf, sizeof(buf), "%c%c%c,%02x,%02x", (char) (((mfct >> 10) & 0x1f) + 64),
-           (char) (((mfct >> 5) & 0x1f) + 64), (char) ((mfct & 0x1f) + 64), version, type);
+  snprintf(buf, sizeof(buf), "%s,%02x,%02x", manufacturer_flag(mfct).c_str(), version, type);
   return buf;
 }
 

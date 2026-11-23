@@ -12,6 +12,7 @@ driver {
     library {
         use = fabrication_no
         use = total_m3
+        use = software_version
     }
     fields {
         field {

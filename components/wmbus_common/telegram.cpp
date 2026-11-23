@@ -60,10 +60,14 @@ static const char *media_name(std::span<const MediaType> table, uint8_t type) {
   return m == table.end() ? nullptr : m->name;
 }
 
-static const char *media_type_of(uint8_t type, uint16_t mfct) {
+std::string manufacturer_flag(uint16_t mfct) {
+  return {(char) (((mfct >> 10) & 0x1f) + 64), (char) (((mfct >> 5) & 0x1f) + 64), (char) ((mfct & 0x1f) + 64)};
+}
+
+const char *media_type_of(uint8_t type, uint16_t mfct) {
   if (const char *name = media_name(MEDIA_TYPES, type))
     return name;
-  if (type >= 0x1d && type <= 0x3f)
+  if (type == 0x1d || (type >= 0x1f && type <= 0x3f))
     return "reserved";
   if (mfct == manufacturer_code('T', 'C', 'H')) {
     if (const char *name = media_name(TCH_MEDIA_TYPES, type))
@@ -364,6 +368,8 @@ bool Telegram::check_2f2f() {
 }
 
 bool Telegram::potentially_decrypt(Key &key) {
+  if (tpl->num_encr_blocks && tpl->num_encr_blocks * 16u < left())
+    encrypted_end_ = pos_ + tpl->num_encr_blocks * 16;
   switch (tpl->sec_mode) {
     case TPL_NO_SECURITY:
       // Unencrypted although a key is configured: rejected, as upstream does.
@@ -407,10 +413,12 @@ bool Telegram::parse_compact_apl(CompactFormats &formats) {
   const std::optional<std::span<const uint8_t>> format = formats.lookup(signature);
   if (!format || left() < 2)
     return false;
-  pos_ += 2;  // the crc of the full frame
+  const uint16_t full_frame_crc = esphome::encode_value_le<uint16_t>(&frame[pos_]);
+  pos_ += 2;
   header_size = (uint16_t) pos_;
-  read_records(format, formats);
-  return true;
+  CompactFrame compact{*format, encrypted_end_, {}};
+  records = parse_records(frame, payload(), &compact);
+  return wmbus::crc16_en13757(compact.full_frame) == full_frame_crc;
 }
 
 DecodeError Telegram::decode(Key &key, CompactFormats &formats, std::optional<PayloadQuirk> quirk) {
@@ -436,7 +444,7 @@ DecodeError Telegram::decode(Key &key, CompactFormats &formats, std::optional<Pa
   if (tpl->ci == 0x73 || tpl->ci == 0x79 || tpl->ci == 0x7B)
     return parse_compact_apl(formats) ? DecodeError::None : DecodeError::NotUnderstood;
   header_size = (uint16_t) pos_;
-  read_records(std::nullopt, formats);
+  read_records(formats);
   return DecodeError::None;
 }
 
@@ -586,10 +594,8 @@ DerivedKeys Telegram::derive_keys(std::span<const uint8_t, 16> key) const {
   return derived;
 }
 
-void Telegram::read_records(std::optional<std::span<const uint8_t>> format, CompactFormats &formats) {
-  records = parse_records(frame, payload(), format);
-  if (format)
-    return;
+void Telegram::read_records(CompactFormats &formats) {
+  records = parse_records(frame, payload(), nullptr);
   // Its CRC is the signature later compact frames arrive under; upstream leaves the 0x0f marker out.
   std::vector<uint8_t> layout;
   for (const Record &r : records) {
