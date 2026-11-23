@@ -10,8 +10,6 @@
   device_class: "temperature"
   accuracy_decimals: 2
   decoder: |-
-      if (data.size() < 144)
-          return {};
       float value = data[143] - 128.0f;
       auto frac_raw = data[118] & 0b00000111;
 
@@ -23,8 +21,6 @@
   device_class: "temperature"
   accuracy_decimals: 2
   decoder: |-
-      if (data.size()<145)
-          return {};
       float value = data[144] - 128.0f;
       auto frac_raw = (data[118] >> 3) & 0b00000111;
 
@@ -221,7 +217,7 @@
 64:
   name: "High Pressure"
   byte: 163
-  multiplier: 0.2
+  multiplier: 0.196133
   offset: -1
   device_class: "pressure"
 65: 
@@ -235,7 +231,7 @@
 66:
   name: "Low Pressure"
   byte: 164
-  multiplier: 50
+  multiplier: 49.03325
   offset: -1
   device_class: "pressure"
 67:
@@ -291,7 +287,6 @@
   byte: 125
   multiplier: 0.02
   offset: -1
-  unit_of_measurement: "bar"
   device_class: "pressure"
 116: 
   name: "Second Inlet Temperature"

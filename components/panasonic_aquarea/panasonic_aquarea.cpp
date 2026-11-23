@@ -15,27 +15,8 @@ static constexpr uint32_t RESUME_POLLING_ID = 1;
 static constexpr uint32_t RESPONSE_TIMEOUT_MS = 2000;
 static constexpr uint32_t EXTERNAL_CONTROLLER_SILENCE_MS = 60000;  // CZ-TAW1 boots in ~35-40 s
 static constexpr size_t UART_CHUNK_SIZE = 64;
-
-// ============================================================================
-// SupportsExtraQueryEntity Implementation
-// ============================================================================
-
-Device::SupportsExtraQueryEntity::SupportsExtraQueryEntity() {
-  // Lambda extractor that checks if extra query is supported
-  set_extractor(new LambdaExtractor<bool>([this](std::span<const uint8_t> data) -> optional<bool> {
-    if (data.size() <= EXTRA_SUPPORT_BYTE_INDEX) {
-      return {};
-    }
-    if (data[EXTRA_SUPPORT_BYTE_INDEX] >= EXTRA_SUPPORT_THRESHOLD) {
-      return true;
-    }
-    return false;
-  }));
-}
-
-void Device::SupportsExtraQueryEntity::publish_state(bool value) { state = value; }
-
-const LogString *Device::SupportsExtraQueryEntity::get_log_name() const { return LOG_STR("Extra Query Support"); }
+static constexpr size_t EXTRA_SUPPORT_BYTE_INDEX = 199;
+static constexpr uint8_t EXTRA_SUPPORT_THRESHOLD = 0x03;
 
 // ============================================================================
 // Command Queue Management
@@ -145,9 +126,6 @@ void Device::process_external_controller_data() {
 // ============================================================================
 
 void Device::setup() {
-  // Initialize extra query support entity
-  this->add_entity(&this->supports_extra_query_entity_, false);
-
   if (this->external_controller_)
     this->yield_to_external_controller();
 }
@@ -168,7 +146,7 @@ void Device::update() {
   if (this->start_response_timeout(true)) {
     // Determine which type of polling message to send
     // Alternate between standard and extra queries if supported
-    auto commands_range = this->supports_extra_query_entity_.state ? 2 : 1;
+    auto commands_range = this->supports_extra_query_ ? 2 : 1;
     auto idx = this->request_counter_ % commands_range;
 
     const static Protocol::RequestFrame requests[] = {
@@ -183,27 +161,10 @@ void Device::update() {
 }
 
 void Device::dump_config() {
-  auto entities_count =
-      std::distance(this->standard_response_entities_.cbegin(), this->standard_response_entities_.cend()) +
-      std::distance(this->extra_response_entities_.cbegin(), this->extra_response_entities_.cend());
-
   ESP_LOGCONFIG(TAG, "Panasonic Heatpump Device");
   ESP_LOGCONFIG(TAG, "  External Controller Installed: %s", YESNO(this->external_controller_));
-  ESP_LOGCONFIG(TAG, "  Number of Dependent Entities: %d", entities_count);
+  ESP_LOGCONFIG(TAG, "  Number of Dependent Entities: %zu", this->entities_.size());
   LOG_UPDATE_INTERVAL(this);
-}
-
-float Device::get_setup_priority() const {
-  // Ensure this component is set up after UART Bus
-  return setup_priority::BUS - 50.0f;
-}
-
-void Device::add_entity(ReadableEntity *entity, bool extra) {
-  if (extra) {
-    this->extra_response_entities_.push_front(entity);
-  } else {
-    this->standard_response_entities_.push_front(entity);
-  }
 }
 
 // ============================================================================
@@ -219,8 +180,10 @@ void Device::handle_response(std::span<const uint8_t> frame) {
     return;
   }
 
-  const auto &entities = extra ? this->extra_response_entities_ : this->standard_response_entities_;
-
+  if (!extra)
+    this->supports_extra_query_ = frame[EXTRA_SUPPORT_BYTE_INDEX] >= EXTRA_SUPPORT_THRESHOLD;
+  auto entities = extra ? this->entities_.subspan(this->standard_entities_count_)
+                        : this->entities_.first(this->standard_entities_count_);
   for (auto *entity : entities)
     entity->handle_update(frame);
 

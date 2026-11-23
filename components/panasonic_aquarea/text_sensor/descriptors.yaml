@@ -10,9 +10,6 @@
 44:
   name: "Error"
   decoder: |-
-    if (data.size() < 115)
-        return {};
-
     auto error_type = data[113];
     auto error_number = data[114];
 

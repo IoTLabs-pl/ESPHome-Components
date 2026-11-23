@@ -11,8 +11,8 @@ from . import panasonic_aquarea_ns
 BitField = panasonic_aquarea_ns.class_("BitField")
 BinaryExtractor = panasonic_aquarea_ns.class_("BinaryExtractor")
 FloatExtractor = panasonic_aquarea_ns.class_("FloatExtractor")
-StringArrayExtractor = panasonic_aquarea_ns.class_("StringArrayExtractor")
-StringMapExtractor = panasonic_aquarea_ns.class_("StringMapExtractor")
+ArrayIndexExtractor = panasonic_aquarea_ns.class_("ArrayIndexExtractor")
+MapIndexExtractor = panasonic_aquarea_ns.class_("MapIndexExtractor")
 LambdaExtractor = panasonic_aquarea_ns.class_("LambdaExtractor")
 
 FRAME_PARAMETER = (cg.std_span.template(cg.uint8.operator("const")), cg.MockObj("data"))
@@ -70,14 +70,13 @@ class StringArrayExtractorConfig(ExtractorConfig):
         if not isinstance(self.labels, list):
             raise ValueError("labels must be a list of strings")
 
+    @property
+    def options(self) -> list[str]:
+        return self.labels
+
     def build(self) -> cg.MockObj:
-        extractor_type = StringArrayExtractor.template(len(self.labels))
-        initializer = cg.ArrayInitializer(*self.labels, multiline=True)
-        return extractor_type.new(
-            self.byte,
-            self.bit,
-            self.bit_width,
-            initializer,
+        return ArrayIndexExtractor.new(
+            self.byte, self.bit, self.bit_width, len(self.labels)
         )
 
     def condition(self, value: str) -> LambdaExpression:
@@ -103,6 +102,10 @@ class StringMapExtractorConfig(ExtractorConfig):
         if not isinstance(self.labels, dict):
             raise ValueError("labels must be a dict mapping int or tuple to string")
 
+    @property
+    def options(self) -> list[str]:
+        return list(self.labels.values())
+
     def build(self) -> cg.MockObj:
         keys = tuple(key if isinstance(key, tuple) else (key,) for key in self.labels)
         key_length = len(keys[0])
@@ -111,20 +114,16 @@ class StringMapExtractorConfig(ExtractorConfig):
             "All keys in labels dict must have the same length"
         )
 
-        extractor_type = StringMapExtractor.template(key_length)
-        initializer = cg.ArrayInitializer(
-            *zip(
-                ([cv.HexInt(byte) for byte in key] for key in keys),
-                self.labels.values(),
+        table = cg.shared_progmem_array(
+            "panasonic_aquarea_keys",
+            cg.std_ns.class_("array").template(cg.uint8, key_length),
+            cg.ArrayInitializer(
+                *(cg.ArrayInitializer(*map(cv.HexInt, key)) for key in keys),
+                multiline=True,
             ),
-            multiline=True,
         )
-
-        return extractor_type.new(
-            self.byte,
-            self.bit,
-            self.bit_width,
-            initializer,
+        return MapIndexExtractor.template(key_length).new(
+            self.byte, self.bit, self.bit_width, table
         )
 
 

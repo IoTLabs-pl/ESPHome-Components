@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <forward_list>
 
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
@@ -111,26 +110,12 @@ template<typename Derived> class VariantMixin {
 };
 
 class Device : public PollingComponent, public uart::UARTDevice {
- public:
-  class SupportsExtraQueryEntity : public ReadOnlyEntity<SupportsExtraQueryEntity, bool> {
-   private:
-    static constexpr size_t EXTRA_SUPPORT_BYTE_INDEX = 199;
-    static constexpr uint8_t EXTRA_SUPPORT_THRESHOLD = 0x03;
-
-   public:
-    SupportsExtraQueryEntity();
-
-    bool state{false};
-    void publish_state(bool value);
-    const LogString *get_log_name() const;
-  };
-
  protected:
   uart::UARTComponent *external_controller_{nullptr};
 
-  SupportsExtraQueryEntity supports_extra_query_entity_;
-  std::forward_list<ReadableEntity *> standard_response_entities_;
-  std::forward_list<ReadableEntity *> extra_response_entities_;
+  bool supports_extra_query_{false};
+  std::span<ReadableEntity *const> entities_;
+  size_t standard_entities_count_{0};
 
   Protocol::RequestFrame awaiting_command_data{};
   bool awaiting_command_dirty_flag_{false};
@@ -169,8 +154,10 @@ class Device : public PollingComponent, public uart::UARTDevice {
   void loop() override;
   void update() override;
   void dump_config() override;
-  float get_setup_priority() const override;
-  void add_entity(ReadableEntity *entity, bool extra = false);
+  void set_entities(std::span<ReadableEntity *const> entities, size_t standard_count) {
+    this->entities_ = entities;
+    this->standard_entities_count_ = standard_count;
+  }
   Protocol::RequestFrame &get_command_data() {
     this->awaiting_command_dirty_flag_ = true;
     return this->awaiting_command_data;

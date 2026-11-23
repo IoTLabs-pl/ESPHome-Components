@@ -39,17 +39,6 @@ class SelectDescriptor(PlatformDescriptor):
         StringMapExtractorConfig,
     )
 
-    @property
-    def options(self):
-        """Return list of possible options from extractor labels."""
-        if hasattr(self.extractor, 'labels'):
-            labels = self.extractor.labels
-            if isinstance(labels, list):
-                return labels
-            elif isinstance(labels, dict):
-                return list(labels.values())
-        return None
-
     def create_entity_schema(self) -> cv.Schema:
         return select.select_schema(
             SelectClass,
@@ -57,15 +46,7 @@ class SelectDescriptor(PlatformDescriptor):
         )
 
     async def create_entity(self, config: dict):
-        # Get options for new_select
-        if isinstance(self.extractor, StringArrayExtractorConfig):
-            options = list(self.extractor.labels)
-        elif isinstance(self.extractor, StringMapExtractorConfig):
-            options = list(self.extractor.labels.values())
-        else:
-            options = []
-
-        return await select.new_select(config, options=options)
+        return await select.new_select(config, options=self.extractor.options)
 
 
 # Create platform instance

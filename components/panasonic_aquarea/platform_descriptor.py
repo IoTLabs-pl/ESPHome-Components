@@ -12,7 +12,7 @@ from esphome.core import ID
 from esphome.cpp_generator import LambdaExpression
 from esphome.const import CONF_NAME, CONF_ID
 
-from . import Device, ReadableEntity, WritableEntity
+from . import Device, ReadableEntity, WritableEntity, readable_entities
 from .extractor import ExtractorConfig
 
 T = TypeVar("T")
@@ -99,16 +99,13 @@ class PlatformDescriptor(ABC, Generic[T]):
         # Create and set extractor
         cg.add(var.set_extractor(self.extractor.build()))
 
-        # Register with parent
-        parent = await cg.get_variable(config["parent_id"])
-
-        # Register on hub component if needed (readable entities)
         if id.type.inherits_from(ReadableEntity):
-            cg.add(parent.add_entity(var, getattr(self, "extra", False)))
+            extra = getattr(self, "extra", False)
+            entities = readable_entities(config["parent_id"])
+            (entities.extra if extra else entities.standard).append(var)
 
-        # Register as parented if needed (writable entities)
         if id.type.inherits_from(WritableEntity):
-            await cg.register_parented(var, parent)
+            await cg.register_parented(var, config["parent_id"])
 
         await cg.register_component(var, config)
 

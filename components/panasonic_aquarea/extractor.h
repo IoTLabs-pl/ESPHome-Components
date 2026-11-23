@@ -3,10 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <functional>
-#include <map>
 #include <span>
-#include <string>
 
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
@@ -105,6 +102,10 @@ class FloatExtractor : public ExtractorInterface<float> {
     for (size_t i = 0; i < bit_width_ / 8; ++i) {
       raw |= static_cast<uint32_t>(data[byte_ + i]) << (8 * i);
     }
+    if (raw == 0) {
+      ESP_LOGD(TAG, "no data for float (byte %zu)", byte_);
+      return {};
+    }
     return (raw + offset_) * multiplier_;
   }
 
@@ -123,52 +124,43 @@ class FloatExtractor : public ExtractorInterface<float> {
   float multiplier_;
 };
 
-template<size_t N> class StringArrayExtractor : public ExtractorInterface<std::string>, protected BitField {
+class ArrayIndexExtractor : public ExtractorInterface<size_t>, protected BitField {
  public:
-  StringArrayExtractor(size_t byte, uint8_t bit, uint8_t bit_width, const std::array<std::string, N> &strings)
-      : BitField(byte, bit, bit_width), strings_(strings) {}
+  ArrayIndexExtractor(size_t byte, uint8_t bit, uint8_t bit_width, size_t count)
+      : BitField(byte, bit, bit_width), count_(count) {}
 
-  optional<std::string> decode(std::span<const uint8_t> data) override {
+  optional<size_t> decode(std::span<const uint8_t> data) override {
     auto raw_data = read_bits(data);
 
     if (raw_data == 0)
       return {};
 
     // -1 as indices are 1-based (zero means no data)
-    uint8_t index = raw_data - 1;
+    size_t index = raw_data - 1;
 
-    if (index >= strings_.size()) {
-      ESP_LOGW(TAG, "invalid index %u for string extractor (byte %zu bit %u)", index, byte_, bit_);
+    if (index >= count_) {
+      ESP_LOGW(TAG, "invalid index %zu for array index extractor (byte %zu bit %u)", index, byte_, bit_);
       return {};
     }
-    return strings_[index];
+    return index;
   }
 
-  void encode(std::span<uint8_t> data, const std::string &value) override {
-    auto it = std::find(strings_.begin(), strings_.end(), value);
-    if (it == strings_.end()) {
-      ESP_LOGW(TAG, "string '%s' not found in extractor array (byte %zu bit %u)", value.c_str(), byte_, bit_);
-      return;
-    }
-
-    size_t index = std::distance(strings_.begin(), it) + 1;  // +1 for 1-based index
-
-    write_bits(data, index);
-  }
+  void encode(std::span<uint8_t> data, const size_t &index) override { write_bits(data, index + 1); }
 
  private:
-  static constexpr const char *TAG = "panasonic_aquarea.extractor.stringarray";
-  std::array<std::string, N> strings_;
+  static constexpr const char *TAG = "panasonic_aquarea.extractor.arrayindex";
+  size_t count_;
 };
 
-template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std::string> {
+template<size_t KeyLen> class MapIndexExtractor : public ExtractorInterface<size_t> {
  public:
-  StringMapExtractor(size_t byte, uint8_t bit, uint8_t bit_width,
-                     const std::map<std::array<uint8_t, KeyLen>, std::string> &strings)
-      : byte_(byte), bit_(bit), bit_width_(bit_width), strings_(strings) {}
+  using Key = std::array<uint8_t, KeyLen>;
 
-  optional<std::string> decode(std::span<const uint8_t> data) override {
-    std::array<uint8_t, KeyLen> key;
+  MapIndexExtractor(size_t byte, uint8_t bit, uint8_t bit_width, std::span<const Key> keys)
+      : byte_(byte), bit_(bit), bit_width_(bit_width), keys_(keys) {}
+
+  optional<size_t> decode(std::span<const uint8_t> data) override {
+    Key key;
     std::ranges::copy(data.subspan(byte_, KeyLen), key.begin());
 
     // Calculate total bits in key and actual data range
@@ -193,34 +185,24 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
       key[0] >>= shift;
     }
 
-    auto it = strings_.find(key);
-    if (it == strings_.end()) {
+    auto it = std::ranges::find(keys_, key);
+    if (it == keys_.end()) {
       char hex[format_hex_pretty_size(KeyLen)];
-      ESP_LOGW(TAG, "key not found for string extractor (byte %zu, %zu bytes): %s", byte_, KeyLen,
+      ESP_LOGW(TAG, "key not found for map index extractor (byte %zu, %zu bytes): %s", byte_, KeyLen,
                format_hex_pretty_to(hex, key));
-      return {"undefined"};
+      return {};
     }
 
-    return it->second;
+    return std::distance(keys_.begin(), it);
   }
 
-  void encode(std::span<uint8_t> data, const std::string &value) override {
-    auto it = std::find_if(
-        strings_.begin(), strings_.end(),
-        [&value](const std::pair<std::array<uint8_t, KeyLen>, std::string> &pair) { return pair.second == value; });
-    if (it == strings_.end()) {
-      ESP_LOGW(TAG, "string '%s' not found in extractor map (byte %zu)", value.c_str(), byte_);
-      return;
-    }
-
-    const auto &key = it->first;
-
+  void encode(std::span<uint8_t> data, const size_t &index) override {
     // Calculate total bits in key and actual data range
     const size_t total_bits = 8 * KeyLen;
     const size_t data_end_bit = bit_ + bit_width_ - 1;
 
     // Shift all bytes to align to the last bit
-    std::array<uint8_t, KeyLen> aligned_key = key;
+    Key aligned_key = keys_[index];
     if (data_end_bit % 8 != 0) {
       const uint8_t shift = 8 - (data_end_bit % 8);
       for (size_t i = 0; i < KeyLen - 1; ++i) {
@@ -246,28 +228,23 @@ template<size_t KeyLen> class StringMapExtractor : public ExtractorInterface<std
   }
 
  private:
-  static constexpr const char *TAG = "panasonic_aquarea.extractor.stringmap";
+  static constexpr const char *TAG = "panasonic_aquarea.extractor.mapindex";
   size_t byte_;
   uint8_t bit_;
   uint8_t bit_width_;
-  std::map<std::array<uint8_t, KeyLen>, std::string> strings_;
+  std::span<const Key> keys_;
 };
 
 template<typename T> class LambdaExtractor : public ExtractorInterface<T> {
  public:
-  using Decoder = std::function<optional<T>(std::span<const uint8_t>)>;
-  using Encoder = std::function<void(std::span<uint8_t>, const T &)>;
+  using Decoder = optional<T> (*)(std::span<const uint8_t>);
 
-  LambdaExtractor(Decoder decoder, Encoder encoder = nullptr) : decoder_(decoder), encoder_(encoder) {}
+  explicit LambdaExtractor(Decoder decoder) : decoder_(decoder) {}
   optional<T> decode(std::span<const uint8_t> data) override { return decoder_(data); }
-  void encode(std::span<uint8_t> data, const T &value) override {
-    if (encoder_)
-      encoder_(data, value);
-  }
+  void encode(std::span<uint8_t>, const T &) override {}
 
  private:
   Decoder decoder_;
-  Encoder encoder_;
 };
 
 }  // namespace panasonic_aquarea
