@@ -13,8 +13,8 @@ void Transceiver::set_dio1_pin(InternalGPIOPin *dio1_pin) { this->dio1_pin_ = di
 
 void Transceiver::reset() {
   this->reset_pin_->digital_write(0);
-  delay(5);
-  this->reset_pin_->digital_write(1);
+  delayMicroseconds(100);
+  this->reset_pin_->pin_mode(gpio::FLAG_INPUT);
   delay(5);
 }
 

@@ -17,7 +17,6 @@ enum class SX1262::Register : uint16_t {
   VERSION_STRING = 0x0320,
   RX_TX_PAYLOAD_LEN = 0x06BB,
   SYNC_WORD_0 = 0x06C0,
-  SYNC_WORD_1 = 0x06C1,
   RX_ADDR_POINTER = 0x0803,
   RX_GAIN = 0x08AC,
 };
@@ -130,11 +129,11 @@ bool SX1262::configure_chip() {
   this->command(Opcode::SET_BUFFER_BASE_ADDRESS, {0x00, 0x00});
 
   ESP_LOGVV(TAG, "set sync word");
-  this->write_register(Register::SYNC_WORD_0, 0x54);
-  this->write_register(Register::SYNC_WORD_1, 0x3D);
+  this->write_register(Register::SYNC_WORD_0, {0x54, 0x3D});
 
   ESP_LOGVV(TAG, "set %s RX gain", this->rx_boost_ ? "boosted" : "power saving");
-  this->write_register(Register::RX_GAIN, this->rx_boost_ ? 0x96 : 0x94);
+  const uint8_t rx_gain = this->rx_boost_ ? 0x96 : 0x94;
+  this->write_register(Register::RX_GAIN, {rx_gain});
 
   ESP_LOGVV(TAG, "route SyncWordValid IRQ to DIO1");
   this->command(Opcode::SET_DIO_IRQ_PARAMS, {0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00});
@@ -165,7 +164,7 @@ void SX1262::reset_receiver() {
   this->command(Opcode::SET_STANDBY, {0x01});
   this->rx_read_offset_ = 0;
   this->command(Opcode::SET_BUFFER_BASE_ADDRESS, {0x00, 0x00});
-  this->write_register(Register::RX_TX_PAYLOAD_LEN, 0xFF);
+  this->write_register(Register::RX_TX_PAYLOAD_LEN, {0xFF});
   this->command(Opcode::CLEAR_IRQ_STATUS, {0xFF, 0xFF});
   ulTaskNotifyValueClear(nullptr, static_cast<uint32_t>(Interrupt::SYNC_WORD));
   this->command(Opcode::SET_RX, {0xFF, 0xFF, 0xFF});
@@ -238,9 +237,12 @@ void SX1262::read_registers(Register address, std::span<uint8_t> data) {
   this->command(Opcode::READ_REGISTER, {byte(raw, 1), byte(raw, 0)}, data);
 }
 
-void SX1262::write_register(Register address, uint8_t value) {
-  const auto raw = static_cast<uint16_t>(address);
-  this->command(Opcode::WRITE_REGISTER, {byte(raw, 1), byte(raw, 0), value});
+void SX1262::write_register(Register address, std::initializer_list<uint8_t> data) {
+  auto raw = static_cast<uint16_t>(address);
+  for (const uint8_t value : data) {
+    this->command(Opcode::WRITE_REGISTER, {byte(raw, 1), byte(raw, 0), value});
+    raw++;
+  }
 }
 
 uint8_t SX1262::available_bytes() {
@@ -258,7 +260,7 @@ size_t SX1262::read_buffer(std::span<uint8_t> target) {
   this->rx_read_offset_ += target.size();
   // The data buffer is a 256-byte ring. Keeping the fixed payload length just behind the read offset lets
   // a frame run past 255 bytes while the chip never overwrites what is still unread.
-  this->write_register(Register::RX_TX_PAYLOAD_LEN, this->rx_read_offset_ - 1);
+  this->write_register(Register::RX_TX_PAYLOAD_LEN, {static_cast<uint8_t>(this->rx_read_offset_ - 1)});
   return target.size();
 }
 

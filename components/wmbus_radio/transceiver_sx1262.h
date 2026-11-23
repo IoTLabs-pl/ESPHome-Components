@@ -56,7 +56,7 @@ class SX1262 final : public Transceiver {
 
   void command(Opcode opcode, std::initializer_list<uint8_t> parameters, std::span<uint8_t> response = {});
   void read_registers(Register address, std::span<uint8_t> data);
-  void write_register(Register address, uint8_t value);
+  void write_register(Register address, std::initializer_list<uint8_t> data);
 
   uint8_t available_bytes();
   size_t read_buffer(std::span<uint8_t> target);
