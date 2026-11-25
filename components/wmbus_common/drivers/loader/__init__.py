@@ -14,6 +14,6 @@ validate_driver_name = cv.All(cv.one_of(*DriverManager.available_drivers), Drive
 
 def validate_meter_type(value):
     if value == AUTO:
-        return DriverManager.request_auto_driver()
+        return DriverManager.auto_driver.request()
 
     return validate_driver_name(value)
