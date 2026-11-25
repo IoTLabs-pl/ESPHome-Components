@@ -1,74 +1,8 @@
 #include "crypto.h"
 
-#include "esphome/core/defines.h"
 #include "esphome/core/helpers.h"
 
-#if defined(USE_HOST)
-#include <openssl/evp.h>
-#else
-#include "mbedtls/aes.h"
-#endif
-
 namespace wmbus {
-
-#if defined(USE_HOST)
-namespace {
-
-// OpenSSL 3 exposes AES only through EVP; the per-call context is fine on a host.
-void evp(const EVP_CIPHER *cipher, std::span<const uint8_t, 16> key, const uint8_t *iv, std::span<const uint8_t> in,
-         std::span<uint8_t> out, bool encrypt) {
-  EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-  if (ctx == nullptr)
-    return;
-
-  if (encrypt)
-    EVP_EncryptInit_ex(ctx, cipher, nullptr, key.data(), iv);
-  else
-    EVP_DecryptInit_ex(ctx, cipher, nullptr, key.data(), iv);
-  EVP_CIPHER_CTX_set_padding(ctx, 0);
-
-  int written = 0;
-  if (encrypt)
-    EVP_EncryptUpdate(ctx, out.data(), &written, in.data(), (int) in.size());
-  else
-    EVP_DecryptUpdate(ctx, out.data(), &written, in.data(), (int) in.size());
-
-  EVP_CIPHER_CTX_free(ctx);
-}
-
-}  // namespace
-#endif
-
-std::array<uint8_t, 16> aes_ecb_encrypt(std::span<const uint8_t, 16> key, std::span<const uint8_t, 16> in) {
-  std::array<uint8_t, 16> out;
-#if defined(USE_HOST)
-  evp(EVP_aes_128_ecb(), key, nullptr, in, out, true);
-#else
-  mbedtls_aes_context ctx;
-  mbedtls_aes_init(&ctx);
-  mbedtls_aes_setkey_enc(&ctx, key.data(), 128);
-  mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, in.data(), out.data());
-  mbedtls_aes_free(&ctx);
-#endif
-  return out;
-}
-
-// By value: mbedtls_aes_crypt_cbc advances the iv in place.
-void aes_cbc_decrypt(std::span<const uint8_t, 16> key, std::array<uint8_t, 16> iv, std::span<uint8_t> buf) {
-  buf = buf.first(buf.size() - buf.size() % 16);
-  if (buf.empty())
-    return;
-
-#if defined(USE_HOST)
-  evp(EVP_aes_128_cbc(), key, iv.data(), buf, buf, false);
-#else
-  mbedtls_aes_context ctx;
-  mbedtls_aes_init(&ctx);
-  mbedtls_aes_setkey_dec(&ctx, key.data(), 128);
-  mbedtls_aes_crypt_cbc(&ctx, MBEDTLS_AES_DECRYPT, buf.size(), iv.data(), buf.data(), buf.data());
-  mbedtls_aes_free(&ctx);
-#endif
-}
 
 namespace {
 

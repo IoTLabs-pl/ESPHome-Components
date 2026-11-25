@@ -12,6 +12,7 @@ FetchContent_Declare(ArduinoJson EXCLUDE_FROM_ALL
   URL https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v$ENV{ARDUINOJSON_VERSION}.tar.gz)
 FetchContent_Declare(MbedTLS EXCLUDE_FROM_ALL
   URL https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$ENV{MBEDTLS_VERSION}/mbedtls-$ENV{MBEDTLS_VERSION}.tar.bz2)
+set(TF_PSA_CRYPTO_CONFIG_FILE ${CMAKE_SOURCE_DIR}/psa_config.h CACHE FILEPATH "")
 FetchContent_MakeAvailable(ArduinoJson MbedTLS)
 
 add_compile_options(-Oz -flto -fno-exceptions -DNDEBUG)
@@ -22,13 +23,11 @@ list(FILTER SOURCES EXCLUDE REGEX "/component\\.cpp$")
 set(CORE_HELPERS ${GENERATED}/src/esphome/core/helpers.cpp ${GENERATED}/src/esphome/core/alloc_helpers.cpp
   ${GENERATED}/src/esphome/components/json/json_util.cpp)
 add_compile_definitions(USE_HOST)
-# USE_HOST on every source would switch crypto.cpp to OpenSSL.
-set_source_files_properties(${GENERATED}/src/esphome/components/wmbus_common/crypto.cpp PROPERTIES COMPILE_OPTIONS -UUSE_HOST)
 
 add_executable(wmbusmeters_wasm wmbusmeters_wasm.cpp ${SOURCES} ${CORE_HELPERS})
 target_compile_features(wmbusmeters_wasm PRIVATE cxx_std_20)
 target_include_directories(wmbusmeters_wasm PRIVATE ${GENERATED}/src)
-target_link_libraries(wmbusmeters_wasm PRIVATE ArduinoJson mbedcrypto)
+target_link_libraries(wmbusmeters_wasm PRIVATE ArduinoJson tfpsacrypto)
 target_link_options(wmbusmeters_wasm PRIVATE -Oz -flto
   -sMODULARIZE -sEXPORT_ES6 -sSINGLE_FILE -sENVIRONMENT=web,node -sALLOW_MEMORY_GROWTH -sFILESYSTEM=0
   -lembind --extern-pre-js=${GENERATED}/banner.js --pre-js=${GENERATED}/metadata.js)

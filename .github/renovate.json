@@ -19,11 +19,6 @@
   ],
   "packageRules": [
     {
-      "description": "The firmware's ESP-IDF stays on the Mbed TLS 3.6 LTS.",
-      "matchPackageNames": ["Mbed-TLS/mbedtls"],
-      "allowedVersions": "<4"
-    },
-    {
       "matchPackageNames": ["esphome/esphome"],
       "ignoreUnstable": false,
       "separateMinorPatch": true
