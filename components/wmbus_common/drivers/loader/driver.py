@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
+from typing import Self
 
 import esphome.config_validation as cv
 from esphome.core import CORE
@@ -30,7 +31,17 @@ class FieldDefinition:
 
 
 class FieldSelection:
+    name: str
     fields: set[FieldDefinition]
+
+    @property
+    def requested(self) -> set[str] | None:
+        """Fields this config asked for, None if it never asked; CORE.reset() clears them for the next config."""
+        return CORE.data.get(DOMAIN, {}).get(self.name)
+
+    def request(self) -> Self:
+        CORE.data.setdefault(DOMAIN, {}).setdefault(self.name, set())
+        return self
 
     def available_fields(self, kind: FieldKind | None = None) -> list[str]:
         return sorted(
@@ -49,18 +60,8 @@ class FieldSelection:
                 f"{' and '.join(sorted(kinds))} values, not {kind}"
             )
         cv.one_of(*self.available_fields(kind))(field_name)
+        self.request().requested.add(field_name)
         return field_name
-
-
-@dataclass
-class DriverRequests:
-    # An empty field set means every field.
-    fields: dict["Driver", set[str]] = field(default_factory=dict)
-    auto: bool = False
-
-
-def driver_requests() -> DriverRequests:
-    return CORE.data.setdefault(DOMAIN, DriverRequests())
 
 
 @dataclass(frozen=True, order=True)
@@ -83,10 +84,6 @@ class Driver(FieldSelection):
     @cached_property
     def fields(self) -> set[FieldDefinition]:
         return {FieldDefinition(f.definition.kind, f.json_name) for f in self.concrete_fields}
-
-    def request_field(self, field_name: str, kind: FieldKind | None = None) -> str:
-        driver_requests().fields.setdefault(self, set()).add(super().request_field(field_name, kind))
-        return field_name
 
     @property
     def aliases(self) -> list[str]:
@@ -112,8 +109,10 @@ class Driver(FieldSelection):
     def default_fields(self) -> list[str]:
         return self._definition["default_fields"]
 
-    def serialize(self, requested: set[str]) -> str:
-        return generate_from_definition(self._definition, self.source_path.name, requested or None)
+    def serialize(self, every_field: bool = False) -> str:
+        # Requested without any field means every field, too.
+        fields = None if every_field else self.requested or None
+        return generate_from_definition(self._definition, self.source_path.name, fields)
 
 
 @dataclass(frozen=True)
@@ -132,7 +131,7 @@ class DriverManager:
     def __init__(self):
         self._all_drivers: dict[str, Driver] = {}
         self._aliases: dict[str, str] = {}
-        self._auto_driver = AutoDriver(manager=self)
+        self.auto_driver = AutoDriver(manager=self)
         for p in sorted(XMQ_DRIVERS_PATH.glob("*.xmq")):
             driver = Driver.from_source(p)
             self._all_drivers[driver.name] = driver
@@ -144,34 +143,27 @@ class DriverManager:
         return sorted(set(self._all_drivers) | set(self._aliases))
 
     def request_driver(self, driver_name: str) -> Driver:
-        driver = self._all_drivers[self._aliases.get(driver_name, driver_name)]
-        driver_requests().fields.setdefault(driver, set())
-        return driver
-
-    def request_auto_driver(self) -> AutoDriver:
-        driver_requests().auto = True
-        return self._auto_driver
+        return self._all_drivers[self._aliases.get(driver_name, driver_name)].request()
 
     @property
     def auto_requested(self) -> bool:
-        return driver_requests().auto
+        return self.auto_driver.requested is not None
 
     @property
     def registered_drivers(self) -> list[Driver]:
-        return sorted(driver_requests().fields)
+        return [d for d in self._all_drivers.values() if d.requested is not None]
 
     def registry_index(self, driver: Driver) -> int:
         return self.registered_drivers.index(driver)
 
     def sync_to_directory(self, target_dir: str | Path) -> None:
         """Outside src/esphome/, because writer.copy_src_tree() deletes anything there it did not put."""
-        requests = driver_requests()
         files = {
             "registry.h": TEMPLATES.get_template("registry.h.j2").render(
                 symbols=[d.symbol for d in self.registered_drivers]
             ),
             # An auto meter may bind to any compiled driver, so none can be trimmed.
-            **{f"{d.name}.cpp": d.serialize(set() if requests.auto else f) for d, f in requests.fields.items()},
+            **{f"{d.name}.cpp": d.serialize(every_field=self.auto_requested) for d in self.registered_drivers},
         }
 
         target_dir = Path(target_dir)
