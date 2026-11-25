@@ -11,7 +11,7 @@ namespace wmbus {
 std::array<uint8_t, 16> aes_ecb_encrypt(std::span<const uint8_t, 16> key, std::span<const uint8_t, 16> in);
 
 // In place; the tail that does not fill a block is left alone.
-void aes_cbc_decrypt(std::span<const uint8_t, 16> key, std::array<uint8_t, 16> iv, std::span<uint8_t> buf);
+void aes_cbc_decrypt(std::span<const uint8_t, 16> key, const std::array<uint8_t, 16> &iv, std::span<uint8_t> buf);
 
 // RFC 4493.
 std::array<uint8_t, 16> aes_cmac(std::span<const uint8_t, 16> key, std::span<const uint8_t> input);

@@ -13,6 +13,7 @@ external_components:
 
 wmbus_common:
   drivers: all
+  crypto: psa
 
 wmbusmeters_wasm:
   version: ${version}

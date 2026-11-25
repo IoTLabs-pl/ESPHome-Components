@@ -13,6 +13,8 @@ FetchContent_Declare(ArduinoJson EXCLUDE_FROM_ALL
 FetchContent_Declare(MbedTLS EXCLUDE_FROM_ALL
   URL https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-$ENV{MBEDTLS_VERSION}/mbedtls-$ENV{MBEDTLS_VERSION}.tar.bz2)
 FetchContent_MakeAvailable(ArduinoJson MbedTLS)
+# mbedTLS's own entropy reads /dev/urandom, which -sFILESYSTEM=0 leaves out.
+target_compile_definitions(mbedcrypto PUBLIC MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)
 
 add_compile_options(-Oz -flto -fno-exceptions -DNDEBUG)
 set(GENERATED ${CMAKE_BINARY_DIR}/esphome/build/wmbusmeters-wasm)
@@ -22,8 +24,6 @@ list(FILTER SOURCES EXCLUDE REGEX "/component\\.cpp$")
 set(CORE_HELPERS ${GENERATED}/src/esphome/core/helpers.cpp ${GENERATED}/src/esphome/core/alloc_helpers.cpp
   ${GENERATED}/src/esphome/components/json/json_util.cpp)
 add_compile_definitions(USE_HOST)
-# USE_HOST on every source would switch crypto.cpp to OpenSSL.
-set_source_files_properties(${GENERATED}/src/esphome/components/wmbus_common/crypto.cpp PROPERTIES COMPILE_OPTIONS -UUSE_HOST)
 
 add_executable(wmbusmeters_wasm wmbusmeters_wasm.cpp ${SOURCES} ${CORE_HELPERS})
 target_compile_features(wmbusmeters_wasm PRIVATE cxx_std_20)

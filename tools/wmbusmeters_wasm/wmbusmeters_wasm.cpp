@@ -5,10 +5,21 @@
 #include <vector>
 
 #include <emscripten/bind.h>
+#include <psa/crypto.h>
+#include <unistd.h>
 
 #include "esphome/components/wmbus_common/meter.h"
 #include "esphome/components/wmbus_common/telegram.h"
 #include "esphome/core/helpers.h"
+
+extern "C" psa_status_t mbedtls_psa_external_get_random(mbedtls_psa_external_random_context_t *, uint8_t *output,
+                                                        size_t output_size, size_t *output_length) {
+  for (size_t done = 0; done < output_size; done += 256)
+    if (getentropy(output + done, std::min<size_t>(256, output_size - done)) != 0)
+      return PSA_ERROR_INSUFFICIENT_ENTROPY;
+  *output_length = output_size;
+  return PSA_SUCCESS;
+}
 
 namespace {
 

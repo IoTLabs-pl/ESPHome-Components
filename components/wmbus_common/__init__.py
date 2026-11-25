@@ -15,6 +15,7 @@ AUTO_LOAD = ["json"]
 UPSTREAM_REF = (Path(__file__).parent / ".wmbusmeters_tag").read_text().strip()
 
 CONF_ALL = "all"
+CONF_CRYPTO = "crypto"
 CONF_DRIVERS = "drivers"
 CONF_FIELDS = "fields"
 
@@ -57,12 +58,15 @@ DRIVER_ENTRY_SCHEMA = cv.maybe_simple_value(
     key=CONF_NAME,
 )
 
+CRYPTO_BACKENDS = ("psa", "openssl")
+
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(WMBusCommon),
         cv.Optional(CONF_DRIVERS, default=[]): cv.All(
             maybe_all(DriverManager.available_drivers), [DRIVER_ENTRY_SCHEMA]
         ),
+        cv.SplitDefault(CONF_CRYPTO, esp32="psa", host="openssl"): cv.one_of(*CRYPTO_BACKENDS, lower=True),
     }
 )
 
@@ -81,9 +85,13 @@ def validate_auto_has_candidates(config):
 FINAL_VALIDATE_SCHEMA = validate_auto_has_candidates
 
 
+def FILTER_SOURCE_FILES():
+    used = CORE.config[DOMAIN][CONF_CRYPTO]
+    return [f"crypto_{backend}.cpp" for backend in CRYPTO_BACKENDS if backend != used]
+
+
 async def to_code(config):
-    # Host AES comes from OpenSSL; ESP32 uses mbedTLS.
-    if CORE.is_host:
+    if config[CONF_CRYPTO] == "openssl":
         cg.add_build_flag("-lcrypto")
 
     cg.add_define("WMBUSMETERS_VERSION", UPSTREAM_REF)
