@@ -1,14 +1,34 @@
 # ESPHome Components
 
-![ESPHome](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FIoTLabs-pl%2FESPHome-Components%2Frefs%2Fheads%2Fmaster%2F.github%2Fworkflows%2Fbuild.yaml&query=%24.env.ESPHOME_VERSION&label=ESPHome&style=for-the-badge&color=f3922d&labelColor=2b4c5a)
-![GitHub License](https://img.shields.io/github/license/IoTLabs-pl/esphome-components?style=for-the-badge&color=f3922d&labelColor=2b4c5a)
+![ESPHome](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FIoTLabs-pl%2FESPHome-Components%2Frefs%2Fheads%2Fmaster%2F.github%2Fworkflows%2Fbuild.yaml&query=%24.env.ESPHOME_VERSION&label=ESPHome&style=for-the-badge&color=f3922d&labelColor=2b4c5a&logo=esphome&logoColor=white)
+![Version](https://img.shields.io/github/v/release/IoTLabs-pl/ESPHome-Components?style=for-the-badge&color=f3922d&labelColor=2b4c5a&logo=git&logoColor=white)
+![GitHub License](https://img.shields.io/github/license/IoTLabs-pl/ESPHome-Components?style=for-the-badge&color=f3922d&labelColor=2b4c5a&logo=gplv3&logoColor=white)
 
 This repository contains custom [ESPHome](https://esphome.io/) components for devices developed by [IoTLabs](https://iotlabs.pl).
 
+## Installation
+
+Add this repository as an [external component](https://esphome.io/components/external_components/) in your ESPHome configuration. **Pin a specific [release tag](https://github.com/IoTLabs-pl/ESPHome-Components/releases)** instead of tracking `master` to avoid unexpected breaking changes or ESPHome version mismatches:
+
+```yaml
+external_components:
+  - source: github://IoTLabs-pl/ESPHome-Components@v1.4.3
+```
+
+## Components
+
+| Component | Description |
+| --- | --- |
+| [`wmbus_radio`](#wmbus_radio) | 868 MHz wM-Bus receiver for Semtech SX1276 and SX1262 SPI transceivers |
+| [`wmbus_meter`](#wmbus_meter) | Decode wM-Bus meters into ESPHome sensors |
+| [`wmbus_common`](#wmbus_common) | Build-time [wmbusmeters](https://github.com/wmbusmeters/wmbusmeters) XMQ driver compiler (auto-loaded by `wmbus_radio`/`wmbus_meter`) |
+| [`socket_transmitter`](#socket_transmitter) | Send raw frames or payloads over TCP/UDP |
+| [`panasonic_aquarea`](#panasonic_aquarea) | Serial interface for Panasonic Aquarea heat pumps (based on [HeishaMon](https://github.com/heishamon/HeishaMon)) |
+
+Looking for ready-to-use hardware? See [wM-Bus-Gateway](https://github.com/IoTLabs-pl/wM-Bus-Gateway) and [PanaProxy](https://github.com/IoTLabs-pl/PanaProxy) — buying our hardware helps us fund ongoing development and maintenance of these components.
+
 ## `panasonic_aquarea`
 This component allows to communicate with Panasonic Aquarea heat pumps using their serial interface. It supports reading various parameters from the heat pump, such as temperature, pressure, and operating mode.
-
-Heavily based on [Heishamon](https://github.com/heishamon/HeishaMon). Thanks to the authors for grunt work of reverse-engineering the proprietary protocol used by Panasonic Aquarea heat pumps and making it available to the public.
 
 **Example configuration:**
 
@@ -48,7 +68,7 @@ switch:
 ```
 All available entities are listed in the catalogs:
 - [by Entity Type](docs/panasonic_aquarea/entities/by_entity_type.md)
-- [by Heishamon ID](docs/panasonic_aquarea/entities/by_id.md)
+- [by HeishaMon ID](docs/panasonic_aquarea/entities/by_id.md)
 - [by Name](docs/panasonic_aquarea/entities/by_name.md)
 
 ## `socket_transmitter`
@@ -74,7 +94,7 @@ interval:
 
 ## `wmbus_common`
 
-This component decodes wM-Bus telegrams with the driver definitions of [wmbusmeters](https://wmbusmeters.org/), compiled into the firmware at build time. See [components/wmbus_common/README.md](components/wmbus_common/README.md) for details.
+This component decodes wM-Bus telegrams with the driver definitions of [wmbusmeters](https://github.com/wmbusmeters/wmbusmeters), compiled into the firmware at build time. See [components/wmbus_common/README.md](components/wmbus_common/README.md) for details.
 
 **Example configuration:**
 
@@ -216,5 +236,10 @@ SX1262 also needs `busy_pin` wired to its BUSY pin. `tcxo_voltage` is optional a
 
 The `on_frame` trigger can be used to send received wM-Bus packets to a remote server using `socket_transmitter` component. It can also be used to process packets in any other way, such as sending them to MQTT broker or HTTP server.
 
-### Disclaimer
-`wmbus_*` components are based on work of [SzczepanLeon's ESPHome Components repository](https://github.com/SzczepanLeon/esphome-components). Thanks to the authors for their work and making it available to the public.
+## Acknowledgements
+
+These components wouldn't exist without the open-source community. Huge thanks to the authors of the projects below for doing the hard work and making it available to the public:
+
+- **`panasonic_aquarea`** — heavily based on [HeishaMon](https://github.com/heishamon/HeishaMon), which did the grunt work of reverse-engineering the proprietary Panasonic Aquarea serial protocol.
+- **`wmbus_*`** — built on top of [SzczepanLeon's ESPHome Components](https://github.com/SzczepanLeon/esphome-components), which laid the groundwork for wM-Bus in ESPHome.
+- **`wmbus_common`** — powered by [wmbusmeters](https://github.com/wmbusmeters/wmbusmeters), whose contributors have spent years cataloging and maintaining driver definitions for hundreds of meters.
