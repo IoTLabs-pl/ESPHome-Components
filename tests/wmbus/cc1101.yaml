@@ -1,0 +1,7 @@
+packages:
+  wmbus: !include common.yaml
+
+wmbus_radio:
+  radio_type: CC1101
+  cs_pin: GPIO3
+  gdo2_pin: GPIO4

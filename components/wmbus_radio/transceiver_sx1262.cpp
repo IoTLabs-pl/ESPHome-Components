@@ -61,7 +61,10 @@ void SX1262::setup() {
 
 bool SX1262::configure_chip() {
   ESP_LOGV(TAG, "Setting up SX1262");
-  this->reset();
+  this->reset_pin_->digital_write(0);
+  delayMicroseconds(100);
+  this->reset_pin_->pin_mode(gpio::FLAG_INPUT);
+  delay(5);
   if (!this->wait_for_busy()) {
     ESP_LOGE(TAG, "No response, BUSY stays high after reset");
     return false;
@@ -144,6 +147,8 @@ bool SX1262::configure_chip() {
 
 void SX1262::dump_config() {
   Transceiver::dump_config();
+  LOG_PIN("Reset Pin: ", this->reset_pin_);
+  LOG_PIN("DIO1 Pin: ", this->dio1_pin_);
   LOG_PIN("Busy Pin: ", this->busy_pin_);
   if (this->tcxo_voltage_ != TcxoVoltage::NONE) {
     ESP_LOGCONFIG(TAG, "TCXO voltage code: 0x%02X", static_cast<uint8_t>(this->tcxo_voltage_));

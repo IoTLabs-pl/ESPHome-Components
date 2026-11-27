@@ -1,11 +1,12 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
-from esphome.const import CONF_BUSY_PIN
+from esphome.const import CONF_BUSY_PIN, CONF_RESET_PIN
 
 from .radio import radio_ns
 from .transceiver import register_transceiver, transceiver_schema
 
+CONF_DIO1_PIN = "dio1_pin"
 CONF_TCXO_VOLTAGE = "tcxo_voltage"
 CONF_RF_SWITCH = "rf_switch"
 CONF_USE_DCDC = "use_dcdc"
@@ -31,6 +32,8 @@ def config_schema(radio_type, radio_schema):
         transceiver_schema(
             radio_type,
             {
+                cv.Required(CONF_RESET_PIN): pins.internal_gpio_output_pin_schema,
+                cv.Required(CONF_DIO1_PIN): pins.internal_gpio_input_pin_schema,
                 cv.Required(CONF_BUSY_PIN): pins.internal_gpio_input_pin_schema,
                 cv.Optional(CONF_TCXO_VOLTAGE, default="0V"): cv.All(
                     cv.voltage,
@@ -48,6 +51,8 @@ def config_schema(radio_type, radio_schema):
 async def to_code(config):
     var = await register_transceiver(config)
 
+    await cg.add_pin(var.set_reset_pin, config[CONF_RESET_PIN])
+    await cg.add_pin(var.set_dio1_pin, config[CONF_DIO1_PIN])
     await cg.add_pin(var.set_busy_pin, config[CONF_BUSY_PIN])
     cg.add(var.set_tcxo_voltage(config[CONF_TCXO_VOLTAGE]))
     cg.add(var.set_rf_switch(config[CONF_RF_SWITCH]))
